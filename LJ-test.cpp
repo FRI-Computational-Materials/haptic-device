@@ -474,7 +474,13 @@ int main(int argc, char *argv[]) {
         sphere->setTexture(texture);
         sphere->m_texture->setSphericalMappingEnabled(true);
         sphere->setUseTexture(true);
-        sphere->m_material->setWhite();
+
+        // Set the first sphere (the one being controlled to red initially)
+        if (i == 0) {
+            sphere->m_material->setRed();
+        } else {
+            sphere->m_material->setWhite();
+        }
 
     }
     for (int i = 0; i < NUM_SPHERES; i++) {
@@ -817,6 +823,7 @@ void updateHaptics(void) {
         bool button3;
         hapticDevice->getUserSwitch(2, button3);
 
+        // Changes the camera when button2 is pressed 
         if (button3) {
             if (!button3_changed) {
                 //I was trying to make the camera rotate around the cluster of atoms in a cirle but there is still some problems with it
@@ -859,14 +866,19 @@ void updateHaptics(void) {
         } else
             button3_changed = false;
 
+        // Changes the current atom being controlled when button 1 is pressed 
         if (button2) {
 
             if (!button2_changed) {
                 if (curr_atom == NUM_SPHERES - 1) {
                     cVector3d B = spheres[0]->getLocalPos();
                     curr_atom = 0;
+                    // TODO - make sure this works, changes color of the current sphere in this special case
+                    // TODO - note: this will only change colors after toggle
                     spheres[curr_atom]->setLocalPos(position);
+                    spheres[curr_atom]->m_material->setRed();
                     spheres[NUM_SPHERES - 1]->setLocalPos(B);
+                    spheres[NUM_SPHERES - 1]->m_material->setWhite();
                     //curr_atom = curr_atom - NUM_SPHERES + 1;
                     cVector3d translate_last =
                             (spheres[NUM_SPHERES - 1]->getLocalPos()) - (spheres[curr_atom]->getLocalPos());
@@ -893,8 +905,11 @@ void updateHaptics(void) {
                     } */
                     cVector3d A = spheres[curr_atom + 1]->getLocalPos();
                     curr_atom++;
+                    // Change the current atom & its color, set the previous one back
                     spheres[curr_atom]->setLocalPos(position);
+                    spheres[curr_atom]->m_material->setRed();
                     spheres[curr_atom - 1]->setLocalPos(A);
+                    spheres[curr_atom - 1]->m_material->setWhite();
                     cVector3d translate = (spheres[curr_atom - 1]->getLocalPos()) - (spheres[curr_atom]->getLocalPos());
                     for (int i = 0; i < NUM_SPHERES; i++) {
                         if (i != curr_atom) {
