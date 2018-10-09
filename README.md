@@ -4,6 +4,16 @@ Code for the FRI haptic device project
 ## Build Instructions
 
 ### Windows
+FOLLOW THESE STEPS TO INSTALL HAPTIC DEVICE SOFTWARE ON WINDOWS
+
+1. Download Force Dimension drivers for the Novint Falcon from [force dimension](http://www.forcedimension.com/download/sdk). Most recent as of 10/3/18 is SDK 3.7.
+2. Run the .exe file to install drivers.
+3. Download the CHAI3D libraries from [CHAI3D](http://chai3d.org/download/releases). I think both the multi-platform and Windows versions work, but I got mine to work based off the multi-platform one.
+4. If you don’t have it, install the Community version of Visual Studio (for free!) from [visual studio](https://visualstudio.microsoft.com/downloads/?utm_medium=microsoft&utm_source=docs.microsoft.com&utm_campaign=button+cta&utm_content=download+vs2017).
+5. SUPER IMPORTANT: Follow all of the instructions in the CHAI3D documentation for setting things up at [force dimension tutorial]( http://chai3d.org/download/doc/html/wrapper-overview.html). Go to the section titled ‘Creating an Application.’
+6. NOTE: For Visual Studio 2017, there is an issue with making an ‘Empty Project’ as they removed the option in this version. Instead, select the Wizard and check the Empty option when the prompt appears.
+
+
 
 ### Linux
 1. Download the multiplatform release from [chai3d](http://www.chai3d.org/download/releases)
