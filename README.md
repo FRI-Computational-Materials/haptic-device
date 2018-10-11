@@ -12,7 +12,15 @@ Code for the FRI haptic device project
     * libasound2-dev
     * freeglut3-dev
     * xorg-dev
-3. **TODO** - setup directory structure 
+3. Unzip the sdk and build using  `cd chai3d-3.2.0 && make`
+4. Clone this repo into the chai3d-3.2.0 directory
+   * `git clone https://github.com/styu99/haptic-device.git`
+5. Build LJ-test with `cd haptic-device && make`
+6. Navigate to `chai3d-3.2.0/bin/lin-x86_64`
+7. Run as root: `sudo ./haptic device`
+8. To get the haptic device working you may need to adding rules to udev
+    * `sudo cp chai3d-3.2.0/external/DHD/doc/linux/51-forcedimension.rules /etc/udev/rules.d`
+ 
 
 
 ## Reference
