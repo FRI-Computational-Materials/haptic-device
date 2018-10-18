@@ -168,6 +168,9 @@ int swapInterval = 1;
 // root resource path
 string resourceRoot;
 
+// a line representing the velocity vector of the haptic device
+cShapeLine* velocity;
+
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -230,7 +233,7 @@ int main(int argc, char *argv[]) {
     cout << "-----------------------------------" << endl;
     cout << "CHAI3D" << endl;
     cout << "Demo: LJ-TEST" << endl;
-
+    cout << "Force-Vector Branch" << endl;
     cout << "-----------------------------------" << endl << endl << endl;
     cout << endl << endl;
 
@@ -372,6 +375,12 @@ int main(int argc, char *argv[]) {
     // set light cone half angle
     light->setCutOffAngleDeg(30);
 
+    // create a small line to illustrate velocity of the haptic device
+    velocity = new cShapeLine(cVector3d(0,0,0),
+                              cVector3d(0,0,0));
+    
+    // insert line inside world
+    world->addChild(velocity);
 
     //--------------------------------------------------------------------------
     // HAPTIC DEVICES / TOOLS
@@ -780,12 +789,21 @@ void updateHaptics(void) {
         position *= 2.0;
         // read user-switch status (button 0)
 
+        // read linear and angular velocity
+        cVector3d linearVelocity;
+        hapticDevice->getLinearVelocity(linearVelocity);
 
+        cVector3d angularVelocity;
+        hapticDevice->getAngularVelocity(angularVelocity);
 
 
         /////////////////////////////////////////////////////////////////////////
         // UPDATE SIMULATION
         /////////////////////////////////////////////////////////////////////////
+
+        // update arrow
+        velocity->m_pointA = position;
+        velocity->m_pointB = cAdd(position, linearVelocity);
 
         // position of walls and ground
         const double WALL_GROUND = 0.0 + SPHERE_RADIUS;
@@ -822,8 +840,8 @@ void updateHaptics(void) {
 
         bool button3;
         hapticDevice->getUserSwitch(2, button3);
-
-        // Changes the camera when button2 is pressed 
+        
+//////////////////////////////////////////////////////////////
         if (button3) {
             if (!button3_changed) {
                 //I was trying to make the camera rotate around the cluster of atoms in a cirle but there is still some problems with it
