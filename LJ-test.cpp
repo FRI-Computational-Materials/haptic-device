@@ -801,7 +801,7 @@ void updateHaptics(void) {
         // UPDATE SIMULATION
         /////////////////////////////////////////////////////////////////////////
 
-        // update arrow
+        // update force vector arrow
         velocity->m_pointA = position;
         velocity->m_pointB = cAdd(position, linearVelocity);
 
