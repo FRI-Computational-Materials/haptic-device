@@ -169,7 +169,10 @@ int swapInterval = 1;
 string resourceRoot;
 
 // a line representing the velocity vector of the haptic device
-cShapeLine* velocity;
+//cShapeLine* velocity;
+
+// An array of velocity vectors
+cShapeLine *velVectors[NUM_SPHERES];
 
 
 //------------------------------------------------------------------------------
@@ -376,11 +379,11 @@ int main(int argc, char *argv[]) {
     light->setCutOffAngleDeg(30);
 
     // create a small line to illustrate velocity of the haptic device
-    velocity = new cShapeLine(cVector3d(0,0,0),
-                              cVector3d(0,0,0));
+    //velocity = new cShapeLine(cVector3d(0,0,0),
+    //                         cVector3d(0,0,0));
     
     // insert line inside world
-    world->addChild(velocity);
+    //world->addChild(velocity);
 
     //--------------------------------------------------------------------------
     // HAPTIC DEVICES / TOOLS
@@ -450,11 +453,21 @@ int main(int argc, char *argv[]) {
         // create a sphere and define its radius
         cShapeSphere *sphere = new cShapeSphere(SPHERE_RADIUS);
 
+        // create a small line to illustrate velocity
+        cShapeLine *velocity = new cShapeLine(cVector3d(0,0,0),
+                                              cVector3d(0,0,0));
+            
+
         // store pointer to sphere primitive
         spheres[i] = sphere;
 
+        //store pointer to line
+        velVectors[i] = velocity;
+
         // add sphere primitive to world
         world->addChild(sphere);
+
+        world->addChild(velocity);
 
         // set the position of the object at the center of the world
 
@@ -753,7 +766,7 @@ void updateHaptics(void) {
 
     //Array for all velocities
     //cVector3d sphereVel[NUM_SPHERES];
-    cout << sphereVel[NUM_SPHERES] << endl;
+    //cout << sphereVel[NUM_SPHERES] << endl;
     // main haptic simulation loop
 
     bool button2_changed = false;
@@ -801,9 +814,6 @@ void updateHaptics(void) {
         // UPDATE SIMULATION
         /////////////////////////////////////////////////////////////////////////
 
-        // update force vector arrow
-        velocity->m_pointA = position;
-        velocity->m_pointB = cAdd(position, linearVelocity);
 
         // position of walls and ground
         const double WALL_GROUND = 0.0 + SPHERE_RADIUS;
@@ -1012,6 +1022,7 @@ void updateHaptics(void) {
                     // compute acceleration
                     cVector3d sphereAcc = (force / SPHERE_MASS);
                     sphereVel[i] = K_DAMPING * (sphereVel[i] + timeInterval * sphereAcc);
+        
                     // compute /position
                     //cout << i << " " << sphereVel << endl;
                     cVector3d spherePos_change = timeInterval * sphereVel[i] + cSqr(timeInterval) * sphereAcc;
@@ -1062,6 +1073,20 @@ void updateHaptics(void) {
         //cout << "current " << position << endl;
 
         cVector3d force = sphereFce[curr_atom];
+
+        // update force vector arrow
+        //velocity->m_pointA = position;
+        //velocity->m_pointB = cAdd(position, linearVelocity);
+        for (int i = 0; i < NUM_SPHERES; i++){
+            velVectors[i]->m_pointA = spheres[i]->getLocalPos();
+            //velVectors[i]->m_pointB = cAdd(spheres[i]->getLocalPos(),
+            //                               sphereVel[i]);
+            
+            velVectors[i]->m_pointB = cAdd(spheres[i]->getLocalPos(),
+                                           sphereVel[i] * 500);
+            
+        }
+        cout <<  endl;
 
         //cout << force << endl;
         /////////////////////////////////////////////////////////////////////////
