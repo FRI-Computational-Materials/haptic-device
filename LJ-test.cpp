@@ -79,7 +79,7 @@ bool mirroredDisplay = false;
 //------------------------------------------------------------------------------
 
 // number of spheres in the scene
-const int NUM_SPHERES = 6;
+const int NUM_SPHERES = 2;
 
 // radius of each sphere
 const double SPHERE_RADIUS = 0.008;
@@ -1073,20 +1073,28 @@ void updateHaptics(void) {
         //cout << "current " << position << endl;
 
         cVector3d force = sphereFce[curr_atom];
+    
 
-        // update force vector arrow
-        //velocity->m_pointA = position;
-        //velocity->m_pointB = cAdd(position, linearVelocity);
+        // update force vector arrows
         for (int i = 0; i < NUM_SPHERES; i++){
-            velVectors[i]->m_pointA = spheres[i]->getLocalPos();
-            //velVectors[i]->m_pointB = cAdd(spheres[i]->getLocalPos(),
-            //                               sphereVel[i]);
-            
-            velVectors[i]->m_pointB = cAdd(spheres[i]->getLocalPos(),
-                                           sphereVel[i] * 500);
-            
-        }
-        cout <<  endl;
+            cVector3d newPoint = cAdd(spheres[i]->getLocalPos(), sphereFce[i]);
+            cVector3d newPointNormalized;
+            sphereFce[i].normalizer(newPointNormalized);
+            velVectors[i]->m_pointA = cAdd(spheres[i]->getLocalPos(), newPointNormalized * SPHERE_RADIUS);
+            velVectors[i]->m_pointB = cAdd(velVectors[i]->m_pointA, sphereFce[i] * .05);
+            velVectors[i]->setLineWidth(3)
+            //float distance = cDistance(velVectors[i]->m_pointA, newPoint);
+            // TODO - use distance to set some kind of threshold that will scale down any large lines
+            // code below is a remmant from using velocity
+            /*
+            if (i == curr_atom) {
+                velVectors[i]->m_pointB = cAdd(spheres[i]->getLocalPos(), linearVelocity);
+            } else {
+                velVectors[i]->m_pointB = cAdd(spheres[i]->getLocalPos(), sphereFce[i]);
+                //velVectors[i]->m_pointB = cAdd(spheres[i]->getLocalPos(),
+                //                            sphereVel[i] * -500);
+            } */
+        } 
 
         //cout << force << endl;
         /////////////////////////////////////////////////////////////////////////
