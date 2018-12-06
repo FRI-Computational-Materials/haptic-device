@@ -79,6 +79,7 @@ bool mirroredDisplay = false;
 //------------------------------------------------------------------------------
 
 // number of spheres in the scene
+// defined on line #
 const int NUM_SPHERES = 2;
 
 // radius of each sphere
@@ -229,6 +230,12 @@ double x = .5;
 double y = .5;
 
 int main(int argc, char *argv[]) {
+    if (argc == 1) {
+        cout << "hi" << endl;
+    } else if (argc == 2) {
+        cout << "my name jeff" << argv[1] << endl;
+    }
+    
     //--------------------------------------------------------------------------
     // INITIALIZATION
     //--------------------------------------------------------------------------
@@ -447,9 +454,8 @@ int main(int argc, char *argv[]) {
         close();
         return (-1);
     }
-
-    // create spheres
-    for (int i = 0; i < NUM_SPHERES; i++) {
+// create spheres
+        for (int i = 0; i < NUM_SPHERES; i++) {
         // create a sphere and define its radius
         cShapeSphere *sphere = new cShapeSphere(SPHERE_RADIUS);
 
@@ -1080,10 +1086,24 @@ void updateHaptics(void) {
             cVector3d newPoint = cAdd(spheres[i]->getLocalPos(), sphereFce[i]);
             cVector3d newPointNormalized;
             sphereFce[i].normalizer(newPointNormalized);
-            velVectors[i]->m_pointA = cAdd(spheres[i]->getLocalPos(), newPointNormalized * SPHERE_RADIUS);
+            velVectors[i]->m_pointA = cAdd(spheres[i]->getLocalPos(), newPointNormalized * spheres[i]->getRadius());
             velVectors[i]->m_pointB = cAdd(velVectors[i]->m_pointA, sphereFce[i] * .05);
-            velVectors[i]->setLineWidth(3)
-            //float distance = cDistance(velVectors[i]->m_pointA, newPoint);
+            velVectors[i]->setLineWidth(5);
+            
+            // Change color, red if current, black otherwise
+            if (i == curr_atom) {
+                velVectors[i]->m_colorPointA.setRed();
+                velVectors[i]->m_colorPointB.setRed();
+            } else {
+                velVectors[i]->m_colorPointA.setBlack();
+                velVectors[i]->m_colorPointB.setBlack();
+            }
+
+            // Change size based on threshold?
+            float dist = velVectors[i]->m_pointA.distance(velVectors[i]->m_pointB);
+            if (dist >= .05 ){
+                velVectors[i]->m_pointB = cAdd(velVectors[i]->m_pointA, newPointNormalized * .05);
+            }
             // TODO - use distance to set some kind of threshold that will scale down any large lines
             // code below is a remmant from using velocity
             /*
