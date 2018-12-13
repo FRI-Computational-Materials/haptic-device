@@ -4,12 +4,15 @@ Code for the FRI haptic device project
 ## Build Instructions
 
 ### Windows
+
 Installing all the Drivers/SDKs/Software:
+
 
 1. Download Force Dimension drivers for the Novint Falcon from [force dimension](http://www.forcedimension.com/download/sdk). Most recent as of 10/3/18 is SDK 3.7.
 2. Run the .exe file to install drivers.
 3. Download the CHAI3D libraries from [CHAI3D](http://chai3d.org/download/releases). I think both the multi-platform and Windows versions work, but I got mine to work based off the multi-platform one.
 4. If you don’t have it, install the Community version of Visual Studio (for free!) from [visual studio](https://visualstudio.microsoft.com/downloads/?utm_medium=microsoft&utm_source=docs.microsoft.com&utm_campaign=button+cta&utm_content=download+vs2017).
+
 
 Creating Projects:
 
@@ -68,6 +71,6 @@ The textbook is too big to upload so here's the link: http://www.charleshouserjr
     * button 1 = button2
         * this button changes the current atom being used
     * button3 = freebutton
-        * also does nothin
+        * also does nothing
     * button2  = button3
         * this changes the camera position
