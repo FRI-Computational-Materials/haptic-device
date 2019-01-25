@@ -85,7 +85,7 @@ const int NUM_SPHERES = 2;
 const double SPHERE_RADIUS = 0.008;
 
 //number of cameras
-const int NUM_CAM = 4;
+const int NUM_CAM = 2;
 
 //------------------------------------------------------------------------------
 // DECLARED VARIABLES
@@ -243,7 +243,8 @@ int main(int argc, char *argv[]) {
 	glfwSetErrorCallback(errorCallback);
 
 	// compute desired size of window
-	const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+    const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+//	const w *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 	int w = 0.8 * mode->height;
 	int h = 0.5 * mode->height;
 	int x = 0.5 * (mode->width - w);
@@ -389,7 +390,7 @@ int main(int argc, char *argv[]) {
 	cTexture2dPtr texture = cTexture2d::create();
 
 	// load texture file
-	bool fileload = texture->loadFromFile(RESOURCE_PATH("../resources/images/spheremap-3.jpg"));
+	bool fileload = texture->loadFromFile(RESOURCE_PATH("/Users/jrd2852/chai3d-3.2.0/bin/resources/images/spheremap-3.jpg"));
 	if (!fileload) {
 #if defined(_MSVC)
 		fileload = texture->loadFromFile("../../../bin/resources/images/spheremap-3.jpg");
@@ -439,10 +440,12 @@ int main(int argc, char *argv[]) {
 		sphere->m_texture->setSphericalMappingEnabled(true);
 		sphere->setUseTexture(true);
 
-		// Set the first sphere (the one being controlled to red initially)
+        // Set the first and second sphere (the one being controlled to red initially and the anchor in blue)
 		if (i == 0) {
 			sphere->m_material->setRed();
-		}
+        }else if (i == 1) {
+            sphere->m_material->setBlue();
+        }
 		else {
 			sphere->m_material->setWhite();
 		}
@@ -496,7 +499,7 @@ int main(int argc, char *argv[]) {
 	background->setFixedAspectRatio(true);
 
 	// load background image
-	fileload = background->loadFromFile(RESOURCE_PATH("../resources/images/background.png"));
+	fileload = background->loadFromFile(RESOURCE_PATH("/Users/jrd2852/chai3d-3.2.0/bin/resources/images/background.png"));
 	if (!fileload) {
 #if defined(_MSVC)
 		fileload = background->loadFromFile("../../../bin/resources/images/background.png");
@@ -686,14 +689,17 @@ void updateHaptics(void) {
 
 	// Track which atom is currently being moved
 	int curr_atom = 0;
+    int anchor_atom = 1;
+    int anchor_atom_hold = 1;
 
 	//Array for all velocities
 	//cVector3d sphereVel[NUM_SPHERES];
-	cout << sphereVel[NUM_SPHERES] << endl;
+	cout << sphereVel[NUM_SPHERES-1] << endl;
 	// main haptic simulation loop
 
 	bool button1_changed = false;
 	bool button2_changed = false;
+    bool button3_changed = false;
 	while (simulationRunning) {
 		/////////////////////////////////////////////////////////////////////
 		// SIMULATION TIME
@@ -730,22 +736,25 @@ void updateHaptics(void) {
 
 		// position of walls and ground
 		const double WALL_GROUND = 0.0 + SPHERE_RADIUS;
-		const double WALL_LEFT = -0.1;
-		const double WALL_RIGHT = 0.2;
-		const double WALL_FRONT = 0.08;
-		const double WALL_BACK = -0.08;
+        const double WALL_CEILING = 0.05; //0.2;
+        const double WALL_LEFT = -0.05; //-0.1;
+        const double WALL_RIGHT = 0.05; //0.2;
+        const double WALL_FRONT = 0.05;//0.08;
+        const double WALL_BACK = -0.05; //-0.08;
 		const double SPHERE_STIFFNESS = 500.0;
 		const double SPHERE_MASS = 0.02;
-		const double K_DAMPING = 0.0005;      //0.996;
+		const double K_DAMPING = 0.001;      //0.996;
 		const double K_MAGNET = 500.0;
 		const double HAPTIC_STIFFNESS = 1000.0;
 		const double SIGMA = 1.0;
 		const double EPSILON = 1.0;
+        const double FORCE_DAMPING = 0.75;
 		//Scales the distance betweens atoms
 		const double DIST_SCALE = .02;
 		// clear forces for all spheres
 		cVector3d sphereFce[NUM_SPHERES];
 
+        
 		//Update current atom based on if the user pressed the far left button
 		//The point of button2_changed is to make it so that it only switches one atom if the button is touched Otherwise it flips out
 
@@ -759,7 +768,7 @@ void updateHaptics(void) {
 		hapticDevice->getUserSwitch(3, button3);
 
 		bool trackfreeze[NUM_SPHERES];
-
+        
 		// Changes the camera when button2 is pressed 
 		if (button2) {
 			if (!button2_changed) {
@@ -785,81 +794,98 @@ void updateHaptics(void) {
 		}
 		else
 			button2_changed = false;
-
-		// Changes the current atom being controlled when button 1 is pressed 
+        
+        
+		// Changes the current atom being controlled when button 1 is pressed
+        // JD: edit so that we use remainder function in C++ and remove previous if else statement
 		if (button1) {
 			if (!button1_changed) {
-				if (curr_atom == NUM_SPHERES - 1) { 
-					cVector3d B = spheres[0]->getLocalPos();
-					curr_atom = 0;
-					// TODO - make sure this works, changes color of the current sphere in this special case
-					// TODO - note: this will only change colors after toggle
-					spheres[curr_atom]->setLocalPos(position);
-					spheres[curr_atom]->m_material->setRed();
-					spheres[NUM_SPHERES - 1]->setLocalPos(B);
-					spheres[NUM_SPHERES - 1]->m_material->setWhite();
-					//curr_atom = curr_atom - NUM_SPHERES + 1;
-					cVector3d translate_last =
-						(spheres[NUM_SPHERES - 1]->getLocalPos()) - (spheres[curr_atom]->getLocalPos());
-					for (int i = 0; i < NUM_SPHERES; i++) {
-						if (i != curr_atom) {
-
-							if (i == (NUM_SPHERES - 1)) {        
-								spheres[i]->setLocalPos(
-									spheres[NUM_SPHERES - 1]->getLocalPos() - (2.0 * translate_last));
-								cVector3d positions = spheres[i]->getLocalPos();
-								//cout << i << " " << positions  << endl;
-							}
-							else {
-								spheres[i]->setLocalPos(spheres[i]->getLocalPos() - (translate_last));
-								cVector3d positions = spheres[i]->getLocalPos();
-								//cout << i << " " << positions  << endl;
-							}
-						}
-					}
-				}
-				else {
-					cVector3d A = spheres[curr_atom + 1]->getLocalPos();
-					curr_atom++;
-					// Change the current atom & its color, set the previous one back
-					spheres[curr_atom]->setLocalPos(position);
-					spheres[curr_atom]->m_material->setRed();
-					spheres[curr_atom - 1]->setLocalPos(A);
-					spheres[curr_atom - 1]->m_material->setWhite();
-					cVector3d translate = (spheres[curr_atom - 1]->getLocalPos()) - (spheres[curr_atom]->getLocalPos());
-					for (int i = 0; i < NUM_SPHERES; i++) {
-						if (i != curr_atom) {
-							if (i == (curr_atom - 1)) {
-								spheres[i]->setLocalPos(spheres[curr_atom - 1]->getLocalPos() - (2.0 * translate));
-								cVector3d positions = spheres[i]->getLocalPos();
-								//cout << i << " " << positions  << endl;
-							}
-							else {
-								spheres[i]->setLocalPos(spheres[i]->getLocalPos() - (translate));
-								cVector3d positions = spheres[i]->getLocalPos();
-								//cout << i << " " << positions  << endl;
-							}
-						}
-					}
-				}
-				button1_changed = true;
+                // computes current atom by taking the remainder of the curr_atom +1 and number of spheres
+                int previous_curr_atom = curr_atom;
+                cout << "remainder of "<< curr_atom+1 << NUM_SPHERES << endl;
+                curr_atom = remainder(curr_atom+1,NUM_SPHERES);
+                if (curr_atom < 0) {
+                        curr_atom = NUM_SPHERES + curr_atom;
+                }
+                cout << "="<< curr_atom << endl;
+                
+                // Add exception for if controlled atom is in the same location as the anchored atom
+                // Skip anchored atom
+                if (curr_atom == anchor_atom) {
+                    curr_atom = remainder(curr_atom+1,NUM_SPHERES);
+                    if (curr_atom < 0) {
+                        curr_atom = NUM_SPHERES + curr_atom;
+                    }
+                }
+                cVector3d A = spheres[curr_atom]->getLocalPos();
+					
+                // Change the current atom & its color, set the previous one back
+                spheres[curr_atom]->setLocalPos(position);
+                spheres[curr_atom]->m_material->setRed();
+                spheres[previous_curr_atom]->setLocalPos(A);
+                spheres[previous_curr_atom]->m_material->setWhite();
+                cVector3d translate = (spheres[previous_curr_atom]->getLocalPos()) - (spheres[curr_atom]->getLocalPos());
+                for (int i = 0; i < NUM_SPHERES; i++) {
+                    if (i != curr_atom) {
+                        if (i == (previous_curr_atom)) {
+                            spheres[i]->setLocalPos(spheres[previous_curr_atom]->getLocalPos() - (2.0* translate));
+                            cVector3d positions = spheres[i]->getLocalPos();
+                            //cout << i << " " << positions  << endl;
+                        }
+                        else {
+                            spheres[i]->setLocalPos(spheres[i]->getLocalPos() - (translate));
+                            cVector3d positions = spheres[i]->getLocalPos();
+                            //cout << i << " " << positions  << endl;
+                        }
+                    }
+                }
+				
+            button1_changed = true;
 			}
 		}
 		else
 			button1_changed = false;
-
+        
+        // JD: added use for button 3; blue atom is now anchor and is fixed in place in the simulation
+        // if you want to change the anchor atom press button 3
+        // Changes the current anchor when button 3 is pressed
+        if (button3) {
+            if (!button3_changed) {
+                anchor_atom_hold = anchor_atom;
+                anchor_atom = remainder(anchor_atom+1,NUM_SPHERES);
+                if (anchor_atom < 0) {
+                    anchor_atom = NUM_SPHERES + anchor_atom;
+                }
+                if (anchor_atom == curr_atom){
+                    anchor_atom = remainder(anchor_atom+1,NUM_SPHERES);
+                    if (anchor_atom < 0) {
+                        anchor_atom = NUM_SPHERES + anchor_atom;
+                    }
+                }
+                button3_changed = true;
+                spheres[anchor_atom_hold]->m_material->setWhite();
+                spheres[anchor_atom]->m_material->setBlue();
+            }
+        }
+        else
+            button3_changed = false;
+        
 		for (int i = 0; i < NUM_SPHERES; i++) {
 			sphereFce[i].zero();
 		}
 		// compute forces for all spheres
 		double lj_PE = 0;
+        
+        // JD: edited this so that many operations are removed out of the inner loop
+        // This loop is for computing the force on atom i
 		for (int i = 0; i < NUM_SPHERES; i++) {
 			// compute force on atom
 			cVector3d force;
 			cVector3d pos0 = spheres[i]->getLocalPos();
 			// check forces with all other spheres
 			force.zero();
-
+            
+            // this loop is for finding all of atom i's neighbors
 			for (int j = 0; j < NUM_SPHERES; j++) {
 				//Don't compute forces between an atom and itself
 				if (i != j) {
@@ -878,52 +904,52 @@ void updateHaptics(void) {
 					lj_potential[i] = { 4 * EPSILON * (pow(SIGMA / distance, 12) - pow(SIGMA / distance, 6)) };
 
 					lj_PE = lj_PE + lj_potential[i];
-
-					// update haptic and graphic rate data
-					LJ_num->setText("Potential Energy: " + cStr((lj_PE / 2), 5));
-
-					// update position of label
-					LJ_num->setLocalPos(650, 500);
-					// Compute LJ forces
 					if (!button0) {
 
 						double lj =
-							-4 * EPSILON * ((-12 * pow(SIGMA / distance, 13)) - (-6 * pow(SIGMA / distance, 7)));
+							-4 * FORCE_DAMPING * EPSILON * ((-12 * pow(SIGMA / distance, 13)) - (-6 * pow(SIGMA / distance, 7)));
 						force.add(lj * dir01);
 					}
-
-					sphereFce[i] = force;
-					// update velocity and position of all spheres
-					// compute acceleration
-					cVector3d sphereAcc = (force / SPHERE_MASS);
-					sphereVel[i] = K_DAMPING * (sphereVel[i] + timeInterval * sphereAcc);
-					// compute /position
-					cVector3d spherePos_change = timeInterval * sphereVel[i] + cSqr(timeInterval) * sphereAcc;
-					double magnitude = spherePos_change.length();
-					cVector3d spherePos =
-						spheres[i]->getLocalPos() + timeInterval * sphereVel[i] + cSqr(timeInterval) * sphereAcc;
-					if (magnitude > 5) {
+                }
+            }
+            sphereFce[i] = force;
+            // update velocity and position of all spheres
+            // compute acceleration
+            cVector3d sphereAcc = (force / SPHERE_MASS);
+            sphereVel[i] = K_DAMPING * (sphereVel[i] + timeInterval * sphereAcc);
+            // compute /position
+            cVector3d spherePos_change = timeInterval * sphereVel[i] + cSqr(timeInterval) * sphereAcc;
+            double magnitude = spherePos_change.length();
+            
+            cVector3d spherePos = spheres[i]->getLocalPos() + spherePos_change;
+            if (magnitude > 5) {
 						cout << i << " velocity " << sphereVel[i].length() << endl;
 						cout << i << " force " << force.length() << endl;
 						cout << i << " acceleration " << sphereAcc.length() << endl;
 						cout << i << " time " << timeInterval << endl;
-					}
-
-					// update value to sphere object
-					double kinetic_energy = .5 * SPHERE_MASS * pow(sphereVel[i].length(), 2);
+                        cout << i << " position of  " << timeInterval << endl;
+            }
+                    
+            // update value to sphere object
+            //double kinetic_energy = .5 * SPHERE_MASS * pow(sphereVel[i].length(), 2);
 					
-					// update position of label
-					total_energy->setLocalPos(650, 480);
-
-					if (i != curr_atom) {
-						spheres[i]->setLocalPos(spherePos);
-					}
-				}
-			}
+            // update position of label
+            //total_energy->setLocalPos(20, 0);
+                    
+            if (i != curr_atom){
+                if (i != anchor_atom){
+                    spheres[i]->setLocalPos(spherePos);
+                }
+            }
 		}
 		spheres[curr_atom]->setLocalPos(position);
 		cVector3d force = sphereFce[curr_atom];
+        // JD: moved this out of nested for loop so that test is set only when fully calculated
+        // update haptic and graphic rate data
+        LJ_num->setText("Potential Energy: " + cStr((lj_PE / 2), 5));
         
+        // update position of label
+        LJ_num->setLocalPos(0, 0);
 		/////////////////////////////////////////////////////////////////////////
 		// FORCE VECTOR
 		/////////////////////////////////////////////////////////////////////////
@@ -932,7 +958,7 @@ void updateHaptics(void) {
             cVector3d newPointNormalized;
             sphereFce[i].normalizer(newPointNormalized);
             velVectors[i]->m_pointA = cAdd(spheres[i]->getLocalPos(), newPointNormalized * spheres[i]->getRadius());
-            velVectors[i]->m_pointB = cAdd(velVectors[i]->m_pointA, sphereFce[i] * .05);
+            velVectors[i]->m_pointB = cAdd(velVectors[i]->m_pointA, sphereFce[i] * .005);
             velVectors[i]->setLineWidth(5);
             
             // Change color, red if current, black otherwise
@@ -945,10 +971,10 @@ void updateHaptics(void) {
             }
 
             // TODO - experiment with threshold 
-            float dist = velVectors[i]->m_pointA.distance(velVectors[i]->m_pointB);
-            if (dist >= .05 ) {
-                velVectors[i]->m_pointB = cAdd(velVectors[i]->m_pointA, newPointNormalized * .05);
-            }
+            //float dist = velVectors[i]->m_pointA.distance(velVectors[i]->m_pointB);
+            //if (dist >= .05 ) {
+            //    velVectors[i]->m_pointB = cAdd(velVectors[i]->m_pointA, newPointNormalized * .05);
+            //}
         }
         
 		/////////////////////////////////////////////////////////////////////////
@@ -973,4 +999,4 @@ void updateHaptics(void) {
 	simulationFinished = true;
 }
 
-//------------------------------------------------------------------------------
+
