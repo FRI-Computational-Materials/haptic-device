@@ -75,6 +75,7 @@ chai3d-3.2.0/
 >bool fileload = texture->loadFromFile(RESOURCE_PATH("../resources/images/spheremap-3.jpg"));
 
 to the absolute file path.
+
 6. Run `make` in the `haptic-device` folder - be sure to do this after any changes.
 7. Navigate to `lin-x86_64` and run `./haptic-device` to launch the program.
 
