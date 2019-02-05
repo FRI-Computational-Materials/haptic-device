@@ -390,10 +390,10 @@ int main(int argc, char *argv[]) {
 	cTexture2dPtr texture = cTexture2d::create();
 
 	// load texture file
-	bool fileload = texture->loadFromFile(RESOURCE_PATH("/Users/jrd2852/chai3d-3.2.0/bin/resources/images/spheremap-3.jpg"));
+	bool fileload = texture->loadFromFile(RESOURCE_PATH("../resources/images/spheremap-3.jpg"));
 	if (!fileload) {
 #if defined(_MSVC)
-		fileload = texture->loadFromFile("../../../bin/resources/images/spheremap-3.jpg");
+		fileload = texture->loadFromFile("../resources/images/spheremap-3.jpg");
 #endif
 	}
 	if (!fileload) {
@@ -499,10 +499,10 @@ int main(int argc, char *argv[]) {
 	background->setFixedAspectRatio(true);
 
 	// load background image
-	fileload = background->loadFromFile(RESOURCE_PATH("/Users/jrd2852/chai3d-3.2.0/bin/resources/images/background.png"));
+	fileload = background->loadFromFile(RESOURCE_PATH("../resources/images/background.png"));
 	if (!fileload) {
 #if defined(_MSVC)
-		fileload = background->loadFromFile("../../../bin/resources/images/background.png");
+		fileload = background->loadFromFile("../resources/images/background.png");
 #endif
 	}
 	if (!fileload) {
