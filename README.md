@@ -54,7 +54,31 @@ If you plan on using one of the CHAI3D examples:
     * libasound2-dev
     * freeglut3-dev
     * xorg-dev
-3. **TODO** - setup directory structure 
+3. Clone this repo into the chai3d-3.2.0 directory
+4. Your directory structure should look like so:
+<pre>
+chai3d-3.2.0/
+├── bin
+│   ├── lin-x86_64
+│   ├── mac-i386
+│   ├── mac-x86_64
+│   ├── resources
+│   ├── win-Win32
+│   └── win-x64
+└── <b>haptic-device</b>
+    ├── LJ.cpp
+    ├── Makefile
+    ├── obj
+    └── README.md
+</pre>
+5. Note that you may to change lines involving the relative file path 
+>bool fileload = texture->loadFromFile(RESOURCE_PATH("../resources/images/spheremap-3.jpg"));
+
+to the absolute file path.
+6. Run `make` in the `haptic-device` folder - be sure to do this after any changes.
+7. Navigate to `lin-x86_64` and run `./haptic-device` to launch the program.
+
+
 
 
 ## Reference
