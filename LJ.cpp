@@ -79,7 +79,7 @@ bool mirroredDisplay = false;
 //------------------------------------------------------------------------------
 
 // Number of spheres in the scene
-const int NUM_SPHERES = 2;
+const int NUM_SPHERES = 3;
 
 // Radius of each sphere
 const double SPHERE_RADIUS = 0.008;
@@ -194,6 +194,9 @@ void updateHaptics(void);
 
 // this function closes the application
 void close(void);
+
+// a scope to monitor the potential energy
+cScope* scope;
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -511,6 +514,15 @@ int main(int argc, char *argv[]) {
 		return (-1);
 	}
 
+	//create a scope to plot potential energy
+	scope = new cScope();
+	camera->m_frontLayer->addChild(scope);
+	scope->setSignalEnabled(true, false, false, false);
+	scope->setTransparencyLevel(.7);
+	// First # should be the global minima, load from txt file?
+	scope->setRange(-3, 0);
+
+
 	//--------------------------------------------------------------------------
 	// START SIMULATION
 	//--------------------------------------------------------------------------
@@ -748,7 +760,7 @@ void updateHaptics(void) {
 		const double HAPTIC_STIFFNESS = 1000.0;
 		const double SIGMA = 1.0;
 		const double EPSILON = 1.0;
-        const double FORCE_DAMPING = 0.75;
+        const double FORCE_DAMPING = .75;
 		//Scales the distance betweens atoms
 		const double DIST_SCALE = .02;
 		// clear forces for all spheres
@@ -947,9 +959,15 @@ void updateHaptics(void) {
         // JD: moved this out of nested for loop so that test is set only when fully calculated
         // update haptic and graphic rate data
         LJ_num->setText("Potential Energy: " + cStr((lj_PE / 2), 5));
+
+
         
         // update position of label
         LJ_num->setLocalPos(0, 0);
+
+
+		// Update scope
+		scope->setSignalValues(lj_PE);
 		/////////////////////////////////////////////////////////////////////////
 		// FORCE VECTOR
 		/////////////////////////////////////////////////////////////////////////
