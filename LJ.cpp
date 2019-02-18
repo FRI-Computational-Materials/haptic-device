@@ -516,6 +516,7 @@ int main(int argc, char *argv[]) {
 
 	//create a scope to plot potential energy
 	scope = new cScope();
+	scope->setLocalPos(0,60);
 	camera->m_frontLayer->addChild(scope);
 	scope->setSignalEnabled(true, false, false, false);
 	scope->setTransparencyLevel(.7);
@@ -967,7 +968,14 @@ void updateHaptics(void) {
 
 
 		// Update scope
-		scope->setSignalValues(lj_PE);
+		double currentTime = clock.getCurrentTimeSeconds();
+		// rounds current time to the nearest tenth
+		double currentTimeRounded = double(int(currentTime * 10 + .5)) / 10;
+		// The number fmod() is compared to is the threshold, this adjusts the timescale
+		if (fmod(currentTime, currentTimeRounded) <= .01) {
+			cout << currentTime << endl;	
+			scope->setSignalValues(lj_PE);
+		}
 		/////////////////////////////////////////////////////////////////////////
 		// FORCE VECTOR
 		/////////////////////////////////////////////////////////////////////////
