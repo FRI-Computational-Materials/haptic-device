@@ -79,7 +79,7 @@ bool mirroredDisplay = false;
 //------------------------------------------------------------------------------
 
 // Number of spheres in the scene
-const int NUM_SPHERES = 3;
+const int NUM_SPHERES = 5;
 
 // Radius of each sphere
 const double SPHERE_RADIUS = 0.008;
@@ -713,6 +713,7 @@ void updateHaptics(void) {
 	bool button1_changed = false;
 	bool button2_changed = false;
     bool button3_changed = false;
+	bool is_anchor = true;
 	while (simulationRunning) {
 		/////////////////////////////////////////////////////////////////////
 		// SIMULATION TIME
@@ -781,6 +782,7 @@ void updateHaptics(void) {
 		hapticDevice->getUserSwitch(3, button3);
 
 		bool trackfreeze[NUM_SPHERES];
+		//bool to keep track if there is an anchor or not
         
 		// Changes the camera when button2 is pressed 
 		if (button2) {
@@ -815,7 +817,7 @@ void updateHaptics(void) {
 			if (!button1_changed) {
                 // computes current atom by taking the remainder of the curr_atom +1 and number of spheres
                 int previous_curr_atom = curr_atom;
-                cout << "remainder of "<< curr_atom+1 << NUM_SPHERES << endl;
+                cout << "remainder of "<< curr_atom+1 << "and" << NUM_SPHERES << endl;
                 curr_atom = remainder(curr_atom+1,NUM_SPHERES);
                 if (curr_atom < 0) {
                         curr_atom = NUM_SPHERES + curr_atom;
@@ -864,20 +866,35 @@ void updateHaptics(void) {
         // Changes the current anchor when button 3 is pressed
         if (button3) {
             if (!button3_changed) {
+				bool anchor_changed = true;
                 anchor_atom_hold = anchor_atom;
                 anchor_atom = remainder(anchor_atom+1,NUM_SPHERES);
+				cout << "changing anchor from " << anchor_atom_hold << " to (";
+				cout << (anchor_atom+1) << " mod " << NUM_SPHERES << ") = " << anchor_atom << endl;
                 if (anchor_atom < 0) {
                     anchor_atom = NUM_SPHERES + anchor_atom;
                 }
                 if (anchor_atom == curr_atom){
-                    anchor_atom = remainder(anchor_atom+1,NUM_SPHERES);
-                    if (anchor_atom < 0) {
-                        anchor_atom = NUM_SPHERES + anchor_atom;
-                    }
+					anchor_changed = false;
+                    //anchor_atom = remainder(anchor_atom+1,NUM_SPHERES);
+                    //if (anchor_atom < 0) {
+                    //    anchor_atom = NUM_SPHERES + anchor_atom;
+                    //}
                 }
                 button3_changed = true;
-                spheres[anchor_atom_hold]->m_material->setWhite();
-                spheres[anchor_atom]->m_material->setBlue();
+				cout << "anchor changed: " << anchor_changed << " is_anchor: " << is_anchor << endl;
+				if (anchor_changed) {
+					if (is_anchor) {
+						spheres[anchor_atom_hold]->m_material->setWhite();
+					} 
+					spheres[anchor_atom]->m_material->setBlue();
+					is_anchor = true;
+				} else {
+					cout << " there is no longer any anchor " << endl;
+					spheres[anchor_atom_hold]->m_material->setWhite();
+					is_anchor = false;
+					cout << "is anchor is now " << is_anchor << endl;
+				}
             }
         }
         else
@@ -973,7 +990,6 @@ void updateHaptics(void) {
 		double currentTimeRounded = double(int(currentTime * 10 + .5)) / 10;
 		// The number fmod() is compared to is the threshold, this adjusts the timescale
 		if (fmod(currentTime, currentTimeRounded) <= .01) {
-			cout << currentTime << endl;	
 			scope->setSignalValues(lj_PE);
 		}
 		/////////////////////////////////////////////////////////////////////////
