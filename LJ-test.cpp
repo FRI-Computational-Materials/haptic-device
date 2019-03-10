@@ -167,9 +167,6 @@ string resourceRoot;
 // An array of velocity vectors
 cShapeLine *velVectors[NUM_SPHERES];
 
-// A scope to monitor the potential energy
-cScope * scope;
-
 //------------------------------------------------------------------------------
 // DECLARED MACROS
 //------------------------------------------------------------------------------
@@ -490,15 +487,6 @@ int main(int argc, char *argv[]) {
 	total_energy = new cLabel(font);
 	total_energy->m_fontColor.setBlack();
 	camera->m_frontLayer->addChild(total_energy);
-
-	// Create a scope to plot potential energy
-	scope = new cScope();
-	scope->setLocalPos(0,60);
-	camera->m_frontLayer->addChild(scope);
-	scope->setSignalEnabled(true, false, false, false);
-	scope->setTransparencyLevel(.7);
-	// First # should be the global minima, load from txt file?
-	scope->setRange(-3, 0);
 
 	// create a background
 	background = new cBackground();
@@ -935,16 +923,7 @@ void updateHaptics(void) {
 		}
 		spheres[curr_atom]->setLocalPos(position);
 		cVector3d force = sphereFce[curr_atom];
-	
-		// Update scope
-		double currentTime = clock.getCurrentTimeSeconds();
-		// rounds current time to the nearest tenth
-		double currentTimeRounded = double(int(currentTime * 10 + .5)) / 10;
-		// The number fmod() is compared to is the threshold, this adjusts the timescale
-		if (fmod(currentTime, currentTimeRounded) <= .01) {
-			cout << currentTime << endl;	
-			scope->setSignalValues(lj_PE);
-		}
+        
 		/////////////////////////////////////////////////////////////////////////
 		// FORCE VECTOR
 		/////////////////////////////////////////////////////////////////////////
