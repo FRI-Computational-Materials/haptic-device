@@ -845,12 +845,9 @@ void updateHaptics(void) {
                         if (i == (previous_curr_atom)) {
                             spheres[i]->setLocalPos(spheres[previous_curr_atom]->getLocalPos() - (2.0* translate));
                             cVector3d positions = spheres[i]->getLocalPos();
-                            //cout << i << " " << positions  << endl;
-                        }
-                        else {
+                        } else {
                             spheres[i]->setLocalPos(spheres[i]->getLocalPos() - (translate));
                             cVector3d positions = spheres[i]->getLocalPos();
-                            //cout << i << " " << positions  << endl;
                         }
                     }
                 }
@@ -864,25 +861,19 @@ void updateHaptics(void) {
         // JD: added use for button 3; blue atom is now anchor and is fixed in place in the simulation
         // if you want to change the anchor atom press button 3
         // Changes the current anchor when button 3 is pressed
+		// When all anchors have been cycled through, there is a setting where there is no anchor.
         if (button3) {
             if (!button3_changed) {
 				bool anchor_changed = true;
                 anchor_atom_hold = anchor_atom;
                 anchor_atom = remainder(anchor_atom+1,NUM_SPHERES);
-				cout << "changing anchor from " << anchor_atom_hold << " to (";
-				cout << (anchor_atom+1) << " mod " << NUM_SPHERES << ") = " << anchor_atom << endl;
                 if (anchor_atom < 0) {
                     anchor_atom = NUM_SPHERES + anchor_atom;
                 }
                 if (anchor_atom == curr_atom){
 					anchor_changed = false;
-                    //anchor_atom = remainder(anchor_atom+1,NUM_SPHERES);
-                    //if (anchor_atom < 0) {
-                    //    anchor_atom = NUM_SPHERES + anchor_atom;
-                    //}
                 }
                 button3_changed = true;
-				cout << "anchor changed: " << anchor_changed << " is_anchor: " << is_anchor << endl;
 				if (anchor_changed) {
 					if (is_anchor) {
 						spheres[anchor_atom_hold]->m_material->setWhite();
@@ -890,10 +881,8 @@ void updateHaptics(void) {
 					spheres[anchor_atom]->m_material->setBlue();
 					is_anchor = true;
 				} else {
-					cout << " there is no longer any anchor " << endl;
 					spheres[anchor_atom_hold]->m_material->setWhite();
 					is_anchor = false;
-					cout << "is anchor is now " << is_anchor << endl;
 				}
             }
         }
