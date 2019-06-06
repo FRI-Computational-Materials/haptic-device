@@ -49,13 +49,21 @@ If you plan on using one of the CHAI3D examples:
 
 ### Linux
 1. Download the multiplatform release from [chai3d](http://www.chai3d.org/download/releases)
-2. Install the prereqs
+2. Run the following commands
+   ```
+   sudo add-apt-repository universe
+   sudo apt update
+   ```
+3. Install the following packages using the command 
+    ```
+    sudo apt-get install <package_name>
+    ```
     * libusb-1.0-0-dev
     * libasound2-dev
     * freeglut3-dev
     * xorg-dev
-3. Clone this repo into the chai3d-3.2.0 directory
-4. Your directory structure should look like so:
+4. Clone this repo into the chai3d-3.2.0 directory
+5. Your directory structure should look like so:
 <pre>
 chai3d-3.2.0/
 ├── bin
