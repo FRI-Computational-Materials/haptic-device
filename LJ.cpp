@@ -43,6 +43,7 @@
 
 //------------------------------------------------------------------------------
 #include "chai3d.h"
+#include "atom.h"
 //------------------------------------------------------------------------------
 #include <GLFW/glfw3.h>
 #include <math.h>
@@ -110,10 +111,7 @@ cGenericHapticDevicePtr hapticDevice;
 double hapticDeviceMaxStiffness;
 
 // sphere objects
-cShapeSphere *spheres[NUM_SPHERES];
-
-// linear velocity of each sphere
-cVector3d sphereVel[NUM_SPHERES];
+Atom *spheres[NUM_SPHERES];
 
 // a colored background
 cBackground *background;
@@ -161,9 +159,6 @@ int swapInterval = 1;
 
 // root resource path
 string resourceRoot;
-
-// An array of velocity vectors
-cShapeLine *velVectors[NUM_SPHERES];
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -417,23 +412,16 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < NUM_SPHERES; i++)
 	{
 		// create a sphere and define its radius
-		cShapeSphere *sphere = new cShapeSphere(SPHERE_RADIUS);
-
-		// create a small line to illustrate velocity
-		cShapeLine *velocity = new cShapeLine(cVector3d(0, 0, 0),
-											  cVector3d(0, 0, 0));
+		Atom *sphere = new Atom(SPHERE_RADIUS);
 
 		// store pointer to sphere primitive
 		spheres[i] = sphere;
-
-		// store pointer to line
-		velVectors[i] = velocity;
 
 		// add sphere primitive to world
 		world->addChild(sphere);
 
 		//add line to world
-		world->addChild(velocity);
+		world->addChild(sphere->velVector);
 
 		// set the position of the object at the center of the world
 
@@ -460,19 +448,22 @@ int main(int argc, char *argv[])
 		sphere->setUseTexture(true);
 
 		// Set the first and second sphere (the one being controlled to red initially and the anchor in blue)
-		if (i == 0)
+		if (i == 0) 	// sphere is current
 		{
 			sphere->m_material->setRed();
 		}
-		else if (i == 1)
+		else if (i == 1)   //sphere is anchor
 		{
 			sphere->m_material->setBlue();
+			sphere->anchor = true;
 		}
 		else
 		{
 			sphere->m_material->setWhite();
 		}
 	}
+
+	//debugging
 	for (int i = 0; i < NUM_SPHERES; i++)
 	{
 		cVector3d posA = spheres[i]->getLocalPos();
@@ -806,8 +797,6 @@ void updateHaptics(void)
 		const double FORCE_DAMPING = .75;
 		//Scales the distance betweens atoms
 		const double DIST_SCALE = .02;
-		// clear forces for all spheres
-		cVector3d sphereFce[NUM_SPHERES];
 
 		//Update current atom based on if the user pressed the far left button
 		//The point of button2_changed is to make it so that it only switches one atom if the button is touched Otherwise it flips out
@@ -949,20 +938,18 @@ void updateHaptics(void)
 		else
 			button3_changed = false;
 
-		for (int i = 0; i < NUM_SPHERES; i++)
-		{
-			sphereFce[i].zero();
-		}
 		// compute forces for all spheres
 		double lj_PE = 0;
 
+		Atom *current;
 		// JD: edited this so that many operations are removed out of the inner loop
 		// This loop is for computing the force on atom i
 		for (int i = 0; i < NUM_SPHERES; i++)
 		{
 			// compute force on atom
 			cVector3d force;
-			cVector3d pos0 = spheres[i]->getLocalPos();
+			current = spheres[i];
+			cVector3d pos0 = current->getLocalPos();
 			// check forces with all other spheres
 			force.zero();
 
@@ -972,8 +959,9 @@ void updateHaptics(void)
 				//Don't compute forces between an atom and itself
 				if (i != j)
 				{
+					Atom *other = spheres[j];
 					// get position of sphere
-					cVector3d pos1 = spheres[j]->getLocalPos();
+					cVector3d pos1 = other->getLocalPos();
 
 					// compute direction vector from sphere 0 to 1
 
@@ -996,19 +984,19 @@ void updateHaptics(void)
 					}
 				}
 			}
-			sphereFce[i] = force;
+			current->force = force;
 			// update velocity and position of all spheres
 			// compute acceleration
 			cVector3d sphereAcc = (force / SPHERE_MASS);
-			sphereVel[i] = K_DAMPING * (sphereVel[i] + timeInterval * sphereAcc);
+			current->velocity = K_DAMPING * (current->velocity + timeInterval * sphereAcc);
 			// compute /position
-			cVector3d spherePos_change = timeInterval * sphereVel[i] + cSqr(timeInterval) * sphereAcc;
+			cVector3d spherePos_change = timeInterval * current->velocity + cSqr(timeInterval) * sphereAcc;
 			double magnitude = spherePos_change.length();
 
-			cVector3d spherePos = spheres[i]->getLocalPos() + spherePos_change;
+			cVector3d spherePos = current->getLocalPos() + spherePos_change;
 			if (magnitude > 5)
 			{
-				cout << i << " velocity " << sphereVel[i].length() << endl;
+				cout << i << " velocity " << current->velocity.length() << endl;
 				cout << i << " force " << force.length() << endl;
 				cout << i << " acceleration " << sphereAcc.length() << endl;
 				cout << i << " time " << timeInterval << endl;
@@ -1023,14 +1011,15 @@ void updateHaptics(void)
 
 			if (i != curr_atom)
 			{
-				if (i != anchor_atom)
+				if (!current->anchor)
 				{
-					spheres[i]->setLocalPos(spherePos);
+					current->setLocalPos(spherePos);
 				}
 			}
 		}
-		spheres[curr_atom]->setLocalPos(position);
-		cVector3d force = sphereFce[curr_atom];
+		current = spheres[curr_atom];
+		current->setLocalPos(position);
+		cVector3d force = current->force;
 		// JD: moved this out of nested for loop so that test is set only when fully calculated
 		// update haptic and graphic rate data
 		LJ_num->setText("Potential Energy: " + cStr((lj_PE / 2), 5));
@@ -1052,23 +1041,24 @@ void updateHaptics(void)
 		/////////////////////////////////////////////////////////////////////////
 		for (int i = 0; i < NUM_SPHERES; i++)
 		{
-			cVector3d newPoint = cAdd(spheres[i]->getLocalPos(), sphereFce[i]);
+			current = spheres[i];
+			cVector3d newPoint = cAdd(current->getLocalPos(), current->force);
 			cVector3d newPointNormalized;
-			sphereFce[i].normalizer(newPointNormalized);
-			velVectors[i]->m_pointA = cAdd(spheres[i]->getLocalPos(), newPointNormalized * spheres[i]->getRadius());
-			velVectors[i]->m_pointB = cAdd(velVectors[i]->m_pointA, sphereFce[i] * .005);
-			velVectors[i]->setLineWidth(5);
+			current->force.normalizer(newPointNormalized);
+			current->velVector->m_pointA = cAdd(current->getLocalPos(), newPointNormalized * current->getRadius());
+			current->velVector->m_pointB = cAdd(current->velVector->m_pointA, current->force * .005);
+			current->velVector->setLineWidth(5);
 
 			// Change color, red if current, black otherwise
 			if (i == curr_atom)
 			{
-				velVectors[i]->m_colorPointA.setRed();
-				velVectors[i]->m_colorPointB.setRed();
+				current->velVector->m_colorPointA.setRed();
+				current->velVector->m_colorPointB.setRed();
 			}
 			else
 			{
-				velVectors[i]->m_colorPointA.setBlack();
-				velVectors[i]->m_colorPointB.setBlack();
+				current->velVector->m_colorPointA.setBlack();
+				current->velVector->m_colorPointB.setBlack();
 			}
 
 			// TODO - experiment with threshold
