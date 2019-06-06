@@ -62,8 +62,9 @@ If you plan on using one of the CHAI3D examples:
     * libasound2-dev
     * freeglut3-dev
     * xorg-dev
-4. Clone this repo into the chai3d-3.2.0 directory
-5. Your directory structure should look like so:
+4. Run "make" in the chai3d-3.2.0 directory
+5. Clone this repo into the chai3d-3.2.0 directory
+6. Your directory structure should look like so:
 <pre>
 chai3d-3.2.0/
 ├── bin
