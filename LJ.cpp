@@ -179,6 +179,9 @@ void errorCallback(int error, const char *a_description);
 // callback when a key is pressed
 void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, int a_mods);
 
+// callback to handle mouse click
+void mouseButtonCallback(GLFWwindow* a_window, int a_button, int a_action, int a_mods);
+
 // this function renders the scene
 void updateGraphics(void);
 
@@ -283,6 +286,9 @@ int main(int argc, char *argv[])
 
 	// set key callback
 	glfwSetKeyCallback(window, keyCallback);
+
+    // set mouse button callback
+    glfwSetMouseButtonCallback(window, mouseButtonCallback);
 
 	// set resize callback
 	glfwSetWindowSizeCallback(window, windowSizeCallback);
@@ -658,6 +664,36 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, 
 	}
 }
 
+void mouseButtonCallback(GLFWwindow* a_window, int a_button, int a_action, int a_mods)
+{
+    if (a_button == GLFW_MOUSE_BUTTON_LEFT && a_action == GLFW_PRESS)
+    {
+        // store mouse position
+        double x,y;
+        glfwGetCursorPos(window, &x, &y);
+
+        // detect for any collision between mouse and scene
+        cCollisionRecorder recorder;
+        cCollisionSettings settings;
+
+        bool hit = camera->selectWorld(x, (height-y), width, height, recorder, settings);
+        if (hit)
+        {
+            // retrieve Atom selected by mouse
+			cGenericObject *selected = recorder.m_nearestCollision.m_object;
+			Atom *selectedAtom = (Atom*) selected;
+
+			// Toggle anchor status and color
+			if (selectedAtom->isAnchor()) {
+				selectedAtom->m_material->setWhite();
+				selectedAtom->setAnchor(false);
+			} else {
+				selectedAtom->m_material->setBlue();
+				selectedAtom->setAnchor(true);
+			}
+        }
+    }
+}
 //------------------------------------------------------------------------------
 
 void close(void)
