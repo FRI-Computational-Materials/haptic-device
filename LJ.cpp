@@ -456,11 +456,10 @@ int main(int argc, char *argv[])
 		// Set the first and second sphere (the one being controlled to red initially and the anchor in blue)
 		if (i == 0) 	// sphere is current
 		{
-			sphere->m_material->setRed();
+			sphere->setCurrent(true);
 		}
 		else if (i == 1)   //sphere is anchor
 		{
-			sphere->m_material->setBlue();
 			sphere->setAnchor(true);
 		}
 		else
@@ -470,6 +469,7 @@ int main(int argc, char *argv[])
 	}
 
 	//debugging
+	/*
 	for (int i = 0; i < NUM_SPHERES; i++)
 	{
 		cVector3d posA = spheres[i]->getLocalPos();
@@ -483,6 +483,7 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
+	*/
 	//--------------------------------------------------------------------------
 	// WIDGETS
 	//--------------------------------------------------------------------------
@@ -685,10 +686,8 @@ void mouseButtonCallback(GLFWwindow* a_window, int a_button, int a_action, int a
 
 			// Toggle anchor status and color
 			if (selectedAtom->isAnchor()) {
-				selectedAtom->m_material->setWhite();
 				selectedAtom->setAnchor(false);
-			} else {
-				selectedAtom->m_material->setBlue();
+			} else if(!selectedAtom->isCurrent()){     //cannot set current to anchor
 				selectedAtom->setAnchor(true);
 			}
         }
