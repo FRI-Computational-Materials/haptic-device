@@ -421,7 +421,7 @@ int main(int argc, char *argv[])
 		world->addChild(sphere);
 
 		//add line to world
-		world->addChild(sphere->velVector);
+		world->addChild(sphere->getVelVector());
 
 		// set the position of the object at the center of the world
 
@@ -455,7 +455,7 @@ int main(int argc, char *argv[])
 		else if (i == 1)   //sphere is anchor
 		{
 			sphere->m_material->setBlue();
-			sphere->anchor = true;
+			sphere->setAnchor(true);
 		}
 		else
 		{
@@ -738,7 +738,7 @@ void updateHaptics(void)
 
 	//Array for all velocities
 	//cVector3d sphereVel[NUM_SPHERES];
-	cout << sphereVel[NUM_SPHERES - 1] << endl;
+	//cout << sphereVel[NUM_SPHERES - 1] << endl;
 	// main haptic simulation loop
 
 	bool button1_changed = false;
@@ -978,25 +978,24 @@ void updateHaptics(void)
 					if (!button0)
 					{
 
-						double lj =
-							-4 * FORCE_DAMPING * EPSILON * ((-12 * pow(SIGMA / distance, 13)) - (-6 * pow(SIGMA / distance, 7)));
+						double lj = -4 * FORCE_DAMPING * EPSILON * ((-12 * pow(SIGMA / distance, 13)) - (-6 * pow(SIGMA / distance, 7)));
 						force.add(lj * dir01);
 					}
 				}
 			}
-			current->force = force;
+			current->setForce(force);
 			// update velocity and position of all spheres
 			// compute acceleration
 			cVector3d sphereAcc = (force / SPHERE_MASS);
-			current->velocity = K_DAMPING * (current->velocity + timeInterval * sphereAcc);
+			current->setVelocity(K_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
 			// compute /position
-			cVector3d spherePos_change = timeInterval * current->velocity + cSqr(timeInterval) * sphereAcc;
+			cVector3d spherePos_change = timeInterval * current->getVelocity() + cSqr(timeInterval) * sphereAcc;
 			double magnitude = spherePos_change.length();
 
 			cVector3d spherePos = current->getLocalPos() + spherePos_change;
 			if (magnitude > 5)
 			{
-				cout << i << " velocity " << current->velocity.length() << endl;
+				cout << i << " velocity " << current->getVelocity().length() << endl;
 				cout << i << " force " << force.length() << endl;
 				cout << i << " acceleration " << sphereAcc.length() << endl;
 				cout << i << " time " << timeInterval << endl;
@@ -1011,7 +1010,7 @@ void updateHaptics(void)
 
 			if (i != curr_atom)
 			{
-				if (!current->anchor)
+				if (!current->isAnchor())
 				{
 					current->setLocalPos(spherePos);
 				}
@@ -1019,7 +1018,7 @@ void updateHaptics(void)
 		}
 		current = spheres[curr_atom];
 		current->setLocalPos(position);
-		cVector3d force = current->force;
+		cVector3d force = current->getForce();
 		// JD: moved this out of nested for loop so that test is set only when fully calculated
 		// update haptic and graphic rate data
 		LJ_num->setText("Potential Energy: " + cStr((lj_PE / 2), 5));
@@ -1042,23 +1041,23 @@ void updateHaptics(void)
 		for (int i = 0; i < NUM_SPHERES; i++)
 		{
 			current = spheres[i];
-			cVector3d newPoint = cAdd(current->getLocalPos(), current->force);
+			cVector3d newPoint = cAdd(current->getLocalPos(), current->getForce());
 			cVector3d newPointNormalized;
-			current->force.normalizer(newPointNormalized);
-			current->velVector->m_pointA = cAdd(current->getLocalPos(), newPointNormalized * current->getRadius());
-			current->velVector->m_pointB = cAdd(current->velVector->m_pointA, current->force * .005);
-			current->velVector->setLineWidth(5);
+			current->getForce().normalizer(newPointNormalized);
+			current->getVelVector()->m_pointA = cAdd(current->getLocalPos(), newPointNormalized * current->getRadius());
+			current->getVelVector()->m_pointB = cAdd(current->getVelVector()->m_pointA, current->getForce() * .005);
+			current->getVelVector()->setLineWidth(5);
 
 			// Change color, red if current, black otherwise
 			if (i == curr_atom)
 			{
-				current->velVector->m_colorPointA.setRed();
-				current->velVector->m_colorPointB.setRed();
+				current->getVelVector()->m_colorPointA.setRed();
+				current->getVelVector()->m_colorPointB.setRed();
 			}
 			else
 			{
-				current->velVector->m_colorPointA.setBlack();
-				current->velVector->m_colorPointB.setBlack();
+				current->getVelVector()->m_colorPointA.setBlack();
+				current->getVelVector()->m_colorPointB.setBlack();
 			}
 
 			// TODO - experiment with threshold
