@@ -6,7 +6,7 @@
 using namespace std;
 using namespace chai3d;
 
-class Atom: public cShapeSphere{
+class Atom: public cShapeSphere {
   private:
     bool anchor;
     cVector3d velocity;
