@@ -49,6 +49,7 @@
 #include <math.h>
 #include <ctime>
 #include <chrono>
+#include <vector>
 //------------------------------------------------------------------------------
 using namespace chai3d;
 using namespace std;
@@ -78,7 +79,7 @@ bool mirroredDisplay = false;
 //------------------------------------------------------------------------------
 
 // Number of spheres in the scene
-const int NUM_SPHERES = 5;
+//const int NUM_SPHERES = 5;
 
 // Radius of each sphere
 const double SPHERE_RADIUS = 0.008;
@@ -111,7 +112,7 @@ cGenericHapticDevicePtr hapticDevice;
 double hapticDeviceMaxStiffness;
 
 // sphere objects
-Atom *spheres[NUM_SPHERES];
+vector<Atom*> spheres;
 
 // a colored background
 cBackground *background;
@@ -122,8 +123,6 @@ cFontPtr font;
 // a label to display the rate [Hz] at which the simulation is running
 cLabel *labelRates;
 
-// a label to explain what is happening
-cLabel *labelMessage;
 //a label to show the potential energy
 cLabel *LJ_num;
 
@@ -202,14 +201,13 @@ cScope *scope;
 
 //==============================================================================
 /*
-	DEMO:   09-magnets.cpp
+	LJ.cpp
 
-	This example illustrates how to create a simple dynamic simulation using
-	small sphere shape primitives. All dynamics and collisions are computed
-	in the haptics thread.
+	This program simulates LJ clusters of varying sizes using modified sphere
+	primitives (atom.cpp). All dynamics and collisions are computed in the
+	haptics thread.
 */
 //==============================================================================
-//bool button3_changed = false;
 int curr_camera = 1;
 double theta = 0;
 double x = .5;
@@ -415,13 +413,19 @@ int main(int argc, char *argv[])
 	}
 
 	// create spheres
+	int NUM_SPHERES = 5;
+	if (argc > 1) {
+		NUM_SPHERES = atoi(argv[1]);
+	}
+
 	for (int i = 0; i < NUM_SPHERES; i++)
 	{
 		// create a sphere and define its radius
 		Atom *sphere = new Atom(SPHERE_RADIUS);
 
 		// store pointer to sphere primitive
-		spheres[i] = sphere;
+		//spheres[i] = sphere;
+		spheres.push_back(sphere);
 
 		// add sphere primitive to world
 		world->addChild(sphere);
@@ -492,19 +496,10 @@ int main(int argc, char *argv[])
 	labelRates->m_fontColor.setBlack();
 	camera->m_frontLayer->addChild(labelRates);
 
-	// create a label with a small message
-	labelMessage = new cLabel(font);
-	camera->m_frontLayer->addChild(labelMessage);
-
-	// set font color
-	labelMessage->m_fontColor.setBlack();
-
-	// set text message
-	labelMessage->setText("interact with magnetic spheres - press user switch to disable magnetic effect");
 	//potential energy label
 	LJ_num = new cLabel(font);
-	camera->m_frontLayer->addChild(LJ_num);
 	LJ_num->m_fontColor.setBlack();
+	camera->m_frontLayer->addChild(LJ_num);
 
 	//total energy label
 	total_energy = new cLabel(font);
@@ -598,7 +593,7 @@ void windowSizeCallback(GLFWwindow *a_window, int a_width, int a_height)
 	height = a_height;
 
 	// update position of message label
-	labelMessage->setLocalPos((int)(0.5 * (width - labelMessage->getWidth())), 50);
+	//labelMessage->setLocalPos((int)(0.5 * (width - labelMessage->getWidth())), 50);
 }
 
 //------------------------------------------------------------------------------
@@ -879,11 +874,11 @@ void updateHaptics(void)
 			{
 				// computes current atom by taking the remainder of the curr_atom +1 and number of spheres
 				int previous_curr_atom = curr_atom;
-				cout << "remainder of " << curr_atom + 1 << "and" << NUM_SPHERES << endl;
-				curr_atom = remainder(curr_atom + 1, NUM_SPHERES);
+				cout << "remainder of " << curr_atom + 1 << "and" << spheres.size() << endl;
+				curr_atom = remainder(curr_atom + 1, spheres.size());
 				if (curr_atom < 0)
 				{
-					curr_atom = NUM_SPHERES + curr_atom;
+					curr_atom = spheres.size() + curr_atom;
 				}
 				cout << "=" << curr_atom << endl;
 
@@ -891,10 +886,10 @@ void updateHaptics(void)
 				// Skip anchored atom
 				if (spheres[curr_atom]->isAnchor())
 				{
-					curr_atom = remainder(curr_atom + 1, NUM_SPHERES);
+					curr_atom = remainder(curr_atom + 1, spheres.size());
 					if (curr_atom < 0)
 					{
-						curr_atom = NUM_SPHERES + curr_atom;
+						curr_atom = spheres.size() + curr_atom;
 					}
 				}
 				cVector3d A = spheres[curr_atom]->getLocalPos();
@@ -905,7 +900,7 @@ void updateHaptics(void)
 				spheres[previous_curr_atom]->setCurrent(false);
 				spheres[previous_curr_atom]->setLocalPos(A);
 				cVector3d translate = (spheres[previous_curr_atom]->getLocalPos()) - (spheres[curr_atom]->getLocalPos());
-				for (int i = 0; i < NUM_SPHERES; i++)
+				for (int i = 0; i < spheres.size(); i++)
 				{
 					if (i != curr_atom)
 					{
@@ -938,10 +933,10 @@ void updateHaptics(void)
 			{
 				bool anchor_changed = true;
 				anchor_atom_hold = anchor_atom;
-				anchor_atom = remainder(anchor_atom + 1, NUM_SPHERES);
+				anchor_atom = remainder(anchor_atom + 1, spheres.size());
 				if (anchor_atom < 0)
 				{
-					anchor_atom = NUM_SPHERES + anchor_atom;
+					anchor_atom = spheres.size() + anchor_atom;
 				}
 				if (anchor_atom == curr_atom)
 				{
@@ -973,7 +968,7 @@ void updateHaptics(void)
 		Atom *current;
 		// JD: edited this so that many operations are removed out of the inner loop
 		// This loop is for computing the force on atom i
-		for (int i = 0; i < NUM_SPHERES; i++)
+		for (int i = 0; i < spheres.size(); i++)
 		{
 			// compute force on atom
 			cVector3d force;
@@ -983,7 +978,7 @@ void updateHaptics(void)
 			force.zero();
 
 			// this loop is for finding all of atom i's neighbors
-			for (int j = 0; j < NUM_SPHERES; j++)
+			for (int j = 0; j < spheres.size(); j++)
 			{
 				//Don't compute forces between an atom and itself
 				if (i != j)
@@ -1000,7 +995,7 @@ void updateHaptics(void)
 					double distance = cDistance(pos0, pos1) / DIST_SCALE;
 
 					//cout << "array " << (sizeof(lj_potential)/sizeof(*lj_potential)) << endl;
-					double lj_potential[NUM_SPHERES];
+					double lj_potential[spheres.size()];
 					lj_potential[i] = {4 * EPSILON * (pow(SIGMA / distance, 12) - pow(SIGMA / distance, 6))};
 
 					lj_PE = lj_PE + lj_potential[i];
@@ -1067,7 +1062,7 @@ void updateHaptics(void)
 		/////////////////////////////////////////////////////////////////////////
 		// FORCE VECTOR
 		/////////////////////////////////////////////////////////////////////////
-		for (int i = 0; i < NUM_SPHERES; i++)
+		for (int i = 0; i < spheres.size(); i++)
 		{
 			current = spheres[i];
 			cVector3d newPoint = cAdd(current->getLocalPos(), current->getForce());
