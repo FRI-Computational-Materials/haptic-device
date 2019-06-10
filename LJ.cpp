@@ -122,8 +122,6 @@ cFontPtr font;
 // a label to display the rate [Hz] at which the simulation is running
 cLabel *labelRates;
 
-// a label to explain what is happening
-cLabel *labelMessage;
 //a label to show the potential energy
 cLabel *LJ_num;
 
@@ -202,14 +200,13 @@ cScope *scope;
 
 //==============================================================================
 /*
-	DEMO:   09-magnets.cpp
+	LJ.cpp	
 
-	This example illustrates how to create a simple dynamic simulation using
-	small sphere shape primitives. All dynamics and collisions are computed
-	in the haptics thread.
+	This program simulates LJ clusters of varying sizes using modified sphere
+	primitives (atom.cpp). All dynamics and collisions are computed in the 
+	haptics thread.
 */
 //==============================================================================
-//bool button3_changed = false;
 int curr_camera = 1;
 double theta = 0;
 double x = .5;
@@ -495,19 +492,10 @@ int main(int argc, char *argv[])
 	labelRates->m_fontColor.setBlack();
 	camera->m_frontLayer->addChild(labelRates);
 
-	// create a label with a small message
-	labelMessage = new cLabel(font);
-	camera->m_frontLayer->addChild(labelMessage);
-
-	// set font color
-	labelMessage->m_fontColor.setBlack();
-
-	// set text message
-	labelMessage->setText("interact with magnetic spheres - press user switch to disable magnetic effect");
 	//potential energy label
 	LJ_num = new cLabel(font);
-	camera->m_frontLayer->addChild(LJ_num);
 	LJ_num->m_fontColor.setBlack();
+	camera->m_frontLayer->addChild(LJ_num);
 
 	//total energy label
 	total_energy = new cLabel(font);
@@ -601,7 +589,7 @@ void windowSizeCallback(GLFWwindow *a_window, int a_width, int a_height)
 	height = a_height;
 
 	// update position of message label
-	labelMessage->setLocalPos((int)(0.5 * (width - labelMessage->getWidth())), 50);
+	//labelMessage->setLocalPos((int)(0.5 * (width - labelMessage->getWidth())), 50);
 }
 
 //------------------------------------------------------------------------------
