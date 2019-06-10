@@ -755,6 +755,9 @@ void updateGraphics(void)
 
 void updateHaptics(void)
 {
+	Atom *current;
+	Atom *previous;
+
 	// simulation in now running
 	simulationRunning = true;
 	simulationFinished = false;
@@ -893,6 +896,7 @@ void updateHaptics(void)
 				curr_atom = remainder(curr_atom + 1, spheres.size());
 				if (curr_atom < 0)
 				{
+					cout << "curr_atom < 0" << endl;
 					curr_atom = spheres.size() + curr_atom;
 				}
 				cout << "=" << curr_atom << endl;
@@ -904,24 +908,29 @@ void updateHaptics(void)
 					curr_atom = remainder(curr_atom + 1, spheres.size());
 					if (curr_atom < 0)
 					{
+						cout << "curr_atom < 0" << endl;
 						curr_atom = spheres.size() + curr_atom;
 					}
 				}
-				cVector3d A = spheres[curr_atom]->getLocalPos();
+
+				current = spheres[curr_atom];
+				previous = spheres[previous_curr_atom];
+
+				cVector3d A = current->getLocalPos();
 
 				// Change the current atom & its color, set the previous one back
-				spheres[curr_atom]->setCurrent(true);
-				spheres[curr_atom]->setLocalPos(position);
-				spheres[previous_curr_atom]->setCurrent(false);
-				spheres[previous_curr_atom]->setLocalPos(A);
-				cVector3d translate = (spheres[previous_curr_atom]->getLocalPos()) - (spheres[curr_atom]->getLocalPos());
+				current->setCurrent(true);
+				current->setLocalPos(position);
+				previous->setCurrent(false);
+				previous->setLocalPos(A);
+				cVector3d translate = (previous->getLocalPos()) - (current->getLocalPos());
 				for (int i = 0; i < spheres.size(); i++)
 				{
 					if (i != curr_atom)
 					{
 						if (i == (previous_curr_atom))
 						{
-							spheres[i]->setLocalPos(spheres[previous_curr_atom]->getLocalPos() - (2.0 * translate));
+							spheres[i]->setLocalPos(previous->getLocalPos() - (2.0 * translate));
 							cVector3d positions = spheres[i]->getLocalPos();
 						}
 						else
@@ -980,7 +989,6 @@ void updateHaptics(void)
 		// compute forces for all spheres
 		double lj_PE = 0;
 
-		Atom *current;
 		// JD: edited this so that many operations are removed out of the inner loop
 		// This loop is for computing the force on atom i
 		for (int i = 0; i < spheres.size(); i++)
