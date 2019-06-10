@@ -49,7 +49,7 @@
 #include <math.h>
 #include <ctime>
 #include <chrono>
-#include <vector>
+#include <fstream>
 //------------------------------------------------------------------------------
 using namespace chai3d;
 using namespace std;
@@ -159,6 +159,12 @@ int swapInterval = 1;
 // root resource path
 string resourceRoot;
 
+// a scope to monitor the potential energy
+cScope *scope;
+
+// global minimum for the given cluster size
+double global_minimum; 
+
 //------------------------------------------------------------------------------
 // DECLARED MACROS
 //------------------------------------------------------------------------------
@@ -190,8 +196,8 @@ void updateHaptics(void);
 // this function closes the application
 void close(void);
 
-// a scope to monitor the potential energy
-cScope *scope;
+// Reads in global minimum from global_minima.txt
+double getGlobalMinima(int cluster_size);
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -221,7 +227,7 @@ int main(int argc, char *argv[])
 	cout << endl;
 	cout << "-----------------------------------" << endl;
 	cout << "CHAI3D" << endl;
-	cout << "Demo: LJ-TEST" << endl;
+	cout << "LJ.cpp" << endl;
 
 	cout << "-----------------------------------" << endl
 		 << endl
@@ -529,13 +535,22 @@ int main(int argc, char *argv[])
 	}
 
 	//create a scope to plot potential energy
+
 	scope = new cScope();
 	scope->setLocalPos(0, 60);
 	camera->m_frontLayer->addChild(scope);
-	scope->setSignalEnabled(true, false, false, false);
+	scope->setSignalEnabled(true, true, false, false);
 	scope->setTransparencyLevel(.7);
-	// First # should be the global minima, load from txt file?
-	scope->setRange(-3, 0);
+	global_minimum = getGlobalMinima(spheres.size());
+	double lower_bound, upper_bound;
+	if (global_minimum > -50) {
+		upper_bound = 0;
+		lower_bound = global_minimum - .5;
+	} else {
+		upper_bound = 0 + (global_minimum * .2);
+		lower_bound = global_minimum - 3;
+	}
+	scope->setRange(lower_bound, upper_bound);
 
 	//--------------------------------------------------------------------------
 	// START SIMULATION
@@ -1059,7 +1074,7 @@ void updateHaptics(void)
 		// The number fmod() is compared to is the threshold, this adjusts the timescale
 		if (fmod(currentTime, currentTimeRounded) <= .01)
 		{
-			scope->setSignalValues(lj_PE);
+			scope->setSignalValues(lj_PE/2, global_minimum);
 		}
 		/////////////////////////////////////////////////////////////////////////
 		// FORCE VECTOR
@@ -1112,4 +1127,22 @@ void updateHaptics(void)
 
 	// exit haptics thread
 	simulationFinished = true;
+}
+
+double getGlobalMinima(int cluster_size) {
+	ifstream infile("../resources/data/global_minima.txt");
+	
+	if (!infile) {
+		cerr << "Could not open \"global_minima.txt\" for reading" << endl;
+		exit(1);
+	}
+
+	int cluster_size_file;
+	double minimum;
+	while(infile >> cluster_size_file >> minimum) {
+		if (cluster_size_file == cluster_size) {
+			break;
+		}
+	}
+	return minimum;
 }

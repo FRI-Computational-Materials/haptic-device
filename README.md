@@ -73,7 +73,9 @@ If you plan on using one of the CHAI3D examples:
     * xorg-dev
 4. Run "make" in the chai3d-3.2.0 directory
 5. Clone this repo into the chai3d-3.2.0 directory
-6. Your directory structure should look like so:
+6. Create the directory `data` in `bin/resources` and move the file `global_minima.txt` to here.
+7. Run `make` in the `haptic-device` folder - be sure to do this after any changes.
+8. Your directory structure should look like so:
 <pre>
 chai3d-3.2.0/
 ├── bin
@@ -81,21 +83,25 @@ chai3d-3.2.0/
 │   ├── mac-i386
 │   ├── mac-x86_64
 │   ├── resources
+│       └── <b>data</b>
+│           └── <b>global_minima.txt</b>
+│ 
 │   ├── win-Win32
 │   └── win-x64
 └── <b>haptic-device</b>
-    ├── LJ.cpp
-    ├── Makefile
-    ├── obj
-    └── README.md
+    ├── <b>LJ.cpp</b>
+    ├── <b>Makefile</b>
+    ├── <b>obj</b>
+    └── <b>README.md</b>
 </pre>
-5. Note that you may to change lines involving the relative file path 
->bool fileload = texture->loadFromFile(RESOURCE_PATH("../resources/images/spheremap-3.jpg"));
 
+9. Note that you may to change lines involving the relative file path 
+```c++
+bool fileload = texture->loadFromFile(RESOURCE_PATH("../resources/images/spheremap-3.jpg"));
+```
 to the absolute file path.
 
-6. Run `make` in the `haptic-device` folder - be sure to do this after any changes.
-7. Navigate to `lin-x86_64` and run `./haptic-device` to launch the program.
+10. Navigate to `lin-x86_64` and run `./haptic-device` to launch the program.
 
 
 
