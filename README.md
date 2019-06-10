@@ -1,6 +1,8 @@
 # haptic-device
 Code for the FRI haptic device project
 
+**NOTE:** When launching the program, you may need to calibrate the device by pushing it in and out until it is recognized.
+
 ## OPTIONS
 Specify the # of atoms at launch like so:
 ```
