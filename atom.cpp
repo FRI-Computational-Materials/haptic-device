@@ -57,7 +57,8 @@ cVector3d Atom::getForce(){
 }
 
 void Atom::setForce(cVector3d newForce){
-  force = newForce;
+  force = newForce;				// Add exception for if controlled atom is in the same location as the anchored atom
+
 }
 
 cShapeLine* Atom::getVelVector(){

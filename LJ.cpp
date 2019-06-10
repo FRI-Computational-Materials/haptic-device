@@ -877,37 +877,31 @@ void updateHaptics(void)
 			{
 				// computes current atom by taking the remainder of the curr_atom +1 and number of spheres
 				int previous_curr_atom = curr_atom;
-				cout << "remainder of " << curr_atom + 1 << "and" << spheres.size() << endl;
 				curr_atom = remainder(curr_atom + 1, spheres.size());
 				if (curr_atom < 0)
 				{
-					cout << "curr_atom < 0" << endl;
 					curr_atom = spheres.size() + curr_atom;
 				}
-				cout << "=" << curr_atom << endl;
 
-				// Add exception for if controlled atom is in the same location as the anchored atom
-				// Skip anchored atom
-				if (spheres[curr_atom]->isAnchor())
-				{
+				// Skip anchored atoms; will eventually terminate at previous_curr_atom
+				while(spheres[curr_atom]->isAnchor()){
 					curr_atom = remainder(curr_atom + 1, spheres.size());
 					if (curr_atom < 0)
 					{
-						cout << "curr_atom < 0" << endl;
 						curr_atom = spheres.size() + curr_atom;
 					}
 				}
-
+				
 				current = spheres[curr_atom];
 				previous = spheres[previous_curr_atom];
 
 				cVector3d A = current->getLocalPos();
 
 				// Change the current atom & its color, set the previous one back
-				current->setCurrent(true);
-				current->setLocalPos(position);
 				previous->setCurrent(false);
 				previous->setLocalPos(A);
+				current->setCurrent(true);
+				current->setLocalPos(position);
 				cVector3d translate = (previous->getLocalPos()) - (current->getLocalPos());
 				for (int i = 0; i < spheres.size(); i++)
 				{
@@ -925,12 +919,12 @@ void updateHaptics(void)
 						}
 					}
 				}
-
 				button1_changed = true;
 			}
 		}
-		else
+		else{
 			button1_changed = false;
+		}
 
 		// JD: added use for button 3; blue atom is now anchor and is fixed in place in the simulation
 		// if you want to change the anchor atom press button 3
