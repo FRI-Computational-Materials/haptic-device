@@ -1,6 +1,13 @@
 # haptic-device
 Code for the FRI haptic device project
 
+## OPTIONS
+Specify the # of atoms at launch like so:
+```
+./haptic-device 38
+```
+If you don't pass in anything, the default is five.
+
 ## Build Instructions
 
 ### Windows
