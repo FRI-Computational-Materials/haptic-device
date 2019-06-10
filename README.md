@@ -89,13 +89,18 @@ chai3d-3.2.0/
     ├── obj
     └── README.md
 </pre>
-5. Note that you may to change lines involving the relative file path 
->bool fileload = texture->loadFromFile(RESOURCE_PATH("../resources/images/spheremap-3.jpg"));
 
+7. Note that you may to change lines involving the relative file path 
+```c++
+bool fileload = texture->loadFromFile(RESOURCE_PATH("../resources/images/spheremap-3.jpg"));
+```
 to the absolute file path.
-6. Create the directory "data" in bin/resources and move the file "global_minima.txt" to here/
-7. Run `make` in the `haptic-device` folder - be sure to do this after any changes.
-8. Navigate to `lin-x86_64` and run `./haptic-device` to launch the program.
+
+8. Create the directory `data` in `bin/resources` and move the file `global_minima.txt` to here.
+
+9. Run `make` in the `haptic-device` folder - be sure to do this after any changes.
+
+10. Navigate to `lin-x86_64` and run `./haptic-device` to launch the program.
 
 
 
