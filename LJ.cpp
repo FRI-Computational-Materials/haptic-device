@@ -462,10 +462,6 @@ int main(int argc, char *argv[])
 		{
 			sphere->setAnchor(true);
 		}
-		else
-		{
-			sphere->m_material->setWhite();
-		}
 	}
 
 	//debugging
@@ -845,8 +841,6 @@ void updateHaptics(void)
 		bool button3;
 		hapticDevice->getUserSwitch(3, button3);
 
-		bool trackfreeze[NUM_SPHERES];
-		//bool to keep track if there is an anchor or not
 
 		// Changes the camera when button2 is pressed
 		if (button2)
@@ -895,7 +889,7 @@ void updateHaptics(void)
 
 				// Add exception for if controlled atom is in the same location as the anchored atom
 				// Skip anchored atom
-				if (curr_atom == anchor_atom)
+				if (spheres[curr_atom]->isAnchor())
 				{
 					curr_atom = remainder(curr_atom + 1, NUM_SPHERES);
 					if (curr_atom < 0)
@@ -906,10 +900,10 @@ void updateHaptics(void)
 				cVector3d A = spheres[curr_atom]->getLocalPos();
 
 				// Change the current atom & its color, set the previous one back
+				spheres[curr_atom]->setCurrent(true);
 				spheres[curr_atom]->setLocalPos(position);
-				spheres[curr_atom]->m_material->setRed();
+				spheres[previous_curr_atom]->setCurrent(false);
 				spheres[previous_curr_atom]->setLocalPos(A);
-				spheres[previous_curr_atom]->m_material->setWhite();
 				cVector3d translate = (spheres[previous_curr_atom]->getLocalPos()) - (spheres[curr_atom]->getLocalPos());
 				for (int i = 0; i < NUM_SPHERES; i++)
 				{
@@ -958,14 +952,14 @@ void updateHaptics(void)
 				{
 					if (is_anchor)
 					{
-						spheres[anchor_atom_hold]->m_material->setWhite();
+						spheres[anchor_atom_hold]->setAnchor(false);
 					}
-					spheres[anchor_atom]->m_material->setBlue();
+					spheres[anchor_atom]->setAnchor(true);
 					is_anchor = true;
 				}
 				else
 				{
-					spheres[anchor_atom_hold]->m_material->setWhite();
+					spheres[anchor_atom_hold]->setAnchor(false);
 					is_anchor = false;
 				}
 			}

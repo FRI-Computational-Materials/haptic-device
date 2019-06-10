@@ -9,6 +9,7 @@ Atom::Atom(double radius) : cShapeSphere(radius){
   current = false;
   velVector = new cShapeLine(cVector3d(0, 0, 0), cVector3d(0, 0, 0));
   force.zero();
+  m_material->setWhite();
 }
 
 bool Atom::isAnchor(){
@@ -17,8 +18,11 @@ bool Atom::isAnchor(){
 
 void Atom::setAnchor(bool newAnchor){
     if(newAnchor){
+      //setting atom to be an anchor, so change color to blue
       m_material->setBlue();
+      current = false;
     }else{
+      //removing atom as anchor, so change color to white
       m_material->setWhite();
     }
     anchor = newAnchor;
@@ -29,14 +33,15 @@ bool Atom::isCurrent(){
 }
 
 void Atom::setCurrent(bool newCurrent){
-  current = newCurrent;
-  if(current){
+  if(newCurrent){
     m_material->setRed();
+    anchor = false;
   }else if(anchor){
     m_material->setBlue();
   }else{
     m_material->setWhite();
   }
+  current = newCurrent;
 }
 
 cVector3d Atom::getVelocity(){
