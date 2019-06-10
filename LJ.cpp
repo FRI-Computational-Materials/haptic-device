@@ -49,6 +49,7 @@
 #include <math.h>
 #include <ctime>
 #include <chrono>
+#include <vector>
 //------------------------------------------------------------------------------
 using namespace chai3d;
 using namespace std;
@@ -78,7 +79,7 @@ bool mirroredDisplay = false;
 //------------------------------------------------------------------------------
 
 // Number of spheres in the scene
-const int NUM_SPHERES = 5;
+//const int NUM_SPHERES = 5;
 
 // Radius of each sphere
 const double SPHERE_RADIUS = 0.008;
@@ -111,7 +112,7 @@ cGenericHapticDevicePtr hapticDevice;
 double hapticDeviceMaxStiffness;
 
 // sphere objects
-Atom *spheres[NUM_SPHERES];
+vector<Atom*> spheres;
 
 // a colored background
 cBackground *background;
@@ -412,13 +413,19 @@ int main(int argc, char *argv[])
 	}
 
 	// create spheres
+	int NUM_SPHERES = 5;
+	if (argc > 1) {
+		NUM_SPHERES = atoi(argv[1]);
+	}
+
 	for (int i = 0; i < NUM_SPHERES; i++)
 	{
 		// create a sphere and define its radius
 		Atom *sphere = new Atom(SPHERE_RADIUS);
 
 		// store pointer to sphere primitive
-		spheres[i] = sphere;
+		//spheres[i] = sphere;
+		spheres.push_back(sphere);
 
 		// add sphere primitive to world
 		world->addChild(sphere);
@@ -833,7 +840,7 @@ void updateHaptics(void)
 		bool button3;
 		hapticDevice->getUserSwitch(3, button3);
 
-		bool trackfreeze[NUM_SPHERES];
+		bool trackfreeze[spheres.size()];
 		//bool to keep track if there is an anchor or not
 
 		// Changes the camera when button2 is pressed
@@ -873,11 +880,11 @@ void updateHaptics(void)
 			{
 				// computes current atom by taking the remainder of the curr_atom +1 and number of spheres
 				int previous_curr_atom = curr_atom;
-				cout << "remainder of " << curr_atom + 1 << "and" << NUM_SPHERES << endl;
-				curr_atom = remainder(curr_atom + 1, NUM_SPHERES);
+				cout << "remainder of " << curr_atom + 1 << "and" << spheres.size() << endl;
+				curr_atom = remainder(curr_atom + 1, spheres.size());
 				if (curr_atom < 0)
 				{
-					curr_atom = NUM_SPHERES + curr_atom;
+					curr_atom = spheres.size() + curr_atom;
 				}
 				cout << "=" << curr_atom << endl;
 
@@ -885,10 +892,10 @@ void updateHaptics(void)
 				// Skip anchored atom
 				if (curr_atom == anchor_atom)
 				{
-					curr_atom = remainder(curr_atom + 1, NUM_SPHERES);
+					curr_atom = remainder(curr_atom + 1, spheres.size());
 					if (curr_atom < 0)
 					{
-						curr_atom = NUM_SPHERES + curr_atom;
+						curr_atom = spheres.size() + curr_atom;
 					}
 				}
 				cVector3d A = spheres[curr_atom]->getLocalPos();
@@ -899,7 +906,7 @@ void updateHaptics(void)
 				spheres[previous_curr_atom]->setLocalPos(A);
 				spheres[previous_curr_atom]->m_material->setWhite();
 				cVector3d translate = (spheres[previous_curr_atom]->getLocalPos()) - (spheres[curr_atom]->getLocalPos());
-				for (int i = 0; i < NUM_SPHERES; i++)
+				for (int i = 0; i < spheres.size(); i++)
 				{
 					if (i != curr_atom)
 					{
@@ -932,10 +939,10 @@ void updateHaptics(void)
 			{
 				bool anchor_changed = true;
 				anchor_atom_hold = anchor_atom;
-				anchor_atom = remainder(anchor_atom + 1, NUM_SPHERES);
+				anchor_atom = remainder(anchor_atom + 1, spheres.size());
 				if (anchor_atom < 0)
 				{
-					anchor_atom = NUM_SPHERES + anchor_atom;
+					anchor_atom = spheres.size() + anchor_atom;
 				}
 				if (anchor_atom == curr_atom)
 				{
@@ -967,7 +974,7 @@ void updateHaptics(void)
 		Atom *current;
 		// JD: edited this so that many operations are removed out of the inner loop
 		// This loop is for computing the force on atom i
-		for (int i = 0; i < NUM_SPHERES; i++)
+		for (int i = 0; i < spheres.size(); i++)
 		{
 			// compute force on atom
 			cVector3d force;
@@ -977,7 +984,7 @@ void updateHaptics(void)
 			force.zero();
 
 			// this loop is for finding all of atom i's neighbors
-			for (int j = 0; j < NUM_SPHERES; j++)
+			for (int j = 0; j < spheres.size(); j++)
 			{
 				//Don't compute forces between an atom and itself
 				if (i != j)
@@ -994,7 +1001,7 @@ void updateHaptics(void)
 					double distance = cDistance(pos0, pos1) / DIST_SCALE;
 
 					//cout << "array " << (sizeof(lj_potential)/sizeof(*lj_potential)) << endl;
-					double lj_potential[NUM_SPHERES];
+					double lj_potential[spheres.size()];
 					lj_potential[i] = {4 * EPSILON * (pow(SIGMA / distance, 12) - pow(SIGMA / distance, 6))};
 
 					lj_PE = lj_PE + lj_potential[i];
@@ -1061,7 +1068,7 @@ void updateHaptics(void)
 		/////////////////////////////////////////////////////////////////////////
 		// FORCE VECTOR
 		/////////////////////////////////////////////////////////////////////////
-		for (int i = 0; i < NUM_SPHERES; i++)
+		for (int i = 0; i < spheres.size(); i++)
 		{
 			current = spheres[i];
 			cVector3d newPoint = cAdd(current->getLocalPos(), current->getForce());
