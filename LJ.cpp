@@ -291,8 +291,8 @@ int main(int argc, char *argv[])
 	// set key callback
 	glfwSetKeyCallback(window, keyCallback);
 
-  // set mouse button callback
-  glfwSetMouseButtonCallback(window, mouseButtonCallback);
+	// set mouse button callback
+	glfwSetMouseButtonCallback(window, mouseButtonCallback);
 
 	// set resize callback
 	glfwSetWindowSizeCallback(window, windowSizeCallback);
@@ -657,6 +657,15 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, 
 	{
 		mirroredDisplay = !mirroredDisplay;
 		camera->setMirrorVertical(mirroredDisplay);
+	}
+
+	// action - unanchor all key
+	else if (a_key == GLFW_KEY_U) {
+		for (auto i {0}; i < spheres.size(); i++) {
+			if (spheres[i]->isAnchor()) {
+				spheres[i]->setAnchor(false);
+			}
+		}
 	}
 }
 
