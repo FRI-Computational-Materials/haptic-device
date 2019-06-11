@@ -1168,11 +1168,17 @@ void updateHaptics(void)
 }
 
 double getGlobalMinima(int cluster_size) {
-	ifstream infile("../resources/data/global_minima.txt");
+	string file_path = "../resources/data/";
+	string file_name = "global_minima.txt";
+	ifstream infile(file_path + file_name);
 
 	if (!infile) {
-		cerr << "Could not open \"global_minima.txt\" for reading" << endl;
+		cerr << "Could not open \"" + file_name + "\" for reading" << endl;
+		cerr << "Did you move it to \"" + file_path+ "\"?" << endl;
 		exit(1);
+	} else if ((cluster_size < 2) || (cluster_size > 150)) {
+        cout << "WARNING \"" + file_name + "\" doesn't have data for clusters of this size yet." << endl;
+		cout << "The graph may not be accurate" << endl;
 	}
 
 	int cluster_size_file;
@@ -1182,6 +1188,7 @@ double getGlobalMinima(int cluster_size) {
 			break;
 		}
 	}
+	cout << minimum << endl;
 	return minimum;
 }
 
