@@ -43,11 +43,13 @@
 
 //------------------------------------------------------------------------------
 #include "chai3d.h"
+#include "atom.h"
 //------------------------------------------------------------------------------
 #include <GLFW/glfw3.h>
 #include <math.h>
 #include <ctime>
 #include <chrono>
+#include <fstream>
 //------------------------------------------------------------------------------
 using namespace chai3d;
 using namespace std;
@@ -77,7 +79,7 @@ bool mirroredDisplay = false;
 //------------------------------------------------------------------------------
 
 // Number of spheres in the scene
-const int NUM_SPHERES = 5;
+//const int NUM_SPHERES = 5;
 
 // Radius of each sphere
 const double SPHERE_RADIUS = 0.008;
@@ -110,10 +112,7 @@ cGenericHapticDevicePtr hapticDevice;
 double hapticDeviceMaxStiffness;
 
 // sphere objects
-cShapeSphere *spheres[NUM_SPHERES];
-
-// linear velocity of each sphere
-cVector3d sphereVel[NUM_SPHERES];
+vector<Atom*> spheres;
 
 // a colored background
 cBackground *background;
@@ -124,8 +123,6 @@ cFontPtr font;
 // a label to display the rate [Hz] at which the simulation is running
 cLabel *labelRates;
 
-// a label to explain what is happening
-cLabel *labelMessage;
 //a label to show the potential energy
 cLabel *LJ_num;
 
@@ -162,8 +159,11 @@ int swapInterval = 1;
 // root resource path
 string resourceRoot;
 
-// An array of velocity vectors
-cShapeLine *velVectors[NUM_SPHERES];
+// a scope to monitor the potential energy
+cScope *scope;
+
+// global minimum for the given cluster size
+double global_minimum;
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -184,6 +184,9 @@ void errorCallback(int error, const char *a_description);
 // callback when a key is pressed
 void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, int a_mods);
 
+// callback to handle mouse click
+void mouseButtonCallback(GLFWwindow* a_window, int a_button, int a_action, int a_mods);
+
 // this function renders the scene
 void updateGraphics(void);
 
@@ -193,8 +196,8 @@ void updateHaptics(void);
 // this function closes the application
 void close(void);
 
-// a scope to monitor the potential energy
-cScope *scope;
+// Reads in global minimum from global_minima.txt
+double getGlobalMinima(int cluster_size);
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -204,14 +207,13 @@ cScope *scope;
 
 //==============================================================================
 /*
-	DEMO:   09-magnets.cpp
+	LJ.cpp
 
-	This example illustrates how to create a simple dynamic simulation using
-	small sphere shape primitives. All dynamics and collisions are computed
-	in the haptics thread.
+	This program simulates LJ clusters of varying sizes using modified sphere
+	primitives (atom.cpp). All dynamics and collisions are computed in the
+	haptics thread.
 */
 //==============================================================================
-//bool button3_changed = false;
 int curr_camera = 1;
 double theta = 0;
 double x = .5;
@@ -225,7 +227,7 @@ int main(int argc, char *argv[])
 	cout << endl;
 	cout << "-----------------------------------" << endl;
 	cout << "CHAI3D" << endl;
-	cout << "Demo: LJ-TEST" << endl;
+	cout << "LJ.cpp" << endl;
 
 	cout << "-----------------------------------" << endl
 		 << endl
@@ -288,6 +290,9 @@ int main(int argc, char *argv[])
 
 	// set key callback
 	glfwSetKeyCallback(window, keyCallback);
+
+	// set mouse button callback
+	glfwSetMouseButtonCallback(window, mouseButtonCallback);
 
 	// set resize callback
 	glfwSetWindowSizeCallback(window, windowSizeCallback);
@@ -413,46 +418,30 @@ int main(int argc, char *argv[])
 		return (-1);
 	}
 
-	// create spheres
+	// set NUM_SPHERES to input; if none or negative, default is five
+	int NUM_SPHERES = argc > 1 ? atoi(argv[1]) : 5;
+
 	for (int i = 0; i < NUM_SPHERES; i++)
 	{
 		// create a sphere and define its radius
-		cShapeSphere *sphere = new cShapeSphere(SPHERE_RADIUS);
-
-		// create a small line to illustrate velocity
-		cShapeLine *velocity = new cShapeLine(cVector3d(0, 0, 0),
-											  cVector3d(0, 0, 0));
+		Atom *sphere = new Atom(SPHERE_RADIUS);
 
 		// store pointer to sphere primitive
-		spheres[i] = sphere;
-
-		// store pointer to line
-		velVectors[i] = velocity;
+		//spheres[i] = sphere;
+		spheres.push_back(sphere);
 
 		// add sphere primitive to world
 		world->addChild(sphere);
 
 		//add line to world
-		world->addChild(velocity);
+		world->addChild(sphere->getVelVector());
 
 		// set the position of the object at the center of the world
 
 		if (i != 0)
 		{
-			double phi = rand() / double(RAND_MAX) * 2 * M_PI;
-			double costheta = rand() / double(RAND_MAX) * 2 - 1;
-			double u = rand() / double(RAND_MAX);
-			double theta = acos(costheta);
-			double r = 0.1 * cbrt(u);
-			sphere->setLocalPos(r * sin(theta) * cos(phi),
-								r * sin(theta) * sin(phi),
-								r * cos(theta));
-			cout << " x " << r * sin(theta) * cos(phi) << " y " << r * sin(theta) * sin(phi) << " z " << r * cos(theta) << endl;
+			sphere->setInitialPosition();
 		}
-
-		double initialposx = 0.8 * SPHERE_RADIUS * (double)(i + 4) * cos(1.0 * (double)(i));
-		double initialposy = 0.8 * SPHERE_RADIUS * (double)(i + 4) * sin(1.0 * (double)(i));
-		double initialposz = .030 + SPHERE_RADIUS + ((double)(i + 4)) / 4000.;
 
 		// set graphic properties of sphere
 		sphere->setTexture(texture);
@@ -460,19 +449,18 @@ int main(int argc, char *argv[])
 		sphere->setUseTexture(true);
 
 		// Set the first and second sphere (the one being controlled to red initially and the anchor in blue)
-		if (i == 0)
+		if (i == 0) 	// sphere is current
 		{
-			sphere->m_material->setRed();
+			sphere->setCurrent(true);
 		}
-		else if (i == 1)
+		else if (i == 1)   //sphere is anchor
 		{
-			sphere->m_material->setBlue();
-		}
-		else
-		{
-			sphere->m_material->setWhite();
+			sphere->setAnchor(true);
 		}
 	}
+
+	//debugging
+	/*
 	for (int i = 0; i < NUM_SPHERES; i++)
 	{
 		cVector3d posA = spheres[i]->getLocalPos();
@@ -486,6 +474,7 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
+	*/
 	//--------------------------------------------------------------------------
 	// WIDGETS
 	//--------------------------------------------------------------------------
@@ -498,19 +487,10 @@ int main(int argc, char *argv[])
 	labelRates->m_fontColor.setBlack();
 	camera->m_frontLayer->addChild(labelRates);
 
-	// create a label with a small message
-	labelMessage = new cLabel(font);
-	camera->m_frontLayer->addChild(labelMessage);
-
-	// set font color
-	labelMessage->m_fontColor.setBlack();
-
-	// set text message
-	labelMessage->setText("interact with magnetic spheres - press user switch to disable magnetic effect");
 	//potential energy label
 	LJ_num = new cLabel(font);
-	camera->m_frontLayer->addChild(LJ_num);
 	LJ_num->m_fontColor.setBlack();
+	camera->m_frontLayer->addChild(LJ_num);
 
 	//total energy label
 	total_energy = new cLabel(font);
@@ -540,13 +520,22 @@ int main(int argc, char *argv[])
 	}
 
 	//create a scope to plot potential energy
+
 	scope = new cScope();
 	scope->setLocalPos(0, 60);
 	camera->m_frontLayer->addChild(scope);
-	scope->setSignalEnabled(true, false, false, false);
+	scope->setSignalEnabled(true, true, false, false);
 	scope->setTransparencyLevel(.7);
-	// First # should be the global minima, load from txt file?
-	scope->setRange(-3, 0);
+	global_minimum = getGlobalMinima(spheres.size());
+	double lower_bound, upper_bound;
+	if (global_minimum > -50) {
+		upper_bound = 0;
+		lower_bound = global_minimum - .5;
+	} else {
+		upper_bound = 0 + (global_minimum * .2);
+		lower_bound = global_minimum - 3;
+	}
+	scope->setRange(lower_bound, upper_bound);
 
 	//--------------------------------------------------------------------------
 	// START SIMULATION
@@ -604,7 +593,7 @@ void windowSizeCallback(GLFWwindow *a_window, int a_width, int a_height)
 	height = a_height;
 
 	// update position of message label
-	labelMessage->setLocalPos((int)(0.5 * (width - labelMessage->getWidth())), 50);
+	//labelMessage->setLocalPos((int)(0.5 * (width - labelMessage->getWidth())), 50);
 }
 
 //------------------------------------------------------------------------------
@@ -665,8 +654,45 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, 
 		mirroredDisplay = !mirroredDisplay;
 		camera->setMirrorVertical(mirroredDisplay);
 	}
+
+	// action - unanchor all key
+	else if (a_key == GLFW_KEY_U) {
+		for (auto i {0}; i < spheres.size(); i++) {
+			if (spheres[i]->isAnchor()) {
+				spheres[i]->setAnchor(false);
+			}
+		}
+	}
 }
 
+void mouseButtonCallback(GLFWwindow* a_window, int a_button, int a_action, int a_mods)
+{
+    if (a_button == GLFW_MOUSE_BUTTON_LEFT && a_action == GLFW_PRESS)
+    {
+        // store mouse position
+        double x,y;
+        glfwGetCursorPos(window, &x, &y);
+
+        // detect for any collision between mouse and scene
+        cCollisionRecorder recorder;
+        cCollisionSettings settings;
+
+        bool hit = camera->selectWorld(x, (height-y), width, height, recorder, settings);
+        if (hit)
+        {
+            // retrieve Atom selected by mouse
+			cGenericObject *selected = recorder.m_nearestCollision.m_object;
+			Atom *selectedAtom = (Atom*) selected;
+
+			// Toggle anchor status and color
+			if (selectedAtom->isAnchor()) {
+				selectedAtom->setAnchor(false);
+			} else if(!selectedAtom->isCurrent()){     //cannot set current to anchor
+				selectedAtom->setAnchor(true);
+			}
+        }
+    }
+}
 //------------------------------------------------------------------------------
 
 void close(void)
@@ -723,6 +749,9 @@ void updateGraphics(void)
 
 void updateHaptics(void)
 {
+	Atom *current;
+	Atom *previous;
+
 	// simulation in now running
 	simulationRunning = true;
 	simulationFinished = false;
@@ -747,7 +776,7 @@ void updateHaptics(void)
 
 	//Array for all velocities
 	//cVector3d sphereVel[NUM_SPHERES];
-	cout << sphereVel[NUM_SPHERES - 1] << endl;
+	//cout << sphereVel[NUM_SPHERES - 1] << endl;
 	// main haptic simulation loop
 
 	bool button1_changed = false;
@@ -806,8 +835,6 @@ void updateHaptics(void)
 		const double FORCE_DAMPING = .75;
 		//Scales the distance betweens atoms
 		const double DIST_SCALE = .02;
-		// clear forces for all spheres
-		cVector3d sphereFce[NUM_SPHERES];
 
 		//Update current atom based on if the user pressed the far left button
 		//The point of button2_changed is to make it so that it only switches one atom if the button is touched Otherwise it flips out
@@ -821,8 +848,6 @@ void updateHaptics(void)
 		bool button3;
 		hapticDevice->getUserSwitch(3, button3);
 
-		bool trackfreeze[NUM_SPHERES];
-		//bool to keep track if there is an anchor or not
 
 		// Changes the camera when button2 is pressed
 		if (button2)
@@ -861,54 +886,57 @@ void updateHaptics(void)
 			{
 				// computes current atom by taking the remainder of the curr_atom +1 and number of spheres
 				int previous_curr_atom = curr_atom;
-				cout << "remainder of " << curr_atom + 1 << "and" << NUM_SPHERES << endl;
-				curr_atom = remainder(curr_atom + 1, NUM_SPHERES);
+				curr_atom = remainder(curr_atom + 1, spheres.size());
 				if (curr_atom < 0)
 				{
-					curr_atom = NUM_SPHERES + curr_atom;
+					curr_atom = spheres.size() + curr_atom;
 				}
-				cout << "=" << curr_atom << endl;
 
-				// Add exception for if controlled atom is in the same location as the anchored atom
-				// Skip anchored atom
-				if (curr_atom == anchor_atom)
-				{
-					curr_atom = remainder(curr_atom + 1, NUM_SPHERES);
+				// Skip anchored atoms; will eventually terminate at previous_curr_atom
+				while(spheres[curr_atom]->isAnchor()){
+					curr_atom = remainder(curr_atom + 1, spheres.size());
 					if (curr_atom < 0)
 					{
-						curr_atom = NUM_SPHERES + curr_atom;
+						curr_atom = spheres.size() + curr_atom;
 					}
 				}
-				cVector3d A = spheres[curr_atom]->getLocalPos();
 
-				// Change the current atom & its color, set the previous one back
-				spheres[curr_atom]->setLocalPos(position);
-				spheres[curr_atom]->m_material->setRed();
-				spheres[previous_curr_atom]->setLocalPos(A);
-				spheres[previous_curr_atom]->m_material->setWhite();
-				cVector3d translate = (spheres[previous_curr_atom]->getLocalPos()) - (spheres[curr_atom]->getLocalPos());
-				for (int i = 0; i < NUM_SPHERES; i++)
+				current = spheres[curr_atom];
+				previous = spheres[previous_curr_atom];
+
+				cVector3d A = current->getLocalPos();
+
+				// Change attributes of previous current and new current
+				previous->setCurrent(false);
+				previous->setLocalPos(A);
+				current->setCurrent(true);
+				current->setLocalPos(position);
+				cVector3d translate = (previous->getLocalPos()) - (current->getLocalPos());
+
+				Atom *traverser;
+				for (int i = 0; i < spheres.size(); i++)
 				{
+					traverser = spheres[i];
 					if (i != curr_atom)
 					{
 						if (i == (previous_curr_atom))
 						{
-							spheres[i]->setLocalPos(spheres[previous_curr_atom]->getLocalPos() - (2.0 * translate));
-							cVector3d positions = spheres[i]->getLocalPos();
+							traverser->setLocalPos(previous->getLocalPos() - (2.0 * translate));
+							cVector3d positions = traverser->getLocalPos();
 						}
 						else
 						{
-							spheres[i]->setLocalPos(spheres[i]->getLocalPos() - (translate));
-							cVector3d positions = spheres[i]->getLocalPos();
+							traverser->setLocalPos(traverser->getLocalPos() - (translate));
+							cVector3d positions = traverser->getLocalPos();
 						}
 					}
 				}
-
 				button1_changed = true;
 			}
 		}
-		else
+		else{
 			button1_changed = false;
+		}
 
 		// JD: added use for button 3; blue atom is now anchor and is fixed in place in the simulation
 		// if you want to change the anchor atom press button 3
@@ -920,10 +948,10 @@ void updateHaptics(void)
 			{
 				bool anchor_changed = true;
 				anchor_atom_hold = anchor_atom;
-				anchor_atom = remainder(anchor_atom + 1, NUM_SPHERES);
+				anchor_atom = remainder(anchor_atom + 1, spheres.size());
 				if (anchor_atom < 0)
 				{
-					anchor_atom = NUM_SPHERES + anchor_atom;
+					anchor_atom = spheres.size() + anchor_atom;
 				}
 				if (anchor_atom == curr_atom)
 				{
@@ -934,14 +962,14 @@ void updateHaptics(void)
 				{
 					if (is_anchor)
 					{
-						spheres[anchor_atom_hold]->m_material->setWhite();
+						spheres[anchor_atom_hold]->setAnchor(false);
 					}
-					spheres[anchor_atom]->m_material->setBlue();
+					spheres[anchor_atom]->setAnchor(true);
 					is_anchor = true;
 				}
 				else
 				{
-					spheres[anchor_atom_hold]->m_material->setWhite();
+					spheres[anchor_atom_hold]->setAnchor(false);
 					is_anchor = false;
 				}
 			}
@@ -949,25 +977,22 @@ void updateHaptics(void)
 		else
 			button3_changed = false;
 
-		for (int i = 0; i < NUM_SPHERES; i++)
-		{
-			sphereFce[i].zero();
-		}
 		// compute forces for all spheres
 		double lj_PE = 0;
 
 		// JD: edited this so that many operations are removed out of the inner loop
 		// This loop is for computing the force on atom i
-		for (int i = 0; i < NUM_SPHERES; i++)
+		for (int i = 0; i < spheres.size(); i++)
 		{
 			// compute force on atom
 			cVector3d force;
-			cVector3d pos0 = spheres[i]->getLocalPos();
+			current = spheres[i];
+			cVector3d pos0 = current->getLocalPos();
 			// check forces with all other spheres
 			force.zero();
 
 			// this loop is for finding all of atom i's neighbors
-			for (int j = 0; j < NUM_SPHERES; j++)
+			for (int j = 0; j < spheres.size(); j++)
 			{
 				//Don't compute forces between an atom and itself
 				if (i != j)
@@ -983,32 +1008,31 @@ void updateHaptics(void)
 					double distance = cDistance(pos0, pos1) / DIST_SCALE;
 
 					//cout << "array " << (sizeof(lj_potential)/sizeof(*lj_potential)) << endl;
-					double lj_potential[NUM_SPHERES];
+					double lj_potential[spheres.size()];
 					lj_potential[i] = {4 * EPSILON * (pow(SIGMA / distance, 12) - pow(SIGMA / distance, 6))};
 
 					lj_PE = lj_PE + lj_potential[i];
 					if (!button0)
 					{
 
-						double lj =
-							-4 * FORCE_DAMPING * EPSILON * ((-12 * pow(SIGMA / distance, 13)) - (-6 * pow(SIGMA / distance, 7)));
+						double lj = -4 * FORCE_DAMPING * EPSILON * ((-12 * pow(SIGMA / distance, 13)) - (-6 * pow(SIGMA / distance, 7)));
 						force.add(lj * dir01);
 					}
 				}
 			}
-			sphereFce[i] = force;
+			current->setForce(force);
 			// update velocity and position of all spheres
 			// compute acceleration
 			cVector3d sphereAcc = (force / SPHERE_MASS);
-			sphereVel[i] = K_DAMPING * (sphereVel[i] + timeInterval * sphereAcc);
+			current->setVelocity(K_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
 			// compute /position
-			cVector3d spherePos_change = timeInterval * sphereVel[i] + cSqr(timeInterval) * sphereAcc;
+			cVector3d spherePos_change = timeInterval * current->getVelocity() + cSqr(timeInterval) * sphereAcc;
 			double magnitude = spherePos_change.length();
 
-			cVector3d spherePos = spheres[i]->getLocalPos() + spherePos_change;
+			cVector3d spherePos = current->getLocalPos() + spherePos_change;
 			if (magnitude > 5)
 			{
-				cout << i << " velocity " << sphereVel[i].length() << endl;
+				cout << i << " velocity " << current->getVelocity().length() << endl;
 				cout << i << " force " << force.length() << endl;
 				cout << i << " acceleration " << sphereAcc.length() << endl;
 				cout << i << " time " << timeInterval << endl;
@@ -1021,16 +1045,17 @@ void updateHaptics(void)
 			// update position of label
 			//total_energy->setLocalPos(20, 0);
 
-			if (i != curr_atom)
+			if (!current->isCurrent())
 			{
-				if (i != anchor_atom)
+				if (!current->isAnchor())
 				{
-					spheres[i]->setLocalPos(spherePos);
+					current->setLocalPos(spherePos);
 				}
 			}
 		}
-		spheres[curr_atom]->setLocalPos(position);
-		cVector3d force = sphereFce[curr_atom];
+		current = spheres[curr_atom];
+		current->setLocalPos(position);
+		cVector3d force = current->getForce();
 		// JD: moved this out of nested for loop so that test is set only when fully calculated
 		// update haptic and graphic rate data
 		LJ_num->setText("Potential Energy: " + cStr((lj_PE / 2), 5));
@@ -1045,30 +1070,31 @@ void updateHaptics(void)
 		// The number fmod() is compared to is the threshold, this adjusts the timescale
 		if (fmod(currentTime, currentTimeRounded) <= .01)
 		{
-			scope->setSignalValues(lj_PE);
+			scope->setSignalValues(lj_PE/2, global_minimum);
 		}
 		/////////////////////////////////////////////////////////////////////////
 		// FORCE VECTOR
 		/////////////////////////////////////////////////////////////////////////
-		for (int i = 0; i < NUM_SPHERES; i++)
+		for (int i = 0; i < spheres.size(); i++)
 		{
-			cVector3d newPoint = cAdd(spheres[i]->getLocalPos(), sphereFce[i]);
+			current = spheres[i];
+			cVector3d newPoint = cAdd(current->getLocalPos(), current->getForce());
 			cVector3d newPointNormalized;
-			sphereFce[i].normalizer(newPointNormalized);
-			velVectors[i]->m_pointA = cAdd(spheres[i]->getLocalPos(), newPointNormalized * spheres[i]->getRadius());
-			velVectors[i]->m_pointB = cAdd(velVectors[i]->m_pointA, sphereFce[i] * .005);
-			velVectors[i]->setLineWidth(5);
+			current->getForce().normalizer(newPointNormalized);
+			current->getVelVector()->m_pointA = cAdd(current->getLocalPos(), newPointNormalized * current->getRadius());
+			current->getVelVector()->m_pointB = cAdd(current->getVelVector()->m_pointA, current->getForce() * .005);
+			current->getVelVector()->setLineWidth(5);
 
 			// Change color, red if current, black otherwise
 			if (i == curr_atom)
 			{
-				velVectors[i]->m_colorPointA.setRed();
-				velVectors[i]->m_colorPointB.setRed();
+				current->getVelVector()->m_colorPointA.setRed();
+				current->getVelVector()->m_colorPointB.setRed();
 			}
 			else
 			{
-				velVectors[i]->m_colorPointA.setBlack();
-				velVectors[i]->m_colorPointB.setBlack();
+				current->getVelVector()->m_colorPointA.setBlack();
+				current->getVelVector()->m_colorPointB.setBlack();
 			}
 
 			// TODO - experiment with threshold
@@ -1097,4 +1123,22 @@ void updateHaptics(void)
 
 	// exit haptics thread
 	simulationFinished = true;
+}
+
+double getGlobalMinima(int cluster_size) {
+	ifstream infile("../resources/data/global_minima.txt");
+
+	if (!infile) {
+		cerr << "Could not open \"global_minima.txt\" for reading" << endl;
+		exit(1);
+	}
+
+	int cluster_size_file;
+	double minimum;
+	while(infile >> cluster_size_file >> minimum) {
+		if (cluster_size_file == cluster_size) {
+			break;
+		}
+	}
+	return minimum;
 }
