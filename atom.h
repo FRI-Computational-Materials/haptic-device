@@ -26,6 +26,7 @@ class Atom: public cShapeSphere {
     void setForce(cVector3d newForce);
     cShapeLine* getVelVector();
     void setVelVector(cShapeLine *newVelVector);
+    void setInitialPosition();
 };
 
 #endif // ATOM_H

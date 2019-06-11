@@ -1,5 +1,6 @@
 #include "atom.h"
 #include "chai3d.h"
+#include "math.h"
 
 using namespace std;
 using namespace chai3d;
@@ -34,11 +35,13 @@ bool Atom::isCurrent(){
 
 void Atom::setCurrent(bool newCurrent){
   if(newCurrent){
+    //setting atom to be current, so change color to red
     m_material->setRed();
-    anchor = false;
+    anchor = false;  //cannot be both anchor and current
   }else if(anchor){
     m_material->setBlue();
   }else{
+    //toggling current off, so set to white
     m_material->setWhite();
   }
   current = newCurrent;
@@ -67,4 +70,14 @@ cShapeLine* Atom::getVelVector(){
 
 void Atom::setVelVector(cShapeLine *newVelVector){
   velVector = newVelVector;
+}
+
+void Atom::setInitialPosition(){
+  double phi = rand() / double(RAND_MAX) * 2 * M_PI;
+  double costheta = rand() / double(RAND_MAX) * 2 - 1;
+  double u = rand() / double(RAND_MAX);
+  double theta = acos(costheta);
+  double r = 0.1 * cbrt(u);
+  setLocalPos(r * sin(theta) * cos(phi), r * sin(theta) * sin(phi), r * cos(theta));
+  cout << " x " << r * sin(theta) * cos(phi) << " y " << r * sin(theta) * sin(phi) << " z " << r * cos(theta) << endl;
 }

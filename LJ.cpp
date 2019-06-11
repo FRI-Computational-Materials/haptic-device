@@ -163,7 +163,7 @@ string resourceRoot;
 cScope *scope;
 
 // global minimum for the given cluster size
-double global_minimum; 
+double global_minimum;
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -291,8 +291,8 @@ int main(int argc, char *argv[])
 	// set key callback
 	glfwSetKeyCallback(window, keyCallback);
 
-    // set mouse button callback
-    glfwSetMouseButtonCallback(window, mouseButtonCallback);
+  // set mouse button callback
+  glfwSetMouseButtonCallback(window, mouseButtonCallback);
 
 	// set resize callback
 	glfwSetWindowSizeCallback(window, windowSizeCallback);
@@ -418,11 +418,8 @@ int main(int argc, char *argv[])
 		return (-1);
 	}
 
-	// create spheres
-	int NUM_SPHERES = 5;
-	if (argc > 1) {
-		NUM_SPHERES = atoi(argv[1]);
-	}
+	// set NUM_SPHERES to input; if none or negative, default is five
+	int NUM_SPHERES = argc > 1 ? atoi(argv[1]) : 5;
 
 	for (int i = 0; i < NUM_SPHERES; i++)
 	{
@@ -443,15 +440,7 @@ int main(int argc, char *argv[])
 
 		if (i != 0)
 		{
-			double phi = rand() / double(RAND_MAX) * 2 * M_PI;
-			double costheta = rand() / double(RAND_MAX) * 2 - 1;
-			double u = rand() / double(RAND_MAX);
-			double theta = acos(costheta);
-			double r = 0.1 * cbrt(u);
-			sphere->setLocalPos(r * sin(theta) * cos(phi),
-								r * sin(theta) * sin(phi),
-								r * cos(theta));
-			cout << " x " << r * sin(theta) * cos(phi) << " y " << r * sin(theta) * sin(phi) << " z " << r * cos(theta) << endl;
+			sphere->setInitialPosition();
 		}
 
 		double initialposx = 0.8 * SPHERE_RADIUS * (double)(i + 4) * cos(1.0 * (double)(i));
@@ -906,7 +895,7 @@ void updateHaptics(void)
 						curr_atom = spheres.size() + curr_atom;
 					}
 				}
-				
+
 				current = spheres[curr_atom];
 				previous = spheres[previous_curr_atom];
 
@@ -1131,7 +1120,7 @@ void updateHaptics(void)
 
 double getGlobalMinima(int cluster_size) {
 	ifstream infile("../resources/data/global_minima.txt");
-	
+
 	if (!infile) {
 		cerr << "Could not open \"global_minima.txt\" for reading" << endl;
 		exit(1);
