@@ -75,6 +75,15 @@ bool fullscreen = false;
 bool mirroredDisplay = false;
 
 //------------------------------------------------------------------------------
+// STATES
+//------------------------------------------------------------------------------
+enum MouseState
+{
+    MOUSE_IDLE,
+    MOUSE_SELECTION
+};
+
+//------------------------------------------------------------------------------
 // DECLARED CONSTANTS
 //------------------------------------------------------------------------------
 
@@ -135,6 +144,9 @@ bool simulationRunning = false;
 // a flag that indicates if the haptic simulation has terminated
 bool simulationFinished = true;
 
+// mouse state
+MouseState mouseState = MOUSE_IDLE;
+
 // a frequency counter to measure the simulation graphic rate
 cFrequencyCounter freqCounterGraphics;
 
@@ -165,6 +177,15 @@ cScope *scope;
 // global minimum for the given cluster size
 double global_minimum;
 
+// a pointer to the selected object
+Atom* selectedAtom = NULL;
+
+// offset between the position of the mmouse click on the object and the object reference frame location.
+cVector3d selectedAtomOffset;
+
+// position of mouse click.
+cVector3d selectedPoint;
+
 //------------------------------------------------------------------------------
 // DECLARED MACROS
 //------------------------------------------------------------------------------
@@ -187,6 +208,9 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, 
 // callback to handle mouse click
 void mouseButtonCallback(GLFWwindow* a_window, int a_button, int a_action, int a_mods);
 
+//callback to handle mouse motion
+void mouseMotionCallback(GLFWwindow* a_window, double a_posX, double a_posY);
+
 // this function renders the scene
 void updateGraphics(void);
 
@@ -198,6 +222,7 @@ void close(void);
 
 // Reads in global minimum from global_minima.txt
 double getGlobalMinima(int cluster_size);
+
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -290,6 +315,9 @@ int main(int argc, char *argv[])
 
 	// set key callback
 	glfwSetKeyCallback(window, keyCallback);
+
+	// set mouse position callback
+	glfwSetCursorPosCallback(window, mouseMotionCallback);
 
   // set mouse button callback
   glfwSetMouseButtonCallback(window, mouseButtonCallback);
@@ -658,31 +686,45 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, 
 
 void mouseButtonCallback(GLFWwindow* a_window, int a_button, int a_action, int a_mods)
 {
+		// store mouse position
+		double x,y;
+
+		// detect for any collision between mouse and scene
+		cCollisionRecorder recorder;
+		cCollisionSettings settings;
+
     if (a_button == GLFW_MOUSE_BUTTON_LEFT && a_action == GLFW_PRESS)
     {
-        // store mouse position
-        double x,y;
         glfwGetCursorPos(window, &x, &y);
-
-        // detect for any collision between mouse and scene
-        cCollisionRecorder recorder;
-        cCollisionSettings settings;
-
         bool hit = camera->selectWorld(x, (height-y), width, height, recorder, settings);
         if (hit)
         {
-            // retrieve Atom selected by mouse
-			cGenericObject *selected = recorder.m_nearestCollision.m_object;
-			Atom *selectedAtom = (Atom*) selected;
+						cGenericObject *selected = recorder.m_nearestCollision.m_object;
+						selectedAtom = (Atom*) selected;
+						selectedPoint = recorder.m_nearestCollision.m_globalPos;
+						selectedAtomOffset = recorder.m_nearestCollision.m_globalPos - selectedAtom->getLocalPos();
+						mouseState = MOUSE_SELECTION;
+				}
+			}else if(a_button == GLFW_MOUSE_BUTTON_RIGHT && a_action == GLFW_PRESS){
+				glfwGetCursorPos(window, &x, &y);
+				bool hit = camera->selectWorld(x, (height-y), width, height, recorder, settings);
+				if (hit)
+				{
+					// retrieve Atom selected by mouse
+					cGenericObject *selected = recorder.m_nearestCollision.m_object;
+					selectedAtom = (Atom*) selected;
 
-			// Toggle anchor status and color
-			if (selectedAtom->isAnchor()) {
-				selectedAtom->setAnchor(false);
-			} else if(!selectedAtom->isCurrent()){     //cannot set current to anchor
-				selectedAtom->setAnchor(true);
+					// Toggle anchor status and color
+					if (selectedAtom->isAnchor()) {
+						selectedAtom->setAnchor(false);
+					} else if(!selectedAtom->isCurrent()){     //cannot set current to anchor
+						selectedAtom->setAnchor(true);
+					}
+					mouseState = MOUSE_SELECTION;
+				}
+			}else{
+				mouseState = MOUSE_IDLE;
 			}
-        }
-    }
 }
 //------------------------------------------------------------------------------
 
@@ -1132,4 +1174,41 @@ double getGlobalMinima(int cluster_size) {
 		}
 	}
 	return minimum;
+}
+
+void mouseMotionCallback(GLFWwindow* a_window, double a_posX, double a_posY)
+{
+    if ((selectedAtom != NULL) && (mouseState == MOUSE_SELECTION) && (selectedAtom->isAnchor()))
+    {
+        // get the vector that goes from the camera to the selected point (mouse click)
+        cVector3d vCameraObject = selectedPoint - camera->getLocalPos();
+
+        // get the vector that point in the direction of the camera. ("where the camera is looking at")
+        cVector3d vCameraLookAt = camera->getLookVector();
+
+        // compute the angle between both vectors
+        double angle = cAngle(vCameraObject, vCameraLookAt);
+
+        // compute the distance between the camera and the plane that intersects the object and
+        // which is parallel to the camera plane
+        double distanceToObjectPlane = vCameraObject.length() * cos(angle);
+
+        // convert the pixel in mouse space into a relative position in the world
+        double factor = (distanceToObjectPlane * tan(0.5 * camera->getFieldViewAngleRad())) / (0.5 * height);
+        double posRelX = factor * (a_posX - (0.5 * width));
+        double posRelY = factor * ((height - a_posY) - (0.5 * height));
+
+        // compute the new position in world coordinates
+        cVector3d pos = camera->getLocalPos() +
+            distanceToObjectPlane * camera->getLookVector() +
+            posRelX * camera->getRightVector() +
+            posRelY * camera->getUpVector();
+
+        // compute position of object by taking in account offset
+        cVector3d posObject = pos - selectedAtomOffset;
+
+        // apply new position to object
+        selectedAtom->setLocalPos(posObject);
+
+    }
 }
