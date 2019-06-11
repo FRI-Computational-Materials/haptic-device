@@ -443,10 +443,6 @@ int main(int argc, char *argv[])
 			sphere->setInitialPosition();
 		}
 
-		double initialposx = 0.8 * SPHERE_RADIUS * (double)(i + 4) * cos(1.0 * (double)(i));
-		double initialposy = 0.8 * SPHERE_RADIUS * (double)(i + 4) * sin(1.0 * (double)(i));
-		double initialposz = .030 + SPHERE_RADIUS + ((double)(i + 4)) / 4000.;
-
 		// set graphic properties of sphere
 		sphere->setTexture(texture);
 		sphere->m_texture->setSphericalMappingEnabled(true);
@@ -910,25 +906,28 @@ void updateHaptics(void)
 
 				cVector3d A = current->getLocalPos();
 
-				// Change the current atom & its color, set the previous one back
+				// Change attributes of previous current and new current
 				previous->setCurrent(false);
 				previous->setLocalPos(A);
 				current->setCurrent(true);
 				current->setLocalPos(position);
 				cVector3d translate = (previous->getLocalPos()) - (current->getLocalPos());
+
+				Atom *traverser;
 				for (int i = 0; i < spheres.size(); i++)
 				{
+					traverser = spheres[i];
 					if (i != curr_atom)
 					{
 						if (i == (previous_curr_atom))
 						{
-							spheres[i]->setLocalPos(previous->getLocalPos() - (2.0 * translate));
-							cVector3d positions = spheres[i]->getLocalPos();
+							traverser->setLocalPos(previous->getLocalPos() - (2.0 * translate));
+							cVector3d positions = traverser->getLocalPos();
 						}
 						else
 						{
-							spheres[i]->setLocalPos(spheres[i]->getLocalPos() - (translate));
-							cVector3d positions = spheres[i]->getLocalPos();
+							traverser->setLocalPos(traverser->getLocalPos() - (translate));
+							cVector3d positions = traverser->getLocalPos();
 						}
 					}
 				}
@@ -998,9 +997,8 @@ void updateHaptics(void)
 				//Don't compute forces between an atom and itself
 				if (i != j)
 				{
-					Atom *other = spheres[j];
 					// get position of sphere
-					cVector3d pos1 = other->getLocalPos();
+					cVector3d pos1 = spheres[j]->getLocalPos();
 
 					// compute direction vector from sphere 0 to 1
 
@@ -1047,7 +1045,7 @@ void updateHaptics(void)
 			// update position of label
 			//total_energy->setLocalPos(20, 0);
 
-			if (i != curr_atom)
+			if (!current->isCurrent())
 			{
 				if (!current->isAnchor())
 				{
