@@ -322,8 +322,8 @@ int main(int argc, char *argv[])
 	// set mouse position callback
 	glfwSetCursorPosCallback(window, mouseMotionCallback);
 
-  // set mouse button callback
-  glfwSetMouseButtonCallback(window, mouseButtonCallback);
+	// set mouse button callback
+	glfwSetMouseButtonCallback(window, mouseButtonCallback);
 
 	// set resize callback
 	glfwSetWindowSizeCallback(window, windowSizeCallback);
@@ -399,7 +399,6 @@ int main(int argc, char *argv[])
 	light->setShadowMapEnabled(false);
 
 	// set the resolution of the shadow map
-	//light->m_shadowMap->setQualityLow();
 	light->m_shadowMap->setQualityHigh();
 
 	// set shadow factor
@@ -458,7 +457,6 @@ int main(int argc, char *argv[])
 		Atom *sphere = new Atom(SPHERE_RADIUS);
 
 		// store pointer to sphere primitive
-		//spheres[i] = sphere;
 		spheres.push_back(sphere);
 
 		// add sphere primitive to world
@@ -490,22 +488,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	//debugging
-	/*
-	for (int i = 0; i < NUM_SPHERES; i++)
-	{
-		cVector3d posA = spheres[i]->getLocalPos();
-		for (int j = 0; j < NUM_SPHERES; j++)
-		{
-			if (i != j)
-			{
-				cVector3d posB = spheres[j]->getLocalPos();
-				double distancex = (cDistance(posA, posB)) / .02;
-				//cout << i << " and " << j << " distance " << distancex << endl;
-			}
-		}
-	}
-	*/
 	//--------------------------------------------------------------------------
 	// WIDGETS
 	//--------------------------------------------------------------------------
@@ -819,9 +801,6 @@ void updateHaptics(void)
 	int anchor_atom = 1;
 	int anchor_atom_hold = 1;
 
-	//Array for all velocities
-	//cVector3d sphereVel[NUM_SPHERES];
-	//cout << sphereVel[NUM_SPHERES - 1] << endl;
 	// main haptic simulation loop
 
 	bool button1_changed = false;
@@ -1052,7 +1031,6 @@ void updateHaptics(void)
 					// compute distance between both spheres
 					double distance = cDistance(pos0, pos1) / DIST_SCALE;
 
-					//cout << "array " << (sizeof(lj_potential)/sizeof(*lj_potential)) << endl;
 					double lj_potential[spheres.size()];
 					lj_potential[i] = {4 * EPSILON * (pow(SIGMA / distance, 12) - pow(SIGMA / distance, 6))};
 
@@ -1083,12 +1061,6 @@ void updateHaptics(void)
 				cout << i << " time " << timeInterval << endl;
 				cout << i << " position of  " << timeInterval << endl;
 			}
-
-			// update value to sphere object
-			//double kinetic_energy = .5 * SPHERE_MASS * pow(sphereVel[i].length(), 2);
-
-			// update position of label
-			//total_energy->setLocalPos(20, 0);
 
 			if (!current->isCurrent())
 			{
@@ -1142,7 +1114,7 @@ void updateHaptics(void)
 				current->getVelVector()->m_colorPointB.setBlack();
 			}
 
-			// TODO - experiment with threshold
+			// TODO - experiment with threshold (shaking fix)
 			//float dist = velVectors[i]->m_pointA.distance(velVectors[i]->m_pointB);
 			//if (dist >= .05 ) {
 			//    velVectors[i]->m_pointB = cAdd(velVectors[i]->m_pointA, newPointNormalized * .05);
