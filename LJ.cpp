@@ -478,7 +478,6 @@ int main(int argc, char *argv[])
 				for (auto i {0}; i < spheres.size(); i++) {
 					auto dist_between = cDistance(new_atom->getLocalPos(), spheres[i]->getLocalPos());
 					dist_between = dist_between / .02;
-					cout << dist_between << endl;
 					if (dist_between == 0) {
 						continue;
 					} else if (dist_between < 2) {
@@ -502,7 +501,7 @@ int main(int argc, char *argv[])
 		{
 			new_atom->setCurrent(true);
 		}
-		else //if (i == 1)   //sphere is anchor
+		else if (i == 1)   //sphere is anchor
 		{
 			new_atom->setAnchor(true);
 		}
