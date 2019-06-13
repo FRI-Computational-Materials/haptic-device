@@ -78,5 +78,5 @@ void Atom::setInitialPosition(){
   double theta = acos(costheta);
   double r = 0.1 * cbrt(u);
   setLocalPos(r * sin(theta) * cos(phi), r * sin(theta) * sin(phi), r * cos(theta));
-  cout << " x " << r * sin(theta) * cos(phi) << " y " << r * sin(theta) * sin(phi) << " z " << r * cos(theta) << endl;
+  //cout << " x " << r * sin(theta) * cos(phi) << " y " << r * sin(theta) * sin(phi) << " z " << r * cos(theta) << endl;
 }
