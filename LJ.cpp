@@ -465,14 +465,19 @@ int main(int argc, char *argv[])
 		//add line to world
 		world->addChild(new_atom->getVelVector());
 
-		// set the position of the object at the center of the world
 
 		bool inside_atom = true;
 		if (i != 0) {
 			bool collision_detected;
+			auto iter {0};
 			while (inside_atom) {
-				// Set a random position 
-				new_atom->setInitialPosition();
+				// Place atom at a random position 
+				if (iter > 1000) {
+					// If there are too many failed attempts at placing the atom, increase the radius in which it can spawn
+					new_atom->setInitialPosition(.115);
+				} else {
+					new_atom->setInitialPosition();
+				}
 				// Check that it doesn't collide with any others
 				collision_detected = false;
 				for (auto i {0}; i < spheres.size(); i++) {
@@ -480,8 +485,10 @@ int main(int argc, char *argv[])
 					dist_between = dist_between / .02;
 					if (dist_between == 0) {
 						continue;
-					} else if (dist_between < 2) {
+					} else if (dist_between < 1.5) { 
+						// The number that dist_between is compared to is the threshold for collision
 						collision_detected = true;
+						iter++;
 						break;
 					}
 				}
@@ -1175,8 +1182,8 @@ double getGlobalMinima(int cluster_size) {
 		cerr << "Did you move it to \"" + file_path+ "\"?" << endl;
 		exit(1);
 	} else if ((cluster_size < 2) || (cluster_size > 150)) {
-        cout << "WARNING \"" + file_name + "\" doesn't have data for clusters of this size yet." << endl;
-		cout << "The graph may not be accurate" << endl;
+        cout << "WARNING: \"" + file_name + "\" doesn't have data for clusters of this size yet." << endl;
+		cout << "The graph may not be accurate." << endl;
 	}
 
 	int cluster_size_file;
