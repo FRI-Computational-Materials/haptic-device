@@ -71,9 +71,6 @@ cStereoMode stereoMode = C_STEREO_DISABLED;
 // Fullscreen mode
 bool fullscreen = false;
 
-// Mirrored display
-bool mirroredDisplay = false;
-
 //------------------------------------------------------------------------------
 // STATES
 //------------------------------------------------------------------------------
@@ -378,7 +375,7 @@ int main(int argc, char *argv[])
 	camera->setStereoFocalLength(1.8);
 
 	// set vertical mirrored display mode
-	camera->setMirrorVertical(mirroredDisplay);
+	camera->setMirrorVertical(false);
 
 	// create a light source
 	light = new cSpotLight(world);
@@ -690,14 +687,6 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, 
 			glfwSwapInterval(swapInterval);
 		}
 	}
-
-	// option - toggle vertical mirroring
-	else if (a_key == GLFW_KEY_M)
-	{
-		mirroredDisplay = !mirroredDisplay;
-		camera->setMirrorVertical(mirroredDisplay);
-	}
-
 	// action - unanchor all key
 	else if (a_key == GLFW_KEY_U) {
 		for (auto i {0}; i < spheres.size(); i++) {
@@ -706,6 +695,16 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, 
 			}
 		}
 	}
+  // option - save screenshot to file
+  else if (a_key == GLFW_KEY_S)
+  {
+    cImagePtr image = cImage::create();
+    camera->m_frontLayer->removeChild(scope);
+    camera->renderView(width, height);
+    camera->copyImageBuffer(image);
+    camera->m_frontLayer->addChild(scope);
+    image->saveToFile("atoms.png");
+  }
 }
 
 void mouseButtonCallback(GLFWwindow* a_window, int a_button, int a_action, int a_mods)
@@ -789,7 +788,7 @@ void updateGraphics(void)
 	/////////////////////////////////////////////////////////////////////
 
 	// update shadow maps (if any)
-	world->updateShadowMaps(false, mirroredDisplay);
+	world->updateShadowMaps(false, false);
 
 	// render world
 	camera->renderView(width, height);

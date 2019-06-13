@@ -127,8 +127,8 @@ The textbook is too big to upload so here's the link: http://www.charleshouserjr
     * `q` or `ESC`
         * quit program
     * `f`
-        * toggle Fullscreen
-    * `m`
-        * toggle vertical mirroring
+        * toggle fullscreen
     * `u`
         * unanchor all atoms
+    * `s`
+        * screenshot atomic configuration without graph
