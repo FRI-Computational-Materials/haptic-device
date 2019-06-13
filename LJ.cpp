@@ -71,9 +71,6 @@ cStereoMode stereoMode = C_STEREO_DISABLED;
 // Fullscreen mode
 bool fullscreen = false;
 
-// Mirrored display
-bool mirroredDisplay = false;
-
 //------------------------------------------------------------------------------
 // STATES
 //------------------------------------------------------------------------------
@@ -260,6 +257,9 @@ int main(int argc, char *argv[])
 	cout << endl
 		 << endl;
 
+	// seed random
+	srand(time(NULL));
+
 	//--------------------------------------------------------------------------
 	// OPEN GL - WINDOW DISPLAY
 	//--------------------------------------------------------------------------
@@ -319,8 +319,8 @@ int main(int argc, char *argv[])
 	// set mouse position callback
 	glfwSetCursorPosCallback(window, mouseMotionCallback);
 
-  // set mouse button callback
-  glfwSetMouseButtonCallback(window, mouseButtonCallback);
+	// set mouse button callback
+	glfwSetMouseButtonCallback(window, mouseButtonCallback);
 
 	// set resize callback
 	glfwSetWindowSizeCallback(window, windowSizeCallback);
@@ -375,7 +375,7 @@ int main(int argc, char *argv[])
 	camera->setStereoFocalLength(1.8);
 
 	// set vertical mirrored display mode
-	camera->setMirrorVertical(mirroredDisplay);
+	camera->setMirrorVertical(false);
 
 	// create a light source
 	light = new cSpotLight(world);
@@ -396,7 +396,6 @@ int main(int argc, char *argv[])
 	light->setShadowMapEnabled(false);
 
 	// set the resolution of the shadow map
-	//light->m_shadowMap->setQualityLow();
 	light->m_shadowMap->setQualityHigh();
 
 	// set shadow factor
@@ -452,57 +451,70 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < NUM_SPHERES; i++)
 	{
 		// create a sphere and define its radius
-		Atom *sphere = new Atom(SPHERE_RADIUS);
+		Atom *new_atom = new Atom(SPHERE_RADIUS);
 
 		// store pointer to sphere primitive
-		//spheres[i] = sphere;
-		spheres.push_back(sphere);
+		spheres.push_back(new_atom);
 
 		// add sphere primitive to world
-		world->addChild(sphere);
+		world->addChild(new_atom);
 
 		//add line to world
-		world->addChild(sphere->getVelVector());
+		world->addChild(new_atom->getVelVector());
 
-		// set the position of the object at the center of the world
 
-		if (i != 0)
-		{
-			sphere->setInitialPosition();
+		bool inside_atom = true;
+		if (i != 0) {
+			bool collision_detected;
+			auto iter {0};
+			while (inside_atom) {
+				// Place atom at a random position 
+				if (iter > 1000) {
+					// If there are too many failed attempts at placing the atom, increase the radius in which it can spawn
+					new_atom->setInitialPosition(.115);
+				} else {
+					new_atom->setInitialPosition();
+				}
+				// Check that it doesn't collide with any others
+				collision_detected = false;
+				for (auto i {0}; i < spheres.size(); i++) {
+					auto dist_between = cDistance(new_atom->getLocalPos(), spheres[i]->getLocalPos());
+					dist_between = dist_between / .02;
+					if (dist_between == 0) {
+						continue;
+					} else if (dist_between < 1.5) { 
+						// The number that dist_between is compared to is the threshold for collision
+						collision_detected = true;
+						iter++;
+						break;
+					}
+				}
+				if (!collision_detected) {
+					inside_atom = false;
+				}
+			}
 		}
 
 		// set graphic properties of sphere
-		sphere->setTexture(texture);
-		sphere->m_texture->setSphericalMappingEnabled(true);
-		sphere->setUseTexture(true);
+		new_atom->setTexture(texture);
+		new_atom->m_texture->setSphericalMappingEnabled(true);
+		new_atom->setUseTexture(true);
 
 		// Set the first and second sphere (the one being controlled to red initially and the anchor in blue)
 		if (i == 0) 	// sphere is current
 		{
-			sphere->setCurrent(true);
+			new_atom->setCurrent(true);
 		}
 		else if (i == 1)   //sphere is anchor
 		{
-			sphere->setAnchor(true);
+			new_atom->setAnchor(true);
 		}
+
 	}
 
-	//debugging
-	/*
-	for (int i = 0; i < NUM_SPHERES; i++)
-	{
-		cVector3d posA = spheres[i]->getLocalPos();
-		for (int j = 0; j < NUM_SPHERES; j++)
-		{
-			if (i != j)
-			{
-				cVector3d posB = spheres[j]->getLocalPos();
-				double distancex = (cDistance(posA, posB)) / .02;
-				//cout << i << " and " << j << " distance " << distancex << endl;
-			}
-		}
+	for (auto i {0}; i< spheres.size(); i++) {
+		spheres[i]->setVelocity(0);
 	}
-	*/
 	//--------------------------------------------------------------------------
 	// WIDGETS
 	//--------------------------------------------------------------------------
@@ -675,14 +687,6 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, 
 			glfwSwapInterval(swapInterval);
 		}
 	}
-
-	// option - toggle vertical mirroring
-	else if (a_key == GLFW_KEY_M)
-	{
-		mirroredDisplay = !mirroredDisplay;
-		camera->setMirrorVertical(mirroredDisplay);
-	}
-
 	// action - unanchor all key
 	else if (a_key == GLFW_KEY_U) {
 		for (auto i {0}; i < spheres.size(); i++) {
@@ -691,6 +695,16 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, 
 			}
 		}
 	}
+  // option - save screenshot to file
+  else if (a_key == GLFW_KEY_S)
+  {
+    cImagePtr image = cImage::create();
+    camera->m_frontLayer->removeChild(scope);
+    camera->renderView(width, height);
+    camera->copyImageBuffer(image);
+    camera->m_frontLayer->addChild(scope);
+    image->saveToFile("atoms.png");
+  }
 }
 
 void mouseButtonCallback(GLFWwindow* a_window, int a_button, int a_action, int a_mods)
@@ -774,7 +788,7 @@ void updateGraphics(void)
 	/////////////////////////////////////////////////////////////////////
 
 	// update shadow maps (if any)
-	world->updateShadowMaps(false, mirroredDisplay);
+	world->updateShadowMaps(false, false);
 
 	// render world
 	camera->renderView(width, height);
@@ -816,9 +830,6 @@ void updateHaptics(void)
 	int anchor_atom = 1;
 	int anchor_atom_hold = 1;
 
-	//Array for all velocities
-	//cVector3d sphereVel[NUM_SPHERES];
-	//cout << sphereVel[NUM_SPHERES - 1] << endl;
 	// main haptic simulation loop
 
 	bool button1_changed = false;
@@ -1049,7 +1060,6 @@ void updateHaptics(void)
 					// compute distance between both spheres
 					double distance = cDistance(pos0, pos1) / DIST_SCALE;
 
-					//cout << "array " << (sizeof(lj_potential)/sizeof(*lj_potential)) << endl;
 					double lj_potential[spheres.size()];
 					lj_potential[i] = {4 * EPSILON * (pow(SIGMA / distance, 12) - pow(SIGMA / distance, 6))};
 
@@ -1080,12 +1090,6 @@ void updateHaptics(void)
 				cout << i << " time " << timeInterval << endl;
 				cout << i << " position of  " << timeInterval << endl;
 			}
-
-			// update value to sphere object
-			//double kinetic_energy = .5 * SPHERE_MASS * pow(sphereVel[i].length(), 2);
-
-			// update position of label
-			//total_energy->setLocalPos(20, 0);
 
 			if (!current->isCurrent())
 			{
@@ -1139,7 +1143,7 @@ void updateHaptics(void)
 				current->getVelVector()->m_colorPointB.setBlack();
 			}
 
-			// TODO - experiment with threshold
+			// TODO - experiment with threshold (shaking fix)
 			//float dist = velVectors[i]->m_pointA.distance(velVectors[i]->m_pointB);
 			//if (dist >= .05 ) {
 			//    velVectors[i]->m_pointB = cAdd(velVectors[i]->m_pointA, newPointNormalized * .05);
@@ -1177,8 +1181,8 @@ double getGlobalMinima(int cluster_size) {
 		cerr << "Did you move it to \"" + file_path+ "\"?" << endl;
 		exit(1);
 	} else if ((cluster_size < 2) || (cluster_size > 150)) {
-        cout << "WARNING \"" + file_name + "\" doesn't have data for clusters of this size yet." << endl;
-		cout << "The graph may not be accurate" << endl;
+        cout << "WARNING: \"" + file_name + "\" doesn't have data for clusters of this size yet." << endl;
+		cout << "The graph may not be accurate." << endl;
 	}
 
 	int cluster_size_file;

@@ -30,7 +30,7 @@ Creating Projects:
 If you plan on creating your own project:
 
 1. Launch Visual Studio and Select File/New/Project.
-2. Select the "Wizard" option, type in a name for your project, and make sure to put your project folder in the application/external/CHAI3D/examples/GLFW folder. Make sure to check the "Empty Project" option when prompted. 
+2. Select the "Wizard" option, type in a name for your project, and make sure to put your project folder in the application/external/CHAI3D/examples/GLFW folder. Make sure to check the "Empty Project" option when prompted.
 3. Click on Build/Configuration Manager, and wait for the window to pop up.
 4. Click on the drop-down box that says "Active Solution Platform," then <New>, then x64, and then finalize by hitting OK.
 5. Click on File/Add/Existing Project, and navigate to application/external/CHAI3D to add the CHAI3D-VS2015.vcxproj to our project.
@@ -44,7 +44,7 @@ If you plan on creating your own project:
     c. Copy Configuration Properties/C/C++/General/Additional Include Directories and C/C++/Language/Enable Run-Time Type Information
     d. Copy Configuration Properties/Linker/General/Additional Library Directories, Linker/Input/Additional Dependencies, and Linker/System/Console (Choose the /SUBSYSTEM:CONSOLE option).
 11. Preprocessor Directives!
-    a. Set your platform to Win32. 
+    a. Set your platform to Win32.
     b. In C/C++/Language, edit Processor Definitions, and assign the directive "WIN32."
     c. Set the x64 platform.
     d. in C/C++/Language, edit Processor Definitions and include WIN64.
@@ -52,7 +52,7 @@ If you plan on creating your own project:
 If you plan on using one of the CHAI3D examples:
 1. Follow Steps 1-6 from the individual project instructions.
 2. In addition to adding CHAI3D and FreeGLUT, also add the .vcxproj of whatever example project you want to use from application/external/CHAI3D/examples/GLFW.
-3. Set the example's project as the Startup Project. 
+3. Set the example's project as the Startup Project.
 4. You're all set! The Project Properties and Preprocessor Directives should all have been preset to the correct values.
 
 
@@ -63,7 +63,7 @@ If you plan on using one of the CHAI3D examples:
    sudo add-apt-repository universe
    sudo apt update
    ```
-3. Install the following packages using the command 
+3. Install the following packages using the command
     ```
     sudo apt-get install <package_name>
     ```
@@ -85,7 +85,7 @@ chai3d-3.2.0/
 │   ├── resources
 │       └── <b>data</b>
 │           └── <b>global_minima.txt</b>
-│ 
+│
 │   ├── win-Win32
 │   └── win-x64
 └── <b>haptic-device</b>
@@ -95,7 +95,7 @@ chai3d-3.2.0/
     └── <b>README.md</b>
 </pre>
 
-9. Note that you may to change lines involving the relative file path 
+9. Note that you may to change lines involving the relative file path
 ```c++
 bool fileload = texture->loadFromFile(RESOURCE_PATH("../resources/images/spheremap-3.jpg"));
 ```
@@ -123,3 +123,12 @@ The textbook is too big to upload so here's the link: http://www.charleshouserjr
         * also does nothing
     * button2  = button3
         * this changes the camera position
+* Keyboard hotkeys:
+    * `q` or `ESC`
+        * quit program
+    * `f`
+        * toggle fullscreen
+    * `u`
+        * unanchor all atoms
+    * `s`
+        * screenshot atomic configuration without graph

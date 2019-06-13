@@ -71,12 +71,12 @@ void Atom::setVelVector(cShapeLine *newVelVector){
   velVector = newVelVector;
 }
 
-void Atom::setInitialPosition(){
+void Atom::setInitialPosition(double spawn_dist){
   double phi = rand() / double(RAND_MAX) * 2 * M_PI;
   double costheta = rand() / double(RAND_MAX) * 2 - 1;
   double u = rand() / double(RAND_MAX);
   double theta = acos(costheta);
-  double r = 0.1 * cbrt(u);
+  double r = spawn_dist * cbrt(u);
   setLocalPos(r * sin(theta) * cos(phi), r * sin(theta) * sin(phi), r * cos(theta));
-  cout << " x " << r * sin(theta) * cos(phi) << " y " << r * sin(theta) * sin(phi) << " z " << r * cos(theta) << endl;
+  //cout << " x " << r * sin(theta) * cos(phi) << " y " << r * sin(theta) * sin(phi) << " z " << r * cos(theta) << endl;
 }
