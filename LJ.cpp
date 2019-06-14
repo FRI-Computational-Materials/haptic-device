@@ -1142,8 +1142,9 @@ void updateHaptics(void)
 			}
 			current->setForce(force);
 			// update velocity and position of all spheres
-			// compute acceleration
-			cVector3d sphereAcc = (force / SPHERE_MASS);
+
+			//cVector3d sphereAcc = (force / SPHERE_MASS);
+			cVector3d sphereAcc = (force / current->getMass());
 			current->setVelocity(K_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
 			// compute /position
 			cVector3d spherePos_change = timeInterval * current->getVelocity() + cSqr(timeInterval) * sphereAcc;
@@ -1249,8 +1250,8 @@ double getGlobalMinima(int cluster_size) {
 		cerr << "Did you move it to \"" + file_path+ "\"?" << endl;
 		exit(1);
 	} else if ((cluster_size < 2) || (cluster_size > 150)) {
-        cout << "WARNING \"" + file_name + "\" doesn't have data for clusters of this size yet." << endl;
-		cout << "The graph may not be accurate" << endl;
+        cout << "WARNING: \"" + file_name + "\" doesn't have data for clusters of this size yet." << endl;
+		cout << "The graph may not be accurate." << endl;
 	}
 
 	int cluster_size_file;
@@ -1260,7 +1261,7 @@ double getGlobalMinima(int cluster_size) {
 			break;
 		}
 	}
-	cout << minimum << endl;
+	cout << "Global minimum:" << minimum << endl;
 	return minimum;
 }
 

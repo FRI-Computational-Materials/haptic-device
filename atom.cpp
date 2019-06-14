@@ -5,12 +5,16 @@
 using namespace std;
 using namespace chai3d;
 
-Atom::Atom(double radius) : cShapeSphere(radius){
+Atom::Atom(double radius, double sphere_mass, cColorf color) : cShapeSphere(radius){
   anchor = false;
   current = false;
   velVector = new cShapeLine(cVector3d(0, 0, 0), cVector3d(0, 0, 0));
   force.zero();
-  m_material->setWhite();
+  this->sphere_mass = sphere_mass;
+  // note - cColorf defaults to white, as such
+  // the default for atoms is also white (see the header file)
+  base_color = color;
+  m_material->setColor(base_color);
 }
 
 bool Atom::isAnchor(){
@@ -24,7 +28,7 @@ void Atom::setAnchor(bool newAnchor){
       current = false;
     }else{
       //removing atom as anchor, so change color to white
-      m_material->setWhite();
+      m_material->setColor(base_color);
     }
     anchor = newAnchor;
 }
@@ -42,7 +46,7 @@ void Atom::setCurrent(bool newCurrent){
     m_material->setBlue();
   }else{
     //toggling current off, so set to white
-    m_material->setWhite();
+    m_material->setColor(base_color);
   }
   current = newCurrent;
 }
@@ -71,12 +75,20 @@ void Atom::setVelVector(cShapeLine *newVelVector){
   velVector = newVelVector;
 }
 
-void Atom::setInitialPosition(){
+void Atom::setInitialPosition(double spawn_dist){
   double phi = rand() / double(RAND_MAX) * 2 * M_PI;
   double costheta = rand() / double(RAND_MAX) * 2 - 1;
   double u = rand() / double(RAND_MAX);
   double theta = acos(costheta);
-  double r = 0.1 * cbrt(u);
+  double r = spawn_dist * cbrt(u);
   setLocalPos(r * sin(theta) * cos(phi), r * sin(theta) * sin(phi), r * cos(theta));
   //cout << " x " << r * sin(theta) * cos(phi) << " y " << r * sin(theta) * sin(phi) << " z " << r * cos(theta) << endl;
+}
+
+double Atom::getMass() {
+  return sphere_mass;
+}
+
+void Atom::setColor(cColorf color) {
+  m_material->setColor(color);
 }
