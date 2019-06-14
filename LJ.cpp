@@ -51,6 +51,9 @@
 #include <chrono>
 #include <fstream>
 #include <string>
+#include <sys/stat.h>
+#include <unistd.h>
+
 //------------------------------------------------------------------------------
 using namespace chai3d;
 using namespace std;
@@ -221,7 +224,11 @@ void close(void);
 // Reads in global minimum from global_minima.txt
 double getGlobalMinima(int cluster_size);
 
+//checks if char array represents a number
 bool isNumber(char number[]);
+
+//checks if given file exists in directory
+inline bool fileExists(const string& name);
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -760,7 +767,11 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, 
     camera->renderView(width, height);
     camera->copyImageBuffer(image);
     camera->m_frontLayer->addChild(scope);
-    image->saveToFile("atoms.png");
+    int index = 0;
+    while(fileExists("atoms" + to_string(index) + ".png")){
+      index++;
+    }
+    image->saveToFile("atoms" + to_string(index) + ".png");
   }
 }
 
@@ -1290,11 +1301,17 @@ void mouseMotionCallback(GLFWwindow* a_window, double a_posX, double a_posY)
     }
 }
 
-
+//check if char array represents a number
 bool isNumber(char number[]){
     for (int i = 0; number[i] != 0; i++){
         if (!isdigit(number[i]))
             return false;
     }
     return true;
+}
+
+//check if file already exists in directory
+inline bool fileExists(const string& name) {
+  struct stat buffer;
+  return (stat (name.c_str(), &buffer) == 0);
 }
