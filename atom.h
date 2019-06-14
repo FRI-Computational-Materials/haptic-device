@@ -13,9 +13,11 @@ class Atom: public cShapeSphere {
     cVector3d velocity;
     cVector3d force;
     cShapeLine *velVector;
+    double sphere_mass;
+    cColorf base_color;
 
   public:
-    Atom(double radius);
+    Atom(double radius, double sphere_mass, cColorf color = cColorf());
     bool isAnchor();
     void setAnchor(bool newAnchor);
     bool isCurrent();
@@ -27,6 +29,8 @@ class Atom: public cShapeSphere {
     cShapeLine* getVelVector();
     void setVelVector(cShapeLine *newVelVector);
     void setInitialPosition(double spawn_dist = .1);
+    double getMass();
+    void setColor(cColorf color);
 };
 
 #endif // ATOM_H

@@ -451,7 +451,8 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < NUM_SPHERES; i++)
 	{
 		// create a sphere and define its radius
-		Atom *new_atom = new Atom(SPHERE_RADIUS);
+		Atom *new_atom = new Atom(SPHERE_RADIUS, .02);
+		//cout << new_atom->getMass() << endl;
 
 		// store pointer to sphere primitive
 		spheres.push_back(new_atom);
@@ -1074,8 +1075,9 @@ void updateHaptics(void)
 			}
 			current->setForce(force);
 			// update velocity and position of all spheres
-			// compute acceleration
-			cVector3d sphereAcc = (force / SPHERE_MASS);
+
+			//cVector3d sphereAcc = (force / SPHERE_MASS);
+			cVector3d sphereAcc = (force / current->getMass());
 			current->setVelocity(K_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
 			// compute /position
 			cVector3d spherePos_change = timeInterval * current->getVelocity() + cSqr(timeInterval) * sphereAcc;
@@ -1192,7 +1194,7 @@ double getGlobalMinima(int cluster_size) {
 			break;
 		}
 	}
-	cout << minimum << endl;
+	cout << "Global minimum:" << minimum << endl;
 	return minimum;
 }
 
