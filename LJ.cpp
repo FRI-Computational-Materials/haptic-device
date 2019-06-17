@@ -97,6 +97,24 @@ const double SPHERE_RADIUS = 0.008;
 //number of cameras
 const int NUM_CAM = 2;
 
+// position of walls and ground
+const double WALL_GROUND = 0.0 + SPHERE_RADIUS;
+const double WALL_CEILING = 0.05; //0.2;
+const double WALL_LEFT = -0.05;   //-0.1;
+const double WALL_RIGHT = 0.05;   //0.2;
+const double WALL_FRONT = 0.05;   //0.08;
+const double WALL_BACK = -0.05;   //-0.08;
+const double SPHERE_STIFFNESS = 500.0;
+const double SPHERE_MASS = 0.02;
+const double K_DAMPING = 0.001; //0.996;
+const double K_MAGNET = 500.0;
+const double HAPTIC_STIFFNESS = 1000.0;
+const double SIGMA = 1.0;
+const double EPSILON = 1.0;
+const double FORCE_DAMPING = .75;
+//Scales the distance betweens atoms
+const double DIST_SCALE = .02;
+
 //------------------------------------------------------------------------------
 // DECLARED VARIABLES
 //------------------------------------------------------------------------------
@@ -186,6 +204,11 @@ cVector3d selectedAtomOffset;
 
 // position of mouse click.
 cVector3d selectedPoint;
+
+//determine if atoms should be frozen
+bool freezeAtoms = false;
+
+//cColorf *defaultColor = new cColorf();
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -462,7 +485,7 @@ int main(int argc, char *argv[])
   	for (int i = 0; i < NUM_SPHERES; i++)
   	{
   		// create a sphere and define its radius
-  		Atom *new_atom = new Atom(SPHERE_RADIUS);
+  		Atom *new_atom = new Atom(SPHERE_RADIUS, SPHERE_MASS);
 
   		// store pointer to sphere primitive
   		spheres.push_back(new_atom);
@@ -544,7 +567,7 @@ int main(int argc, char *argv[])
       }
 
       // create a sphere and define its radius
-  		Atom *new_atom = new Atom(SPHERE_RADIUS);
+  		Atom *new_atom = new Atom(SPHERE_RADIUS, SPHERE_MASS);
 
   		// store pointer to sphere primitive
   		spheres.push_back(new_atom);
@@ -772,7 +795,14 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, 
       index++;
     }
     image->saveToFile("atoms" + to_string(index) + ".png");
-  }
+  }/*else if (a_key == GLFW_KEY_SPACE){
+    freezeAtoms = !freezeAtoms;
+    if(freezeAtoms){  //need to freeze atoms; disable haptic
+      simulationRunning = false;
+    }else{  //need to free atoms; enable haptic
+      simulationRunning = true;
+    }
+  }*/
 }
 
 void mouseButtonCallback(GLFWwindow* a_window, int a_button, int a_action, int a_mods)
@@ -938,24 +968,6 @@ void updateHaptics(void)
 		/////////////////////////////////////////////////////////////////////////
 		// UPDATE SIMULATION
 		/////////////////////////////////////////////////////////////////////////
-
-		// position of walls and ground
-		const double WALL_GROUND = 0.0 + SPHERE_RADIUS;
-		const double WALL_CEILING = 0.05; //0.2;
-		const double WALL_LEFT = -0.05;   //-0.1;
-		const double WALL_RIGHT = 0.05;   //0.2;
-		const double WALL_FRONT = 0.05;   //0.08;
-		const double WALL_BACK = -0.05;   //-0.08;
-		const double SPHERE_STIFFNESS = 500.0;
-		const double SPHERE_MASS = 0.02;
-		const double K_DAMPING = 0.001; //0.996;
-		const double K_MAGNET = 500.0;
-		const double HAPTIC_STIFFNESS = 1000.0;
-		const double SIGMA = 1.0;
-		const double EPSILON = 1.0;
-		const double FORCE_DAMPING = .75;
-		//Scales the distance betweens atoms
-		const double DIST_SCALE = .02;
 
 		//Update current atom based on if the user pressed the far left button
 		//The point of button2_changed is to make it so that it only switches one atom if the button is touched Otherwise it flips out
