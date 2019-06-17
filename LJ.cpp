@@ -795,14 +795,14 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, 
       index++;
     }
     image->saveToFile("atoms" + to_string(index) + ".png");
-  }/*else if (a_key == GLFW_KEY_SPACE){
+  }else if (a_key == GLFW_KEY_SPACE){
     freezeAtoms = !freezeAtoms;
     if(freezeAtoms){  //need to freeze atoms; disable haptic
-      simulationRunning = false;
+      hapticDevice->close();
     }else{  //need to free atoms; enable haptic
-      simulationRunning = true;
+      hapticDevice->open();
     }
-  }*/
+  }
 }
 
 void mouseButtonCallback(GLFWwindow* a_window, int a_button, int a_action, int a_mods)
@@ -1110,95 +1110,99 @@ void updateHaptics(void)
 		else
 			button3_changed = false;
 
-		// compute forces for all spheres
-		double lj_PE = 0;
 
-		// JD: edited this so that many operations are removed out of the inner loop
-		// This loop is for computing the force on atom i
-		for (int i = 0; i < spheres.size(); i++)
-		{
-			// compute force on atom
-			cVector3d force;
-			current = spheres[i];
-			cVector3d pos0 = current->getLocalPos();
-			// check forces with all other spheres
-			force.zero();
+    if(!freezeAtoms){
+  		// compute forces for all spheres
+  		double lj_PE = 0;
 
-			// this loop is for finding all of atom i's neighbors
-			for (int j = 0; j < spheres.size(); j++)
-			{
-				//Don't compute forces between an atom and itself
-				if (i != j)
-				{
-					// get position of sphere
-					cVector3d pos1 = spheres[j]->getLocalPos();
+  		// JD: edited this so that many operations are removed out of the inner loop
+  		// This loop is for computing the force on atom i
+  		for (int i = 0; i < spheres.size(); i++)
+  		{
+  			// compute force on atom
+  			cVector3d force;
+  			current = spheres[i];
+  			cVector3d pos0 = current->getLocalPos();
+  			// check forces with all other spheres
+  			force.zero();
 
-					// compute direction vector from sphere 0 to 1
+  			// this loop is for finding all of atom i's neighbors
+  			for (int j = 0; j < spheres.size(); j++)
+  			{
+  				//Don't compute forces between an atom and itself
+  				if (i != j)
+  				{
+  					// get position of sphere
+  					cVector3d pos1 = spheres[j]->getLocalPos();
 
-					cVector3d dir01 = cNormalize(pos0 - pos1);
+  					// compute direction vector from sphere 0 to 1
 
-					// compute distance between both spheres
-					double distance = cDistance(pos0, pos1) / DIST_SCALE;
+  					cVector3d dir01 = cNormalize(pos0 - pos1);
 
-					double lj_potential[spheres.size()];
-					lj_potential[i] = {4 * EPSILON * (pow(SIGMA / distance, 12) - pow(SIGMA / distance, 6))};
+  					// compute distance between both spheres
+  					double distance = cDistance(pos0, pos1) / DIST_SCALE;
 
-					lj_PE = lj_PE + lj_potential[i];
-					if (!button0)
-					{
+  					double lj_potential[spheres.size()];
+  					lj_potential[i] = {4 * EPSILON * (pow(SIGMA / distance, 12) - pow(SIGMA / distance, 6))};
 
-						double lj = -4 * FORCE_DAMPING * EPSILON * ((-12 * pow(SIGMA / distance, 13)) - (-6 * pow(SIGMA / distance, 7)));
-						force.add(lj * dir01);
-					}
-				}
-			}
-			current->setForce(force);
-			// update velocity and position of all spheres
+  					lj_PE = lj_PE + lj_potential[i];
+  					if (!button0)
+  					{
 
-			//cVector3d sphereAcc = (force / SPHERE_MASS);
-			cVector3d sphereAcc = (force / current->getMass());
-			current->setVelocity(K_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
-			// compute /position
-			cVector3d spherePos_change = timeInterval * current->getVelocity() + cSqr(timeInterval) * sphereAcc;
-			double magnitude = spherePos_change.length();
+  						double lj = -4 * FORCE_DAMPING * EPSILON * ((-12 * pow(SIGMA / distance, 13)) - (-6 * pow(SIGMA / distance, 7)));
+  						force.add(lj * dir01);
+  					}
+  				}
+  			}
+  			current->setForce(force);
 
-			cVector3d spherePos = current->getLocalPos() + spherePos_change;
-			if (magnitude > 5)
-			{
-				cout << i << " velocity " << current->getVelocity().length() << endl;
-				cout << i << " force " << force.length() << endl;
-				cout << i << " acceleration " << sphereAcc.length() << endl;
-				cout << i << " time " << timeInterval << endl;
-				cout << i << " position of  " << timeInterval << endl;
-			}
+  			//cVector3d sphereAcc = (force / SPHERE_MASS);
+  			cVector3d sphereAcc = (force / current->getMass());
+  			current->setVelocity(K_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
+  			// compute /position
+  			cVector3d spherePos_change = timeInterval * current->getVelocity() + cSqr(timeInterval) * sphereAcc;
+  			double magnitude = spherePos_change.length();
 
-			if (!current->isCurrent())
-			{
-				if (!current->isAnchor())
-				{
-					current->setLocalPos(spherePos);
-				}
-			}
-		}
-		current = spheres[curr_atom];
-		current->setLocalPos(position);
-		cVector3d force = current->getForce();
-		// JD: moved this out of nested for loop so that test is set only when fully calculated
-		// update haptic and graphic rate data
-		LJ_num->setText("Potential Energy: " + cStr((lj_PE / 2), 5));
+  			cVector3d spherePos = current->getLocalPos() + spherePos_change;
+  			if (magnitude > 5)
+  			{
+  				cout << i << " velocity " << current->getVelocity().length() << endl;
+  				cout << i << " force " << force.length() << endl;
+  				cout << i << " acceleration " << sphereAcc.length() << endl;
+  				cout << i << " time " << timeInterval << endl;
+  				cout << i << " position of  " << timeInterval << endl;
+  			}
 
-		// update position of label
-		LJ_num->setLocalPos(0, 0);
+  			if (!current->isCurrent())
+  			{
+  				if (!current->isAnchor())
+  				{
+  					current->setLocalPos(spherePos);
+  				}
+  			}
+  		}
+  		current = spheres[curr_atom];
+  		current->setLocalPos(position);
 
-		// Update scope
-		double currentTime = clock.getCurrentTimeSeconds();
-		// rounds current time to the nearest tenth
-		double currentTimeRounded = double(int(currentTime * 10 + .5)) / 10;
-		// The number fmod() is compared to is the threshold, this adjusts the timescale
-		if (fmod(currentTime, currentTimeRounded) <= .01)
-		{
-			scope->setSignalValues(lj_PE/2, global_minimum);
-		}
+  		//cVector3d force = current->getForce();
+  		// JD: moved this out of nested for loop so that test is set only when fully calculated
+  		// update haptic and graphic rate data
+  		LJ_num->setText("Potential Energy: " + cStr((lj_PE / 2), 5));
+
+  		// update position of label
+  		LJ_num->setLocalPos(0, 0);
+
+  		// Update scope
+  		double currentTime = clock.getCurrentTimeSeconds();
+  		// rounds current time to the nearest tenth
+  		double currentTimeRounded = double(int(currentTime * 10 + .5)) / 10;
+  		// The number fmod() is compared to is the threshold, this adjusts the timescale
+  		if (fmod(currentTime, currentTimeRounded) <= .01)
+  		{
+  			scope->setSignalValues(lj_PE/2, global_minimum);
+  		}
+    }
+    cVector3d force = current->getForce();
 		/////////////////////////////////////////////////////////////////////////
 		// FORCE VECTOR
 		/////////////////////////////////////////////////////////////////////////
@@ -1243,7 +1247,7 @@ void updateHaptics(void)
 			force = 10. * cNormalize(force);
 		// send computed force to haptic device
 		hapticDevice->setForce(stiffnessRatio * force);
-	}
+}
 
 	// close  connection to haptic device
 	hapticDevice->close();
