@@ -553,6 +553,9 @@ int main(int argc, char *argv[])
     for(int i = 0; i < 11; i++){
       getline(readFile, line);
     }
+    double centerCoords[3];
+    bool firstAtom = true;
+
     vector<double> inputCoords; // Create vector to hold our coordinates
 
     while(!readFile.eof()){
@@ -591,8 +594,19 @@ int main(int argc, char *argv[])
   		{
   			new_atom->setAnchor(true);
   		}
-      new_atom->setLocalPos(inputCoords[0], inputCoords[1], inputCoords[2]);
-      cout << inputCoords[4] << ": " << new_atom->getLocalPos() << endl;
+      if(firstAtom){
+        for(int i = 0; i < 3; i++){
+          centerCoords[i] = inputCoords[i];
+        }
+        new_atom->setLocalPos(0.0, 0.0, 0.0);
+        firstAtom = !firstAtom;
+      }else{
+        //scale coordinates
+        for(int i = 0; i < 3; i++){
+          inputCoords[i] = 0.02 * (inputCoords[i] - centerCoords[i])
+        }
+        new_atom->setLocalPos(inputCoords[0] , inputCoords[1], inputCoords[2]);
+      }
     }
     cout << "We exited file reading" << endl;
     readFile.close();
@@ -734,7 +748,6 @@ void errorCallback(int a_error, const char *a_description)
 
 void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, int a_mods)
 {
-	// maybe change this to a switch case?
 	// filter calls that only include a key press
 	if ((a_action != GLFW_PRESS) && (a_action != GLFW_REPEAT))
 	{
@@ -783,7 +796,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, 
 			}
 		}
 	}
-  // action - save screenshot to file
+  // option - save screenshot to file
   else if (a_key == GLFW_KEY_S)
   {
     cImagePtr image = cImage::create();
@@ -791,14 +804,11 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, 
     camera->renderView(width, height);
     camera->copyImageBuffer(image);
     camera->m_frontLayer->addChild(scope);
-	string filename_stem = "lj" + to_string(spheres.size()) + "_";
     int index = 0;
-    while(fileExists(filename_stem + to_string(index) + ".png")){
+    while(fileExists("atoms" + to_string(index) + ".png")){
       index++;
     }
-    image->saveToFile(filename_stem + to_string(index) + ".png");
-	
-	cout << "Screenshot captured" << endl;
+    image->saveToFile("atoms" + to_string(index) + ".png");
   }else if (a_key == GLFW_KEY_SPACE){
     freezeAtoms = !freezeAtoms;
   }
