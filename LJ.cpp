@@ -797,11 +797,6 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, 
     image->saveToFile("atoms" + to_string(index) + ".png");
   }else if (a_key == GLFW_KEY_SPACE){
     freezeAtoms = !freezeAtoms;
-    if(freezeAtoms){  //need to freeze atoms; disable haptic
-      hapticDevice->close();
-    }else{  //need to free atoms; enable haptic
-      hapticDevice->open();
-    }
   }
 }
 
