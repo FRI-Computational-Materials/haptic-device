@@ -734,6 +734,7 @@ void errorCallback(int a_error, const char *a_description)
 
 void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, int a_mods)
 {
+	// maybe change this to a switch case?
 	// filter calls that only include a key press
 	if ((a_action != GLFW_PRESS) && (a_action != GLFW_REPEAT))
 	{
@@ -782,7 +783,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, 
 			}
 		}
 	}
-  // option - save screenshot to file
+  // action - save screenshot to file
   else if (a_key == GLFW_KEY_S)
   {
     cImagePtr image = cImage::create();
@@ -790,11 +791,14 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, 
     camera->renderView(width, height);
     camera->copyImageBuffer(image);
     camera->m_frontLayer->addChild(scope);
+	string filename_stem = "lj" + to_string(spheres.size()) + "_";
     int index = 0;
-    while(fileExists("atoms" + to_string(index) + ".png")){
+    while(fileExists(filename_stem + to_string(index) + ".png")){
       index++;
     }
-    image->saveToFile("atoms" + to_string(index) + ".png");
+    image->saveToFile(filename_stem + to_string(index) + ".png");
+	
+	cout << "Screenshot captured" << endl;
   }else if (a_key == GLFW_KEY_SPACE){
     freezeAtoms = !freezeAtoms;
     if(freezeAtoms){  //need to freeze atoms; disable haptic
