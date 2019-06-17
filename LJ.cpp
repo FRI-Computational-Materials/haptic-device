@@ -154,6 +154,9 @@ cLabel *labelRates;
 //a label to show the potential energy
 cLabel *LJ_num;
 
+// label showing the # anchored 
+cLabel *num_anchored;
+
 //a label to display the total energy of the system
 cLabel *total_energy;
 
@@ -633,6 +636,11 @@ int main(int argc, char *argv[])
 	LJ_num->m_fontColor.setBlack();
 	camera->m_frontLayer->addChild(LJ_num);
 
+	// number anchored label
+	num_anchored = new cLabel(font);
+	num_anchored->m_fontColor.setBlack();
+	camera->m_frontLayer->addChild(num_anchored);
+
 	//total energy label
 	total_energy = new cLabel(font);
 	total_energy->m_fontColor.setBlack();
@@ -732,9 +740,6 @@ void windowSizeCallback(GLFWwindow *a_window, int a_width, int a_height)
 	// update window size
 	width = a_width;
 	height = a_height;
-
-	// update position of message label
-	//labelMessage->setLocalPos((int)(0.5 * (width - labelMessage->getWidth())), 50);
 }
 
 //------------------------------------------------------------------------------
@@ -1200,6 +1205,20 @@ void updateHaptics(void)
 
   		// update position of label
   		LJ_num->setLocalPos(0, 0);
+
+		// update # of anchored atoms
+
+		// count the number of anchored atoms
+		auto anchored {0};
+		for (auto i {0}; i < spheres.size(); i++) {
+                if (spheres[i]->isAnchor()) {
+					anchored++;
+				}
+		};
+		num_anchored->setText(to_string(anchored) + " anchored/ " + to_string(spheres.size()) + " total");
+		auto num_anchored_width = (width-num_anchored->getWidth()) - 5;
+		num_anchored->setLocalPos(num_anchored_width, 0);
+
 
   		// Update scope
   		double currentTime = clock.getCurrentTimeSeconds();
