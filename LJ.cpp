@@ -606,7 +606,7 @@ int main(int argc, char *argv[])
       }else{
         //scale coordinates
         for(int i = 0; i < 3; i++){
-          inputCoords[i] = 0.02 * (inputCoords[i] - centerCoords[i])
+          inputCoords[i] = 0.02 * (inputCoords[i] - centerCoords[i]);
         }
         new_atom->setLocalPos(inputCoords[0] , inputCoords[1], inputCoords[2]);
       }
