@@ -88,9 +88,6 @@ enum MouseState
 // DECLARED CONSTANTS
 //------------------------------------------------------------------------------
 
-// Number of spheres in the scene
-//const int NUM_SPHERES = 5;
-
 // Radius of each sphere
 const double SPHERE_RADIUS = 0.008;
 
@@ -154,11 +151,14 @@ cLabel *labelRates;
 //a label to show the potential energy
 cLabel *LJ_num;
 
-// label showing the # anchored 
+// label showing the # anchored
 cLabel *num_anchored;
 
 //a label to display the total energy of the system
 cLabel *total_energy;
+
+// a label to show whether or not the atoms are frozen
+cLabel *isFrozen;
 
 // a flag that indicates if the haptic simulation is currently running
 bool simulationRunning = false;
@@ -482,10 +482,9 @@ int main(int argc, char *argv[])
 
   //either no arguments were given or argument was an integer
   if(argc == 1 || isNumber(argv[1])){
-    // set NUM_SPHERES to input; if none or negative, default is five
-  	int NUM_SPHERES = argc > 1 ? atoi(argv[1]) : 5;
-    cout << NUM_SPHERES <<endl;
-  	for (int i = 0; i < NUM_SPHERES; i++)
+    // set numSpheres to input; if none or negative, default is five
+  	int numSpheres  = argc > 1 ? atoi(argv[1]) : 5;
+  	for (int i = 0; i < numSpheres; i++)
   	{
   		// create a sphere and define its radius
   		Atom *new_atom = new Atom(SPHERE_RADIUS, SPHERE_MASS);
@@ -606,7 +605,7 @@ int main(int argc, char *argv[])
       }else{
         //scale coordinates
         for(int i = 0; i < 3; i++){
-          inputCoords[i] = 0.02 * (inputCoords[i] - centerCoords[i])
+          inputCoords[i] = 0.02 * (inputCoords[i] - centerCoords[i]);
         }
         new_atom->setLocalPos(inputCoords[0] , inputCoords[1], inputCoords[2]);
       }
@@ -645,6 +644,11 @@ int main(int argc, char *argv[])
 	total_energy = new cLabel(font);
 	total_energy->m_fontColor.setBlack();
 	camera->m_frontLayer->addChild(total_energy);
+
+  // frozen state label
+  isFrozen = new cLabel(font);
+  isFrozen->m_fontColor.setBlack();
+  camera->m_frontLayer->addChild(isFrozen);
 
 	// create a background
 	background = new cBackground();
@@ -1124,6 +1128,11 @@ void updateHaptics(void)
 		else
 			button3_changed = false;
 
+    //update frozen state label
+    string trueFalse = freezeAtoms ? "true" : "false";
+    isFrozen->setText("Freeze simulation: " + trueFalse);
+    auto isFrozenWidth = (width - isFrozen->getWidth()) - 5;
+    isFrozen->setLocalPos(isFrozenWidth, 15);
 
     if(!freezeAtoms){
   		// compute forces for all spheres
@@ -1206,19 +1215,16 @@ void updateHaptics(void)
   		// update position of label
   		LJ_num->setLocalPos(0, 0);
 
-		// update # of anchored atoms
-
-		// count the number of anchored atoms
-		auto anchored {0};
-		for (auto i {0}; i < spheres.size(); i++) {
-                if (spheres[i]->isAnchor()) {
-					anchored++;
-				}
-		};
-		num_anchored->setText(to_string(anchored) + " anchored/ " + to_string(spheres.size()) + " total");
-		auto num_anchored_width = (width-num_anchored->getWidth()) - 5;
-		num_anchored->setLocalPos(num_anchored_width, 0);
-
+  		// count the number of anchored atoms
+  		auto anchored {0};
+  		for (auto i {0}; i < spheres.size(); i++) {
+                  if (spheres[i]->isAnchor()) {
+  					anchored++;
+  				}
+  		};
+  		num_anchored->setText(to_string(anchored) + " anchored / " + to_string(spheres.size()) + " total");
+  		auto num_anchored_width = (width-num_anchored->getWidth()) - 5;
+  		num_anchored->setLocalPos(num_anchored_width, 0);
 
   		// Update scope
   		double currentTime = clock.getCurrentTimeSeconds();
