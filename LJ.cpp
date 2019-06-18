@@ -154,7 +154,7 @@ cLabel *labelRates;
 //a label to show the potential energy
 cLabel *LJ_num;
 
-// label showing the # anchored 
+// label showing the # anchored
 cLabel *num_anchored;
 
 //a label to display the total energy of the system
@@ -606,7 +606,7 @@ int main(int argc, char *argv[])
       }else{
         //scale coordinates
         for(int i = 0; i < 3; i++){
-          inputCoords[i] = 0.02 * (inputCoords[i] - centerCoords[i])
+          inputCoords[i] = 0.02 * (inputCoords[i] - centerCoords[i]);
         }
         new_atom->setLocalPos(inputCoords[0] , inputCoords[1], inputCoords[2]);
       }
