@@ -563,10 +563,13 @@ int main(int argc, char *argv[])
 
     vector<double> inputCoords; // Create vector to hold our coordinates
 
-    while(!readFile.eof()){
+    while(true){
       //read in next coordinates
       inputCoords.clear();
       getline(readFile, line);
+      if(readFile.eof()){
+        break;
+      }
       string buffer;                 // Have a buffer string
       stringstream ss(line);       // Insert the string into a stream
 
@@ -599,6 +602,7 @@ int main(int argc, char *argv[])
   		{
   			new_atom->setAnchor(true);
   		}
+      //cout << inputCoords[4] << ": " << inputCoords[0] << " " << inputCoords[1] << " " << inputCoords[2] << endl;
       if(firstAtom){
         for(int i = 0; i < 3; i++){
           centerCoords[i] = inputCoords[i];
@@ -612,6 +616,7 @@ int main(int argc, char *argv[])
         }
         new_atom->setLocalPos(inputCoords[0] , inputCoords[1], inputCoords[2]);
       }
+      //cout << inputCoords[4] <<": " << new_atom->getLocalPos() << endl;;
     }
     cout << "We exited file reading" << endl;
     readFile.close();
@@ -837,7 +842,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action, 
     writeFile << centerCoords[0] << " " << centerCoords[1] << " "<< centerCoords [2] << " 0 0" << endl;
     for(int i = 1; i < spheres.size(); i++){
       cVector3d pos = spheres[i]->getLocalPos();
-      writeFile << (pos.x() / 0.02) + centerCoords[0] << " " << (pos.y() / 0.02) + centerCoords[1] << " " << (pos.z() / 0.02) + centerCoords[2] << "0" << i << endl;
+      writeFile << (pos.x() / 0.02) + centerCoords[0] << " " << (pos.y() / 0.02) + centerCoords[1] << " " << (pos.z() / 0.02) + centerCoords[2] << " 0 " << i << endl;
     }
     writeFile.close();
   }
