@@ -122,8 +122,6 @@ cCamera *camera;
 // a light source to illuminate the objects in the world
 cSpotLight *light;
 
-// cToolCursor* tool;
-
 // a haptic device handler
 cHapticDeviceHandler *handler;
 
@@ -211,8 +209,6 @@ bool freezeAtoms = false;
 
 // save coordinates of central atom
 double centerCoords[3] = {50.0, 50.0, 50.0};
-
-// cColorf *defaultColor = new cColorf();
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -597,9 +593,8 @@ int main(int argc, char *argv[]) {
       {
         new_atom->setAnchor(true);
       }
-      // cout << inputCoords[4] << ": " << inputCoords[0] << " " <<
-      // inputCoords[1] << " " << inputCoords[2] << endl;
       if (firstAtom) {
+        //store coordinates of first atoms for when writing to files
         for (int i = 0; i < 3; i++) {
           centerCoords[i] = inputCoords[i];
         }
@@ -612,13 +607,10 @@ int main(int argc, char *argv[]) {
         }
         new_atom->setLocalPos(inputCoords[0], inputCoords[1], inputCoords[2]);
       }
-      // cout << inputCoords[4] <<": " << new_atom->getLocalPos() << endl;;
     }
-    cout << "We exited file reading" << endl;
     readFile.close();
   }
-
-  for (auto i{0}; i < spheres.size(); i++) {
+  for (int i = 0; i < spheres.size(); i++) {
     spheres[i]->setVelocity(0);
   }
   //--------------------------------------------------------------------------
@@ -675,7 +667,6 @@ int main(int argc, char *argv[]) {
   }
 
   // create a scope to plot potential energy
-
   scope = new cScope();
   scope->setLocalPos(0, 60);
   camera->m_frontLayer->addChild(scope);
@@ -923,9 +914,6 @@ void updateHaptics(void) {
   // simulation in now running
   simulationRunning = true;
   simulationFinished = false;
-
-  // a flag to indicate if haptic forces are active
-  bool flagHapticsEnabled = false;
 
   // reset clock
   cPrecisionClock clock;
@@ -1348,6 +1336,7 @@ inline bool fileExists(const string &name) {
   return (stat(name.c_str(), &buffer) == 0);
 }
 
+// save configuration to a .con file
 void writeToCon(string fileName) {
   ofstream writeFile;
   writeFile.open(fileName);
