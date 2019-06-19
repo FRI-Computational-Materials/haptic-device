@@ -807,10 +807,11 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
     camera->copyImageBuffer(image);
     camera->m_frontLayer->addChild(scope);
     int index = 0;
-    while (fileExists("atoms" + to_string(index) + ".png")) {
+    string filename_stem = "lj" + to_string(spheres.size()) + "_";
+    while (fileExists(filename_stem + to_string(index) + ".png")) {
       index++;
     }
-    image->saveToFile("atoms" + to_string(index) + ".png");
+    image->saveToFile(filename_stem + to_string(index) + ".png");
   } else if (a_key == GLFW_KEY_SPACE) {  // freeze simulation
     freezeAtoms = !freezeAtoms;
   } else if (a_key == GLFW_KEY_C) {  // save atoms to con file
