@@ -132,3 +132,5 @@ The textbook is too big to upload so here's the link: http://www.charleshouserjr
         * unanchor all atoms
     * `s`
         * screenshot atomic configuration without graph
+    * `SPACE`
+        * freeze atom movement
