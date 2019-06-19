@@ -104,6 +104,9 @@ to the absolute file path.
 10. Navigate to `lin-x86_64` and run `./haptic-device` to launch the program.
 
 
+### MacOS
+1. Download the latest release of CHAI3D for Mac OS X from [chai3d](http://www.chai3d.org/download/releases)
+2. Make sure you have XCode downloaded, and follow instructions from the file entitled "getting-started.html" located in the doc folder of chai3d
 
 
 ## Reference
