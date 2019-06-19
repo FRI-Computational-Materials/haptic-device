@@ -495,9 +495,16 @@ int main(int argc, char *argv[]) {
       bool inside_atom = true;
       if (i != 0) {
         bool collision_detected;
+        auto iter {0};
         while (inside_atom) {
-          // Set a random position
-          new_atom->setInitialPosition();
+          // Place atom at a random position
+          if (iter > 1000) { 
+            // If there are too many failed attempts at placing the atom
+            // increase the radius in which it can spawn
+            new_atom->setInitialPosition(.115);
+          } else { 
+            new_atom->setInitialPosition();
+          }
           // Check that it doesn't collide with any others
           collision_detected = false;
           for (auto i{0}; i < spheres.size(); i++) {
@@ -506,8 +513,11 @@ int main(int argc, char *argv[]) {
             dist_between = dist_between / .02;
             if (dist_between == 0) {
               continue;
-            } else if (dist_between < 2) {
+            } else if (dist_between < 1.5) {
+              // The numebr dist between is being compared to
+              // is the threshold for collision
               collision_detected = true;
+              iter++;
               break;
             }
           }
@@ -798,10 +808,11 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
     camera->copyImageBuffer(image);
     camera->m_frontLayer->addChild(scope);
     int index = 0;
-    while (fileExists("atoms" + to_string(index) + ".png")) {
+    string filename_stem = "lj" + to_string(spheres.size()) + "_";
+    while (fileExists(filename_stem + to_string(index) + ".png")) {
       index++;
     }
-    image->saveToFile("atoms" + to_string(index) + ".png");
+    image->saveToFile(filename_stem + to_string(index) + ".png");
   } else if (a_key == GLFW_KEY_SPACE) {  // freeze simulation
     freezeAtoms = !freezeAtoms;
   } else if (a_key == GLFW_KEY_C) {  // save atoms to con file
