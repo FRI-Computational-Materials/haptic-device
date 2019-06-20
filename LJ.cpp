@@ -499,14 +499,14 @@ int main(int argc, char *argv[]) {
       bool inside_atom = true;
       if (i != 0) {
         bool collision_detected;
-        auto iter {0};
+        auto iter{0};
         while (inside_atom) {
           // Place atom at a random position
-          if (iter > 1000) { 
+          if (iter > 1000) {
             // If there are too many failed attempts at placing the atom
             // increase the radius in which it can spawn
             new_atom->setInitialPosition(.115);
-          } else { 
+          } else {
             new_atom->setInitialPosition();
           }
           // Check that it doesn't collide with any others
@@ -766,6 +766,10 @@ void errorCallback(int a_error, const char *a_description) {
 
 void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
                  int a_mods) {
+  /*
+  KEYS CURRENTLY BEING USED
+  ESC, Q, F, U, S, C, SPACE, A
+   */
   // filter calls that only include a key press
   if ((a_action != GLFW_PRESS) && (a_action != GLFW_REPEAT)) {
     return;
@@ -832,6 +836,13 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       index++;
     }
     writeToCon("atoms" + to_string(index) + ".con");
+  } else if (a_key == GLFW_KEY_A) {
+    // anchor all atoms while maintaining control
+    for (auto i{0}; i < spheres.size(); i++) {
+      if (!(spheres[i]->isAnchor()) && !(spheres[i]->isCurrent())) {
+        spheres[i]->setAnchor(true);
+      }
+    }
   }
 }
 
