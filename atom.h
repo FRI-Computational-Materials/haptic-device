@@ -28,6 +28,7 @@ class Atom : public cShapeSphere {
   void setForce(cVector3d newForce);
   cShapeLine *getVelVector();
   void setVelVector(cShapeLine *newVelVector);
+  void updateVelVector();
   void setInitialPosition(double spawn_dist = .1);
   double getMass();
   void setColor(cColorf color);

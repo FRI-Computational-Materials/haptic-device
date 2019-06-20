@@ -136,3 +136,5 @@ The textbook is too big to upload so here's the link: http://www.charleshouserjr
         * freeze atom movement
     * `c`
         * save configuration to .con file
+    * `a`
+        * anchor all atoms 

@@ -604,7 +604,7 @@ int main(int argc, char *argv[]) {
         new_atom->setAnchor(true);
       }
       if (firstAtom) {
-        //store coordinates of first atoms for when writing to files
+        // store coordinates of first atoms for when writing to files
         for (int i = 0; i < 3; i++) {
           centerCoords[i] = inputCoords[i];
         }
@@ -1231,31 +1231,7 @@ void updateHaptics(void) {
     // FORCE VECTOR
     /////////////////////////////////////////////////////////////////////////
     for (int i = 0; i < spheres.size(); i++) {
-      current = spheres[i];
-      cVector3d newPoint = cAdd(current->getLocalPos(), current->getForce());
-      cVector3d newPointNormalized;
-      current->getForce().normalizer(newPointNormalized);
-      current->getVelVector()->m_pointA = cAdd(
-          current->getLocalPos(), newPointNormalized * current->getRadius());
-      current->getVelVector()->m_pointB =
-          cAdd(current->getVelVector()->m_pointA, current->getForce() * .005);
-      current->getVelVector()->setLineWidth(5);
-
-      // Change color, red if current, black otherwise
-      if (i == curr_atom) {
-        current->getVelVector()->m_colorPointA.setRed();
-        current->getVelVector()->m_colorPointB.setRed();
-      } else {
-        current->getVelVector()->m_colorPointA.setBlack();
-        current->getVelVector()->m_colorPointB.setBlack();
-      }
-
-      // TODO - experiment with threshold (shaking fix)
-      // float dist = velVectors[i]->m_pointA.distance(velVectors[i]->m_pointB);
-      // if (dist >= .05 ) {
-      //    velVectors[i]->m_pointB = cAdd(velVectors[i]->m_pointA,
-      //    newPointNormalized * .05);
-      //}
+      spheres[i]->updateVelVector();
     }
 
     /////////////////////////////////////////////////////////////////////////
