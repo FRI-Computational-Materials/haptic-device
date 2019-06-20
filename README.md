@@ -137,4 +137,8 @@ The textbook is too big to upload so here's the link: http://www.charleshouserjr
     * `c`
         * save configuration to .con file
     * `a`
-        * anchor all atoms 
+        * anchor all atoms     
+    * `ARROW KEYS`
+        * move camera
+    * `[` and `]`
+        * zoom in/out
