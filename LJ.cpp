@@ -122,8 +122,6 @@ cCamera *camera;
 // a light source to illuminate the objects in the world
 cSpotLight *light;
 
-// cToolCursor* tool;
-
 // a haptic device handler
 cHapticDeviceHandler *handler;
 
@@ -211,8 +209,6 @@ bool freezeAtoms = false;
 
 // save coordinates of central atom
 double centerCoords[3] = {50.0, 50.0, 50.0};
-
-// cColorf *defaultColor = new cColorf();
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -499,14 +495,14 @@ int main(int argc, char *argv[]) {
       bool inside_atom = true;
       if (i != 0) {
         bool collision_detected;
-        auto iter {0};
+        auto iter{0};
         while (inside_atom) {
           // Place atom at a random position
-          if (iter > 1000) { 
+          if (iter > 1000) {
             // If there are too many failed attempts at placing the atom
             // increase the radius in which it can spawn
             new_atom->setInitialPosition(.115);
-          } else { 
+          } else {
             new_atom->setInitialPosition();
           }
           // Check that it doesn't collide with any others
@@ -607,9 +603,8 @@ int main(int argc, char *argv[]) {
       {
         new_atom->setAnchor(true);
       }
-      // cout << inputCoords[4] << ": " << inputCoords[0] << " " <<
-      // inputCoords[1] << " " << inputCoords[2] << endl;
       if (firstAtom) {
+        // store coordinates of first atoms for when writing to files
         for (int i = 0; i < 3; i++) {
           centerCoords[i] = inputCoords[i];
         }
@@ -622,13 +617,10 @@ int main(int argc, char *argv[]) {
         }
         new_atom->setLocalPos(inputCoords[0], inputCoords[1], inputCoords[2]);
       }
-      // cout << inputCoords[4] <<": " << new_atom->getLocalPos() << endl;;
     }
-    cout << "We exited file reading" << endl;
     readFile.close();
   }
-
-  for (auto i{0}; i < spheres.size(); i++) {
+  for (int i = 0; i < spheres.size(); i++) {
     spheres[i]->setVelocity(0);
   }
   //--------------------------------------------------------------------------
@@ -685,7 +677,6 @@ int main(int argc, char *argv[]) {
   }
 
   // create a scope to plot potential energy
-
   scope = new cScope();
   scope->setLocalPos(0, 60);
   camera->m_frontLayer->addChild(scope);
@@ -766,6 +757,10 @@ void errorCallback(int a_error, const char *a_description) {
 
 void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
                  int a_mods) {
+  /*
+  KEYS CURRENTLY BEING USED
+  ESC, Q, F, U, S, C, SPACE, A
+   */
   // filter calls that only include a key press
   if ((a_action != GLFW_PRESS) && (a_action != GLFW_REPEAT)) {
     return;
@@ -832,6 +827,13 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       index++;
     }
     writeToCon("atoms" + to_string(index) + ".con");
+  } else if (a_key == GLFW_KEY_A) {
+    // anchor all atoms while maintaining control
+    for (auto i{0}; i < spheres.size(); i++) {
+      if (!(spheres[i]->isAnchor()) && !(spheres[i]->isCurrent())) {
+        spheres[i]->setAnchor(true);
+      }
+    }
   }
 }
 
@@ -934,9 +936,6 @@ void updateHaptics(void) {
   // simulation in now running
   simulationRunning = true;
   simulationFinished = false;
-
-  // a flag to indicate if haptic forces are active
-  bool flagHapticsEnabled = false;
 
   // reset clock
   cPrecisionClock clock;
@@ -1232,31 +1231,7 @@ void updateHaptics(void) {
     // FORCE VECTOR
     /////////////////////////////////////////////////////////////////////////
     for (int i = 0; i < spheres.size(); i++) {
-      current = spheres[i];
-      cVector3d newPoint = cAdd(current->getLocalPos(), current->getForce());
-      cVector3d newPointNormalized;
-      current->getForce().normalizer(newPointNormalized);
-      current->getVelVector()->m_pointA = cAdd(
-          current->getLocalPos(), newPointNormalized * current->getRadius());
-      current->getVelVector()->m_pointB =
-          cAdd(current->getVelVector()->m_pointA, current->getForce() * .005);
-      current->getVelVector()->setLineWidth(5);
-
-      // Change color, red if current, black otherwise
-      if (i == curr_atom) {
-        current->getVelVector()->m_colorPointA.setRed();
-        current->getVelVector()->m_colorPointB.setRed();
-      } else {
-        current->getVelVector()->m_colorPointA.setBlack();
-        current->getVelVector()->m_colorPointB.setBlack();
-      }
-
-      // TODO - experiment with threshold (shaking fix)
-      // float dist = velVectors[i]->m_pointA.distance(velVectors[i]->m_pointB);
-      // if (dist >= .05 ) {
-      //    velVectors[i]->m_pointB = cAdd(velVectors[i]->m_pointA,
-      //    newPointNormalized * .05);
-      //}
+      spheres[i]->updateVelVector();
     }
 
     /////////////////////////////////////////////////////////////////////////
@@ -1359,6 +1334,7 @@ inline bool fileExists(const string &name) {
   return (stat(name.c_str(), &buffer) == 0);
 }
 
+// save configuration to a .con file
 void writeToCon(string fileName) {
   ofstream writeFile;
   writeFile.open(fileName);
