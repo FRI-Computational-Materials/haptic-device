@@ -498,11 +498,11 @@ int main(int argc, char *argv[]) {
         auto iter {0};
         while (inside_atom) {
           // Place atom at a random position
-          if (iter > 1000) { 
+          if (iter > 1000) {
             // If there are too many failed attempts at placing the atom
             // increase the radius in which it can spawn
             new_atom->setInitialPosition(.115);
-          } else { 
+          } else {
             new_atom->setInitialPosition();
           }
           // Check that it doesn't collide with any others
