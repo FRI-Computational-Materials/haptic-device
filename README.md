@@ -134,3 +134,5 @@ The textbook is too big to upload so here's the link: http://www.charleshouserjr
         * screenshot atomic configuration without graph
     * `SPACE`
         * freeze atom movement
+    * `c`
+        * save configuration to .con file
