@@ -876,6 +876,14 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
             camera->setSphericalAzimuthRad(camera-> getSphericalAzimuthRad() + 1000*M_PI);
         }
         camera_pos->setText("Camera located at: (" + cStr(rho*sin(camera->getSphericalPolarRad()) * cos(camera->getSphericalAzimuthRad())) + ", " + cStr(rho*sin(camera->getSphericalPolarRad()) * sin(camera->getSphericalAzimuthRad())) + ", " + cStr(rho*cos(camera->getSphericalPolarRad())) + ")");
+        
+    } else if (a_key == GLFW_KEY_LEFT_BRACKET || a_key == GLFW_KEY_RIGHT_BRACKET){
+        int direction = (a_key == GLFW_KEY_RIGHT_BRACKET) ? 1 : -1;
+        if((direction == 1 && rho < 1) || (direction == -1 && rho > .15)){
+            camera->setSphericalRadius(camera->getSphericalRadius() + .01 * direction);
+            rho = camera->getSphericalRadius();
+            camera_pos->setText("Camera located at: (" + cStr(rho*sin(camera->getSphericalPolarRad()) * cos(camera->getSphericalAzimuthRad())) + ", " + cStr(rho*sin(camera->getSphericalPolarRad()) * sin(camera->getSphericalAzimuthRad())) + ", " + cStr(rho*cos(camera->getSphericalPolarRad())) + ")");
+        }
     }
 }
 
