@@ -43,6 +43,8 @@
 //------------------------------------------------------------------------------
 #include "atom.h"
 #include "chai3d.h"
+#include "potentials.h"
+#include "utility.h"
 //------------------------------------------------------------------------------
 #include <GLFW/glfw3.h>
 #include <math.h>
@@ -104,9 +106,6 @@ const double SPHERE_MASS = 0.02;
 const double K_DAMPING = 0.001;  // 0.996;
 const double K_MAGNET = 500.0;
 const double HAPTIC_STIFFNESS = 1000.0;
-const double SIGMA = 1.0;
-const double EPSILON = 1.0;
-const double FORCE_DAMPING = .75;
 // Scales the distance betweens atoms
 const double DIST_SCALE = .02;
 
@@ -265,23 +264,11 @@ void close(void);
 // Reads in global minimum from global_minima.txt
 double getGlobalMinima(int cluster_size);
 
-// checks if char array represents a number
-bool isNumber(char number[]);
-
-// checks if given file exists in directory
-inline bool fileExists(const string &name);
-
-// save configuration in .con file
-void writeToCon(string fileName);
-
 // add a label to the world with default black text
 void addLabel(cLabel* &label);
 
-// compute Lennard Jones energy
-double getLennardJonesEnergy(double distance);
-
-// compute Lennard Jones force
-double getLennardJonesForce(double distance);
+// save configuration in .con file
+void writeToCon(string fileName);
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -1410,20 +1397,6 @@ void mouseMotionCallback(GLFWwindow *a_window, double a_posX, double a_posY) {
   }
 }
 
-// check if char array represents a number
-bool isNumber(char number[]) {
-  for (int i = 0; number[i] != 0; i++) {
-    if (!isdigit(number[i])) return false;
-  }
-  return true;
-}
-
-// check if file already exists in directory
-inline bool fileExists(const string &name) {
-  struct stat buffer;
-  return (stat(name.c_str(), &buffer) == 0);
-}
-
 void writeToCon(string fileName) {
   ofstream writeFile;
   writeFile.open(fileName);
@@ -1453,13 +1426,4 @@ void addLabel(cLabel* &label){
   label = new cLabel(font);
   label->m_fontColor.setBlack();
   camera->m_frontLayer->addChild(label);
-}
-
-double getLennardJonesEnergy(double distance) {
-  return 4 * EPSILON * (pow(SIGMA / distance, 12) - pow(SIGMA / distance, 6));
-}
-
-double getLennardJonesForce(double distance) {
-  return -4 * FORCE_DAMPING * EPSILON *
-         ((-12 * pow(SIGMA / distance, 13)) - (-6 * pow(SIGMA / distance, 7)));
 }
