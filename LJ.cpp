@@ -164,6 +164,9 @@ cLabel *isFrozen;
 // a label to display the camera position
 cLabel *camera_pos;
 
+// a label to identify the potential energy surface
+cLabel *potentialLabel;
+
 // a flag that indicates if the haptic simulation is currently running
 bool simulationRunning = false;
 
@@ -221,6 +224,7 @@ double centerCoords[3] = {50.0, 50.0, 50.0};
 
 // default potential is Lennard Jones
 Potential energySurface = LENNARD_JONES;
+
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -683,6 +687,11 @@ int main(int argc, char *argv[]) {
   camera_pos->m_fontColor.setBlack();
   camera->m_frontLayer->addChild(camera_pos);
 
+  // energy surface label
+  potentialLabel = new cLabel(font);
+  potentialLabel->m_fontColor.setBlack();
+  camera->m_frontLayer->addChild(potentialLabel);
+
   // create a background
   background = new cBackground();
   camera->m_backLayer->addChild(background);
@@ -735,7 +744,7 @@ int main(int argc, char *argv[]) {
   atexit(close);
 
   // sets the text for the camera position to appear on screen
-  camera_pos->setLocalPos(0, 15, 0);
+  camera_pos->setLocalPos(0, 30, 0);
 
   camera_pos->setText("Camera located at: (" +
                       cStr(rho * sin(camera->getSphericalPolarRad()) *
@@ -745,6 +754,16 @@ int main(int argc, char *argv[]) {
                            sin(camera->getSphericalAzimuthRad())) +
                       ", " + cStr(rho * cos(camera->getSphericalPolarRad())) +
                       ")");
+
+  // set energy surface label
+  potentialLabel->setLocalPos(0, 0);
+  string potentialName;
+  if(energySurface == LENNARD_JONES){
+    potentialName = "Lennard Jones Potential";
+  }else if(energySurface == MORSE){
+    potentialName = "Morse Potential";
+  }
+  potentialLabel->setText("Potential energy surface: " + potentialName);
 
   //--------------------------------------------------------------------------
   // MAIN GRAPHIC LOOP
@@ -1288,7 +1307,7 @@ void updateHaptics(void) {
       LJ_num->setText("Potential Energy: " + cStr((potentialEnergy / 2), 5));
 
       // update position of label
-      LJ_num->setLocalPos(0, 0);
+      LJ_num->setLocalPos(0, 15, 0);
 
       // count the number of anchored atoms
       auto anchored{0};
