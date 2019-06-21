@@ -63,6 +63,26 @@ cShapeLine* Atom::getVelVector() { return velVector; }
 
 void Atom::setVelVector(cShapeLine* newVelVector) { velVector = newVelVector; }
 
+void Atom::updateVelVector() {
+  // Create a line representing the forces felt on the atom
+  cVector3d newPointNormalized = cAdd(this->getLocalPos(), this->getForce());
+  this->getForce().normalizer(newPointNormalized);
+  this->velVector->m_pointA =
+      cAdd(this->getLocalPos(), newPointNormalized * this->getRadius());
+  this->velVector->m_pointB =
+      cAdd(this->getVelVector()->m_pointA, this->getForce() * .005);
+  this->velVector->setLineWidth(5);
+
+  // Update the color based on the current status of the atom
+  if (current) {
+    this->velVector->m_colorPointA.setRed();
+    this->velVector->m_colorPointB.setRed();
+  } else {
+    this->velVector->m_colorPointA.setBlack();
+    this->velVector->m_colorPointB.setBlack();
+  }
+}
+
 void Atom::setInitialPosition(double spawn_dist) {
   double phi = rand() / double(RAND_MAX) * 2 * M_PI;
   double costheta = rand() / double(RAND_MAX) * 2 - 1;
