@@ -37,7 +37,6 @@
 #  $Date: 2016-01-21 16:13:27 +0100 (Thu, 21 Jan 2016) $
 #  $Rev: 1906 $
 
-
 # project layout
 TOP_DIR = ../
 include $(TOP_DIR)/Makefile.common
@@ -49,7 +48,7 @@ LDLIBS   += $(LDLIBS_GLFW)
 
 # platform-dependent adjustments
 ifeq ($(OS), mac)
-  DEPLOY = Rez -append $(TOP_DIR)/bin/resources/icons/chai3d.rsrc -o $(OUTPUT); SetFile -a C $(OUTPUT)
+	DEPLOY = Rez -append $(TOP_DIR)/bin/resources/icons/chai3d.rsrc -o $(OUTPUT); SetFile -a C $(OUTPUT)
 endif
 
 # local configuration

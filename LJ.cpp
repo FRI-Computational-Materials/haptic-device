@@ -40,7 +40,6 @@
         \version   3.2.0 $Rev: 1922 $
 */
 //==============================================================================
-
 //------------------------------------------------------------------------------
 #include "atom.h"
 #include "chai3d.h"
@@ -49,6 +48,7 @@
 #include <math.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <python2.7/Python.h>
 #include <chrono>
 #include <ctime>
 #include <fstream>
@@ -262,6 +262,8 @@ inline bool fileExists(const string &name);
 // save configuration in .con file
 void writeToCon(string fileName);
 
+// declare runAmp
+double runAmp();
 //------------------------------------------------------------------------------
 // DECLARED MACROS
 //------------------------------------------------------------------------------
@@ -502,11 +504,11 @@ int main(int argc, char *argv[]) {
         auto iter {0};
         while (inside_atom) {
           // Place atom at a random position
-          if (iter > 1000) { 
+          if (iter > 1000) {
             // If there are too many failed attempts at placing the atom
             // increase the radius in which it can spawn
             new_atom->setInitialPosition(.115);
-          } else { 
+          } else {
             new_atom->setInitialPosition();
           }
           // Check that it doesn't collide with any others
@@ -832,6 +834,10 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       index++;
     }
     writeToCon("atoms" + to_string(index) + ".con");
+  }else if(a_key == GLFW_KEY_A){
+    writeToCon("atoms.con");
+    double amp_PE = runAmp();
+    std::cout << amp_PE <<endl;
   }
 }
 
@@ -1382,4 +1388,79 @@ void writeToCon(string fileName) {
               << (pos.z() / 0.02) + centerCoords[2] << " 0 " << i << endl;
   }
   writeFile.close();
+}
+
+double runAmp(){
+  PyObject *pName, *pModule, *pFunc;
+  PyObject /***pArgs,**/ *pValue;
+  int i;
+
+  Py_Initialize();
+  /**PyRun_SimpleString("import sys");
+  PyRun_SimpleString("import os");
+  PyRun_SimpleString("sys.path.append(os.getcwd())");
+  PyRun_SimpleString("print os.getcwd()");**/
+
+  pName = PyString_FromString("calculator");
+  PyObject* objectsRepresentation = PyObject_Repr(pName);
+  const char* s = PyString_AsString(objectsRepresentation);
+  std::cout << s << endl;
+  /* Error checking of pName left out */
+
+  pModule = PyImport_Import(pName);
+  Py_DECREF(pName);
+
+  if (pModule != NULL) {
+    pFunc = PyObject_GetAttrString(pModule, "getPE");
+    /* pFunc is a new reference */
+    cout << "pModule is not NULL" << endl;
+    if (pFunc && PyCallable_Check(pFunc)) {
+        cout << "pFunc is not NULL" << endl;
+        //pArgs = NULL;
+        /**for (i = 0; i < argc - 3; ++i) {
+            //pValue = PyLong_FromLong(atoi(argv[i + 3]));
+            if (!pValue) {
+                Py_DECREF(pArgs);
+                Py_DECREF(pModule);
+                fprintf(stderr, "Cannot convert argument\n");
+                return 1;
+            }
+            // pValue reference stolen here:
+            PyTuple_SetItem(pArgs, i, pValue);
+        }**/
+        cout << endl << "Type: " << Py_TYPE(pFunc) << endl;
+        pValue = PyObject_CallObject(pFunc, NULL);
+        //Py_DECREF(pArgs);
+        cout << "We're Stuck" << endl;
+        if (pValue != NULL) {
+          cout <<"pval not null" << endl;
+            //printf("Result of call: %ld\n", PyLong_AsLong(pValue));
+            cout << "Result: " << PyFloat_AsDouble(pValue) << endl;
+            Py_DECREF(pValue);
+        }
+        else {
+          cout << "pval null" << endl;
+            Py_DECREF(pFunc);
+            Py_DECREF(pModule);
+            PyErr_Print();
+            fprintf(stderr,"Call failed\n");
+            return 1;
+        }
+    }
+    else {
+        if (PyErr_Occurred())
+            PyErr_Print();
+        fprintf(stderr, "Cannot find function");
+    }
+    Py_XDECREF(pFunc);
+    Py_DECREF(pModule);
+}
+  else {
+    PyErr_Print();
+    fprintf(stderr, "Failed to load");
+    return 1;
+  }
+  //if (Py_FinalizeEx() < 0) {
+  //  return 120;
+  //}
 }
