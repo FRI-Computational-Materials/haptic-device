@@ -834,7 +834,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       index++;
     }
     writeToCon("atoms" + to_string(index) + ".con");
-  }else if(a_key == GLFW_KEY_A){
+  }else if(a_key == GLFW_KEY_M){
     writeToCon("atoms.con");
     double amp_PE = runAmp();
     std::cout << amp_PE <<endl;
@@ -1396,10 +1396,6 @@ double runAmp(){
   int i;
 
   Py_Initialize();
-  /**PyRun_SimpleString("import sys");
-  PyRun_SimpleString("import os");
-  PyRun_SimpleString("sys.path.append(os.getcwd())");
-  PyRun_SimpleString("print os.getcwd()");**/
 
   pName = PyString_FromString("calculator");
   PyObject* objectsRepresentation = PyObject_Repr(pName);
@@ -1413,9 +1409,7 @@ double runAmp(){
   if (pModule != NULL) {
     pFunc = PyObject_GetAttrString(pModule, "getPE");
     /* pFunc is a new reference */
-    cout << "pModule is not NULL" << endl;
     if (pFunc && PyCallable_Check(pFunc)) {
-        cout << "pFunc is not NULL" << endl;
         //pArgs = NULL;
         /**for (i = 0; i < argc - 3; ++i) {
             //pValue = PyLong_FromLong(atoi(argv[i + 3]));
@@ -1428,23 +1422,17 @@ double runAmp(){
             // pValue reference stolen here:
             PyTuple_SetItem(pArgs, i, pValue);
         }**/
-        cout << endl << "Type: " << Py_TYPE(pFunc) << endl;
         pValue = PyObject_CallObject(pFunc, NULL);
-        //Py_DECREF(pArgs);
-        cout << "We're Stuck" << endl;
         if (pValue != NULL) {
-          cout <<"pval not null" << endl;
-            //printf("Result of call: %ld\n", PyLong_AsLong(pValue));
-            cout << "Result: " << PyFloat_AsDouble(pValue) << endl;
-            Py_DECREF(pValue);
+          return PyFloat_AsDouble(pValue);
+          Py_DECREF(pValue);
         }
         else {
-          cout << "pval null" << endl;
-            Py_DECREF(pFunc);
-            Py_DECREF(pModule);
-            PyErr_Print();
-            fprintf(stderr,"Call failed\n");
-            return 1;
+          Py_DECREF(pFunc);
+          Py_DECREF(pModule);
+          PyErr_Print();
+          fprintf(stderr,"Call failed\n");
+          return 1;
         }
     }
     else {
@@ -1460,7 +1448,4 @@ double runAmp(){
     fprintf(stderr, "Failed to load");
     return 1;
   }
-  //if (Py_FinalizeEx() < 0) {
-  //  return 120;
-  //}
 }
