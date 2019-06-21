@@ -81,6 +81,8 @@ bool fullscreen = false;
 //------------------------------------------------------------------------------
 enum MouseState { MOUSE_IDLE, MOUSE_SELECTION };
 
+enum Potential {LENNARD_JONES, MORSE, MACHINE_LEARNING};
+
 //------------------------------------------------------------------------------
 // DECLARED CONSTANTS
 //------------------------------------------------------------------------------
@@ -210,6 +212,9 @@ bool freezeAtoms = false;
 // save coordinates of central atom
 double centerCoords[3] = {50.0, 50.0, 50.0};
 
+// default potential is Lennard Jones
+Potential energySurface = LENNARD_JONES;
+
 //------------------------------------------------------------------------------
 // DECLARED MACROS
 //------------------------------------------------------------------------------
@@ -257,6 +262,10 @@ inline bool fileExists(const string &name);
 
 // save configuration in .con file
 void writeToCon(string fileName);
+
+// compute Lennard Jones energy and apply forces
+double computeLennardJones(double distance);
+
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -507,7 +516,7 @@ int main(int argc, char *argv[]) {
           }
           // Check that it doesn't collide with any others
           collision_detected = false;
-          for (auto i{0}; i < spheres.size(); i++) {
+          for (int i = 0; i < spheres.size(); i++) {
             auto dist_between =
                 cDistance(new_atom->getLocalPos(), spheres[i]->getLocalPos());
             dist_between = dist_between / .02;
@@ -622,6 +631,17 @@ int main(int argc, char *argv[]) {
   }
   for (int i = 0; i < spheres.size(); i++) {
     spheres[i]->setVelocity(0);
+  }
+  //determine potential if specified
+  if(argc > 2){
+    // convert to lowercase
+    string arg = argv[2];
+    for(char& c : arg){
+      c = tolower(c);
+    }
+    if(arg == "morse" || "m"){
+      energySurface = MORSE;
+    }
   }
   //--------------------------------------------------------------------------
   // WIDGETS
@@ -1127,7 +1147,7 @@ void updateHaptics(void) {
 
     if (!freezeAtoms) {
       // compute forces for all spheres
-      double lj_PE = 0;
+      double potentialEnergy = 0;
 
       // JD: edited this so that many operations are removed out of the inner
       // loop This loop is for computing the force on atom i
@@ -1152,13 +1172,7 @@ void updateHaptics(void) {
 
             // compute distance between both spheres
             double distance = cDistance(pos0, pos1) / DIST_SCALE;
-
-            double lj_potential[spheres.size()];
-            lj_potential[i] = {
-                4 * EPSILON *
-                (pow(SIGMA / distance, 12) - pow(SIGMA / distance, 6))};
-
-            lj_PE = lj_PE + lj_potential[i];
+            potentialEnergy += computeLennardJones(distance);
             if (!button0) {
               double lj = -4 * FORCE_DAMPING * EPSILON *
                           ((-12 * pow(SIGMA / distance, 13)) -
@@ -1199,7 +1213,7 @@ void updateHaptics(void) {
       // cVector3d force = current->getForce();
       // JD: moved this out of nested for loop so that test is set only when
       // fully calculated update haptic and graphic rate data
-      LJ_num->setText("Potential Energy: " + cStr((lj_PE / 2), 5));
+      LJ_num->setText("Potential Energy: " + cStr((potentialEnergy / 2), 5));
 
       // update position of label
       LJ_num->setLocalPos(0, 0);
@@ -1223,7 +1237,7 @@ void updateHaptics(void) {
       // The number fmod() is compared to is the threshold, this adjusts the
       // timescale
       if (fmod(currentTime, currentTimeRounded) <= .01) {
-        scope->setSignalValues(lj_PE / 2, global_minimum);
+        scope->setSignalValues(potentialEnergy / 2, global_minimum);
       }
     }
     cVector3d force = current->getForce();
@@ -1358,4 +1372,9 @@ void writeToCon(string fileName) {
               << (pos.z() / 0.02) + centerCoords[2] << " 0 " << i << endl;
   }
   writeFile.close();
+}
+
+double computeLennardJones(double distance){
+  double energy = 4 * EPSILON * (pow(SIGMA / distance, 12) - pow(SIGMA / distance, 6));
+  return energy;
 }
