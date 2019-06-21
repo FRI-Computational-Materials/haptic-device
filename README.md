@@ -12,6 +12,9 @@ If you don't pass in anything, the default is five.
 
 ## Build Instructions
 
+## ML Project
+In order to run, must have Amp, ase, numpy, and would have to modify Makefile.common and Makefile.config to allow for use of the Python.h header and corresponding library.
+
 ### Windows
 
 Installing all the Drivers/SDKs/Software:
@@ -116,7 +119,7 @@ The textbook is too big to upload so here's the link: http://www.charleshouserjr
 * Button naming convention in LJ-test.cpp (example = name in LJ-test.cp
 * p)
     * button 0 = button
-        * does nothing
+        * turns off forces while pressed
     * button 1 = button2
         * this button changes the current atom being used
     * button3 = freebutton
