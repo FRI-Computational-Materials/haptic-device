@@ -271,9 +271,11 @@ inline bool fileExists(const string &name);
 // save configuration in .con file
 void writeToCon(string fileName);
 
-// compute Lennard Jones energy and apply forces
-double computeLennardJones(double distance);
+// compute Lennard Jones energy
+double getLennardJonesEnergy(double distance);
 
+//compute Lennard Jones force
+double getLennardJonesForce(double distance);
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -1156,37 +1158,6 @@ void updateHaptics(void) {
         } else {
             button1_changed = false;
         }
-        // JD: added use for button 3; blue atom is now anchor and is fixed in place
-        // in the simulation if you want to change the anchor atom press button 3
-        // Changes the current anchor when button 3 is pressed
-        // When all anchors have been cycled through, there is a setting where there
-        // is no anchor.
-        if (button3) {
-            if (!button3_changed) {
-                bool anchor_changed = true;
-                anchor_atom_hold = anchor_atom;
-                anchor_atom = remainder(anchor_atom + 1, spheres.size());
-                if (anchor_atom < 0) {
-                    anchor_atom = spheres.size() + anchor_atom;
-                }
-                if (anchor_atom == curr_atom) {
-                    anchor_changed = false;
-                }
-                button3_changed = true;
-                if (anchor_changed) {
-                    if (is_anchor) {
-                        spheres[anchor_atom_hold]->setAnchor(false);
-                    }
-                    spheres[anchor_atom]->setAnchor(true);
-                    is_anchor = true;
-                } else {
-                    spheres[anchor_atom_hold]->setAnchor(false);
-                    is_anchor = false;
-                }
-            }
-        } else {
-            button3_changed = false;
-        }
 
     // update frozen state label
     string trueFalse = freezeAtoms ? "true" : "false";
@@ -1221,12 +1192,10 @@ void updateHaptics(void) {
 
             // compute distance between both spheres
             double distance = cDistance(pos0, pos1) / DIST_SCALE;
-            potentialEnergy += computeLennardJones(distance);
+            potentialEnergy += getLennardJonesEnergy(distance);
             if (!button0) {
-              double lj = -4 * FORCE_DAMPING * EPSILON *
-                          ((-12 * pow(SIGMA / distance, 13)) -
-                           (-6 * pow(SIGMA / distance, 7)));
-              force.add(lj * dir01);
+              double appliedForce = getLennardJonesForce(distance);
+              force.add(appliedForce * dir01);
             }
           }
       }
@@ -1420,7 +1389,10 @@ void writeToCon(string fileName) {
     writeFile.close();
 }
 
-double computeLennardJones(double distance){
-  double energy = 4 * EPSILON * (pow(SIGMA / distance, 12) - pow(SIGMA / distance, 6));
-  return energy;
+double getLennardJonesEnergy(double distance){
+  return 4 * EPSILON * (pow(SIGMA / distance, 12) - pow(SIGMA / distance, 6));
+}
+
+double getLennardJonesForce(double distance){
+  return -4 * FORCE_DAMPING * EPSILON * ((-12 * pow(SIGMA / distance, 13)) - (-6 * pow(SIGMA / distance, 7)));
 }
