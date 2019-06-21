@@ -274,6 +274,9 @@ inline bool fileExists(const string &name);
 // save configuration in .con file
 void writeToCon(string fileName);
 
+// add a label to the world with default black text
+void addLabel(cLabel* &label);
+
 // compute Lennard Jones energy
 double getLennardJonesEnergy(double distance);
 
@@ -658,39 +661,25 @@ int main(int argc, char *argv[]) {
   font = NEW_CFONTCALIBRI20();
 
   // create a label to display the haptic and graphic rate of the simulation
-  labelRates = new cLabel(font);
-  labelRates->m_fontColor.setBlack();
-  camera->m_frontLayer->addChild(labelRates);
+  addLabel(labelRates);
 
   // potential energy label
-  LJ_num = new cLabel(font);
-  LJ_num->m_fontColor.setBlack();
-  camera->m_frontLayer->addChild(LJ_num);
+  addLabel(LJ_num);
 
   // number anchored label
-  num_anchored = new cLabel(font);
-  num_anchored->m_fontColor.setBlack();
-  camera->m_frontLayer->addChild(num_anchored);
+  addLabel(num_anchored);
 
   // total energy label
-  total_energy = new cLabel(font);
-  total_energy->m_fontColor.setBlack();
-  camera->m_frontLayer->addChild(total_energy);
+  addLabel(total_energy);
 
   // frozen state label
-  isFrozen = new cLabel(font);
-  isFrozen->m_fontColor.setBlack();
-  camera->m_frontLayer->addChild(isFrozen);
+  addLabel(isFrozen);
 
   // camera position label
-  camera_pos = new cLabel(font);
-  camera_pos->m_fontColor.setBlack();
-  camera->m_frontLayer->addChild(camera_pos);
+  addLabel(camera_pos);
 
   // energy surface label
-  potentialLabel = new cLabel(font);
-  potentialLabel->m_fontColor.setBlack();
-  camera->m_frontLayer->addChild(potentialLabel);
+  addLabel(potentialLabel);
 
   // create a background
   background = new cBackground();
@@ -1458,6 +1447,12 @@ void writeToCon(string fileName) {
               << (pos.z() / 0.02) + centerCoords[2] << " 0 " << i << endl;
   }
   writeFile.close();
+}
+
+void addLabel(cLabel* &label){
+  label = new cLabel(font);
+  label->m_fontColor.setBlack();
+  camera->m_frontLayer->addChild(label);
 }
 
 double getLennardJonesEnergy(double distance) {
