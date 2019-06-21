@@ -865,6 +865,13 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       index++;
     }
     writeToCon("atoms" + to_string(index) + ".con");
+  } else if (a_key == GLFW_KEY_A) {
+    // anchor all atoms while maintaing control
+    for (auto i{0}; i < spheres.size(); i++) {
+      if (!spheres[i]->isAnchor() && !(spheres[i]->isCurrent())) {
+        spheres[i]->setAnchor(true);
+      }
+    }
   } else if (a_key == GLFW_KEY_UP || a_key == GLFW_KEY_DOWN) {
     int direction = (a_key == GLFW_KEY_UP) ? 1 : -1;
     camera->setSphericalPolarRad(camera->getSphericalPolarRad() +
