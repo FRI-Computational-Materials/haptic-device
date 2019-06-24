@@ -224,7 +224,6 @@ double centerCoords[3] = {50.0, 50.0, 50.0};
 // default potential is Lennard Jones
 Potential energySurface = LENNARD_JONES;
 
-
 //------------------------------------------------------------------------------
 // DECLARED MACROS
 //------------------------------------------------------------------------------
@@ -265,7 +264,10 @@ void close(void);
 double getGlobalMinima(int cluster_size);
 
 // add a label to the world with default black text
-void addLabel(cLabel* &label);
+void addLabel(cLabel *&label);
+
+// Update camera text
+void updateCameraLabel(cLabel *&camera_pos, cCamera *&camera);
 
 // save configuration in .con file
 void writeToCon(string fileName);
@@ -721,22 +723,14 @@ int main(int argc, char *argv[]) {
 
   // sets the text for the camera position to appear on screen
   camera_pos->setLocalPos(0, 30, 0);
-
-  camera_pos->setText("Camera located at: (" +
-                      cStr(rho * sin(camera->getSphericalPolarRad()) *
-                           cos(camera->getSphericalAzimuthRad())) +
-                      ", " +
-                      cStr(rho * sin(camera->getSphericalPolarRad()) *
-                           sin(camera->getSphericalAzimuthRad())) +
-                      ", " + cStr(rho * cos(camera->getSphericalPolarRad())) +
-                      ")");
+  updateCameraLabel(camera_pos, camera);
 
   // set energy surface label
   potentialLabel->setLocalPos(0, 0);
   string potentialName;
-  if(energySurface == LENNARD_JONES){
+  if (energySurface == LENNARD_JONES) {
     potentialName = "Lennard Jones Potential";
-  }else if(energySurface == MORSE){
+  } else if (energySurface == MORSE) {
     potentialName = "Morse Potential";
   }
   potentialLabel->setText("Potential energy surface: " + potentialName);
@@ -880,14 +874,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       camera->setSphericalPolarRad(camera->getSphericalPolarRad() +
                                    1000 * M_PI);
     }
-    camera_pos->setText("Camera located at: (" +
-                        cStr(rho * sin(camera->getSphericalPolarRad()) *
-                             cos(camera->getSphericalAzimuthRad())) +
-                        ", " +
-                        cStr(rho * sin(camera->getSphericalPolarRad()) *
-                             sin(camera->getSphericalAzimuthRad())) +
-                        ", " + cStr(rho * cos(camera->getSphericalPolarRad())) +
-                        ")");
+    updateCameraLabel(camera_pos, camera);
 
   } else if (a_key == GLFW_KEY_RIGHT || a_key == GLFW_KEY_LEFT) {
     int direction = (a_key == GLFW_KEY_RIGHT) ? 1 : -1;
@@ -903,14 +890,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       camera->setSphericalAzimuthRad(camera->getSphericalAzimuthRad() +
                                      1000 * M_PI);
     }
-    camera_pos->setText("Camera located at: (" +
-                        cStr(rho * sin(camera->getSphericalPolarRad()) *
-                             cos(camera->getSphericalAzimuthRad())) +
-                        ", " +
-                        cStr(rho * sin(camera->getSphericalPolarRad()) *
-                             sin(camera->getSphericalAzimuthRad())) +
-                        ", " + cStr(rho * cos(camera->getSphericalPolarRad())) +
-                        ")");
+    updateCameraLabel(camera_pos, camera);
 
   } else if (a_key == GLFW_KEY_LEFT_BRACKET ||
              a_key == GLFW_KEY_RIGHT_BRACKET) {
@@ -919,14 +899,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       camera->setSphericalRadius(camera->getSphericalRadius() +
                                  .01 * direction);
       rho = camera->getSphericalRadius();
-      camera_pos->setText(
-          "Camera located at: (" +
-          cStr(rho * sin(camera->getSphericalPolarRad()) *
-               cos(camera->getSphericalAzimuthRad())) +
-          ", " +
-          cStr(rho * sin(camera->getSphericalPolarRad()) *
-               sin(camera->getSphericalAzimuthRad())) +
-          ", " + cStr(rho * cos(camera->getSphericalPolarRad())) + ")");
+      updateCameraLabel(camera_pos, camera);
     }
   }
 }
@@ -1105,51 +1078,24 @@ void updateHaptics(void) {
           case 1:
             camera->setSphericalPolarRad(0);
             camera->setSphericalAzimuthRad(0);
-            camera_pos->setText(
-                "Camera located at: (" +
-                cStr(rho * sin(camera->getSphericalPolarRad()) *
-                     cos(camera->getSphericalAzimuthRad())) +
-                ", " +
-                cStr(rho * sin(camera->getSphericalPolarRad()) *
-                     sin(camera->getSphericalAzimuthRad())) +
-                ", " + cStr(rho * cos(camera->getSphericalPolarRad())) + ")");
+            updateCameraLabel(camera_pos, camera);
             break;
           case 2:
             camera->setSphericalPolarRad(0);
             camera->setSphericalAzimuthRad(M_PI);
-            camera_pos->setText(
-                "Camera located at: (" +
-                cStr(rho * sin(camera->getSphericalPolarRad()) *
-                     cos(camera->getSphericalAzimuthRad())) +
-                ", " +
-                cStr(rho * sin(camera->getSphericalPolarRad()) *
-                     sin(camera->getSphericalAzimuthRad())) +
-                ", " + cStr(rho * cos(camera->getSphericalPolarRad())) + ")");
+            updateCameraLabel(camera_pos, camera);
+            ;
             break;
           case 3:
             camera->setSphericalPolarRad(M_PI);
             camera->setSphericalAzimuthRad(M_PI);
-            camera_pos->setText(
-                "Camera located at: (" +
-                cStr(rho * sin(camera->getSphericalPolarRad()) *
-                     cos(camera->getSphericalAzimuthRad())) +
-                ", " +
-                cStr(rho * sin(camera->getSphericalPolarRad()) *
-                     sin(camera->getSphericalAzimuthRad())) +
-                ", " + cStr(rho * cos(camera->getSphericalPolarRad())) + ")");
+            updateCameraLabel(camera_pos, camera);
             break;
           case 4:
             curr_camera = 0;
             camera->setSphericalPolarRad(M_PI);
             camera->setSphericalAzimuthRad(0);
-            camera_pos->setText(
-                "Camera located at: (" +
-                cStr(rho * sin(camera->getSphericalPolarRad()) *
-                     cos(camera->getSphericalAzimuthRad())) +
-                ", " +
-                cStr(rho * sin(camera->getSphericalPolarRad()) *
-                     sin(camera->getSphericalAzimuthRad())) +
-                ", " + cStr(rho * cos(camera->getSphericalPolarRad())) + ")");
+            updateCameraLabel(camera_pos, camera);
             break;
         }
         curr_camera++;
@@ -1422,8 +1368,19 @@ void writeToCon(string fileName) {
   writeFile.close();
 }
 
-void addLabel(cLabel* &label){
+void addLabel(cLabel *&label) {
   label = new cLabel(font);
   label->m_fontColor.setBlack();
   camera->m_frontLayer->addChild(label);
+}
+
+void updateCameraLabel(cLabel *&camera_pos, cCamera *&camera) {
+  camera_pos->setText("Camera located at: (" +
+                      cStr(rho * sin(camera->getSphericalPolarRad()) *
+                           cos(camera->getSphericalAzimuthRad())) +
+                      ", " +
+                      cStr(rho * sin(camera->getSphericalPolarRad()) *
+                           sin(camera->getSphericalAzimuthRad())) +
+                      ", " + cStr(rho * cos(camera->getSphericalPolarRad())) +
+                      ")");
 }
