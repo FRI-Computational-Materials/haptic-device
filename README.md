@@ -101,7 +101,12 @@ bool fileload = texture->loadFromFile(RESOURCE_PATH("../resources/images/spherem
 ```
 to the absolute file path.
 
+10. Run the following commands while in chai3d-3.20/: 
+  * `sudo cp /external/DHD/doc/linux/51-forcedimension.rules /etc/udev/rules.d`
+  * `udevadm control --reload-rules && udevadm trigger`
+
 10. Navigate to `lin-x86_64` and run `./haptic-device` to launch the program.
+
 
 
 ### MacOS
