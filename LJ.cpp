@@ -143,7 +143,7 @@ vector<Atom *> spheres;
 cBackground *background;
 
 // a font for rendering text
-cFontPtr font;
+cFontPtr font = NEW_CFONTCALIBRI20();;
 
 // a label to display the rate [Hz] at which the simulation is running
 cLabel *labelRates;
@@ -259,9 +259,6 @@ void updateHaptics(void);
 
 // this function closes the application
 void close(void);
-
-// Reads in global minimum from global_minima.txt
-double getGlobalMinima(int cluster_size);
 
 // add a label to the world with default black text
 void addLabel(cLabel *&label);
@@ -645,9 +642,6 @@ int main(int argc, char *argv[]) {
   //--------------------------------------------------------------------------
   // WIDGETS
   //--------------------------------------------------------------------------
-
-  // create a font
-  font = NEW_CFONTCALIBRI20();
 
   // create a label to display the haptic and graphic rate of the simulation
   addLabel(labelRates);
@@ -1188,9 +1182,18 @@ void updateHaptics(void) {
 
             // compute distance between both spheres
             double distance = cDistance(pos0, pos1) / DIST_SCALE;
-            potentialEnergy += getLennardJonesEnergy(distance);
+            if(energySurface == LENNARD_JONES){
+              potentialEnergy += getLennardJonesEnergy(distance);
+            }else if (energySurface == MORSE){
+              potentialEnergy += getMorseEnergy(distance);
+            }
             if (!button0) {
-              double appliedForce = getLennardJonesForce(distance);
+              double appliedForce;
+              if(energySurface == LENNARD_JONES){
+                appliedForce = getLennardJonesForce(distance);
+              }else if (energySurface == MORSE){
+                appliedForce = getMorseForce(distance);
+              }
               force.add(appliedForce * dir01);
             }
           }
@@ -1277,32 +1280,6 @@ void updateHaptics(void) {
 
   // exit haptics thread
   simulationFinished = true;
-}
-
-double getGlobalMinima(int cluster_size) {
-  string file_path = "../resources/data/";
-  string file_name = "global_minima.txt";
-  ifstream infile(file_path + file_name);
-  if (!infile) {
-    cerr << "Could not open \"" + file_name + "\" for reading" << endl;
-    cerr << "Did you move it to \"" + file_path + "\"?" << endl;
-    exit(1);
-  } else if ((cluster_size < 2) || (cluster_size > 150)) {
-    cout << "WARNING: \"" + file_name +
-                "\" doesn't have data for clusters of this size yet."
-         << endl;
-    cout << "The graph may not be accurate." << endl;
-  }
-
-  int cluster_size_file;
-  double minimum;
-  while (infile >> cluster_size_file >> minimum) {
-    if (cluster_size_file == cluster_size) {
-      break;
-    }
-  }
-  cout << "Global minimum:" << minimum << endl;
-  return minimum;
 }
 
 void mouseMotionCallback(GLFWwindow *a_window, double a_posX, double a_posY) {
