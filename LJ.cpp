@@ -903,7 +903,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
             camera_pos->setText("Camera located at: (" + cStr(rho*sin(camera->getSphericalPolarRad()) * cos(camera->getSphericalAzimuthRad())) + ", " + cStr(rho*sin(camera->getSphericalPolarRad()) * sin(camera->getSphericalAzimuthRad())) + ", " + cStr(rho*cos(camera->getSphericalPolarRad())) + ")");
         }
   }else if(a_key == GLFW_KEY_M){
-    writeToCon("atoms.con");
+    //writeToCon("atoms.con");
     double amp_PE = runAmp();
     std::cout << amp_PE <<endl;
   }
@@ -1406,8 +1406,17 @@ double getLennardJonesForce(double distance){
 }
 
 double runAmp(){
+  // Prepare positions so they may be passed to python
+  double atomArray [spheres.size() * 3];
+  for (int i = 0; i < spheres.size()*3; i+=3){
+    cVector3d pos = spheres[i/3]->getLocalPos();
+    atomArray[i] = pos.x()/.02 + centerCoords[0];
+    atomArray[i+1] = pos.y()/.02 + centerCoords[1];
+    atomArray[i+2] = pos.z()/.02 + centerCoords[2];
+  }
+
   PyObject *pName, *pModule, *pFunc;
-  PyObject /***pArgs,**/ *pValue;
+  PyObject *pArgs, *pValue, *pTuple;
   int i;
 
   Py_Initialize();
@@ -1415,7 +1424,6 @@ double runAmp(){
   pName = PyString_FromString("calculator");
   PyObject* objectsRepresentation = PyObject_Repr(pName);
   const char* s = PyString_AsString(objectsRepresentation);
-  std::cout << s << endl;
   /* Error checking of pName left out */
 
   pModule = PyImport_Import(pName);
@@ -1425,9 +1433,9 @@ double runAmp(){
     pFunc = PyObject_GetAttrString(pModule, "getPE");
     /* pFunc is a new reference */
     if (pFunc && PyCallable_Check(pFunc)) {
-        //pArgs = NULL;
-        /**for (i = 0; i < argc - 3; ++i) {
-            //pValue = PyLong_FromLong(atoi(argv[i + 3]));
+        pArgs = PyTuple_New(spheres.size() * 3);
+        for (i = 0; i < spheres.size() * 3; ++i) {
+            pValue = PyFloat_FromDouble(atomArray[i]);
             if (!pValue) {
                 Py_DECREF(pArgs);
                 Py_DECREF(pModule);
@@ -1436,8 +1444,15 @@ double runAmp(){
             }
             // pValue reference stolen here:
             PyTuple_SetItem(pArgs, i, pValue);
-        }**/
-        pValue = PyObject_CallObject(pFunc, NULL);
+        }
+        //Create tuple to put pArgs inside of -- Becaue we need to pass one object to python
+
+        pTuple = PyTuple_New(1);
+        PyTuple_SetItem(pTuple, 0, pArgs);
+        pValue = PyObject_CallObject(pFunc, pTuple);
+        if (pTuple != NULL){
+          Py_DECREF(pTuple);
+        }
         if (pValue != NULL) {
           return PyFloat_AsDouble(pValue);
           Py_DECREF(pValue);
