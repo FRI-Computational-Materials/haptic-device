@@ -1,4 +1,4 @@
-//==============================================================================
+ //==============================================================================
 /*
  Software License Agreement (BSD License)
  Copyright (c) 2003-2016, CHAI3D.
@@ -537,8 +537,7 @@ int main(int argc, char *argv[]) {
             inside_atom = false;
           }
         }
-        cout << "Pos: " << new_atom->getLocalPos() << endl;
-        ;
+        // cout << "Pos: " << new_atom->getLocalPos() << endl;
       }
       // set graphic properties of sphere
       new_atom->setTexture(texture);
@@ -1198,7 +1197,9 @@ void updateHaptics(void) {
             }
           }
         }
+
         current->setForce(force);
+
         // cVector3d sphereAcc = (force / SPHERE_MASS);
         cVector3d sphereAcc = (force / current->getMass());
         current->setVelocity(
@@ -1206,9 +1207,12 @@ void updateHaptics(void) {
         // compute /position
         cVector3d spherePos_change = timeInterval * current->getVelocity() +
                                      cSqr(timeInterval) * sphereAcc;
-        double magnitude = spherePos_change.length();
 
         cVector3d spherePos = current->getLocalPos() + spherePos_change;
+
+
+        double magnitude = force.length();
+
         if (magnitude > 5) {
           cout << i << " velocity " << current->getVelocity().length() << endl;
           cout << i << " force " << force.length() << endl;
