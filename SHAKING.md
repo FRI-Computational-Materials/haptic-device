@@ -11,3 +11,6 @@
   B) Reduce movement of device due to forces: FAIL
 
 3. Prevent Rapid Oscillations
+  IDEAS:
+    - Save last position change/velocity/acceleration for each particle.
+    - If it switches to another direction too quickly, greatly reduce magnitude.
