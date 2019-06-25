@@ -4,9 +4,9 @@
 const double SIGMA = 1.0;
 const double EPSILON = 1.0;   // also known as the well depth
 const double FORCE_DAMPING = .75;
-const double EQUILIBRIUM_BOND_LENGTH = SIGMA * 1.12;
+const double EQUILIBRIUM_BOND_LENGTH = 1.0;
 const double K_VALUE = 1.0;
-const double ALPHA = 3.; //pow(K_VALUE / (2 * EPSILON), 1.0/2.0);
+const double ALPHA = 6.; //pow(K_VALUE / (2 * EPSILON), 1.0/2.0);
 
 double getLennardJonesEnergy(double distance) {
   return 4 * EPSILON * (pow(SIGMA / distance, 12) - pow(SIGMA / distance, 6));
