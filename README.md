@@ -145,3 +145,5 @@ The textbook is too big to upload so here's the link: http://www.charleshouserjr
         * move camera
     * `[` and `]`
         * zoom in/out
+    * `r`
+        * reset camera 

@@ -91,8 +91,6 @@ void Atom::setInitialPosition(double spawn_dist) {
   double r = spawn_dist * cbrt(u);
   setLocalPos(r * sin(theta) * cos(phi), r * sin(theta) * sin(phi),
               r * cos(theta));
-  // cout << " x " << r * sin(theta) * cos(phi) << " y " << r * sin(theta) *
-  // sin(phi) << " z " << r * cos(theta) << endl;
 }
 
 double Atom::getMass() { return sphere_mass; }
