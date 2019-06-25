@@ -101,12 +101,14 @@ const double WALL_FRONT = 0.05;    // 0.08;
 const double WALL_BACK = -0.05;    //-0.08;
 const double SPHERE_STIFFNESS = 500.0;
 const double SPHERE_MASS = 0.02;
-const double K_DAMPING = 0.001;  // 0.996;
+const double F_DAMPING = 0.5;
+const double V_DAMPING = 0.001;
+const double A_DAMPING = 1.0;
 const double K_MAGNET = 500.0;
 const double HAPTIC_STIFFNESS = 1000.0;
 const double SIGMA = 1.0;
 const double EPSILON = 1.0;
-const double FORCE_DAMPING = .75;
+
 // Scales the distance betweens atoms
 const double DIST_SCALE = .02;
 
@@ -1249,9 +1251,9 @@ void updateHaptics(void) {
         }
         current->setForce(force);
         // cVector3d sphereAcc = (force / SPHERE_MASS);
-        cVector3d sphereAcc = (force / current->getMass());
+        cVector3d sphereAcc = A_DAMPING * (force / current->getMass());
         current->setVelocity(
-            K_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
+            V_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
         // compute /position
         cVector3d spherePos_change = timeInterval * current->getVelocity() +
                                      cSqr(timeInterval) * sphereAcc;
@@ -1439,6 +1441,6 @@ double getLennardJonesEnergy(double distance) {
 }
 
 double getLennardJonesForce(double distance) {
-  return -4 * FORCE_DAMPING * EPSILON *
+  return -4 * F_DAMPING * EPSILON *
          ((-12 * pow(SIGMA / distance, 13)) - (-6 * pow(SIGMA / distance, 7)));
 }
