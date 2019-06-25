@@ -16,3 +16,17 @@
     - If it switches to another direction too quickly, greatly reduce magnitude.
     - Try threshold damping the acceleration? It's rapid acceleration that's
     - causing the shaking.
+
+### TEST CASES FOR Damping
+
+Having V: 0.99 causes it to be quite jerky in rearranging into optimal structure.
+
+F: 0.01, A: 1.0
+  - If velocity ~ 1 (>0.99) will randomly cluster and float off from center.
+
+F: 0.01, V: 1.0
+  - Same with acceleration - becomes very slow if below 0.8 or so.
+
+### CURRENT OPTIMAL
+
+F: 0.01, V: 0.99, A: 0.99
