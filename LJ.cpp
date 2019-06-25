@@ -1210,7 +1210,7 @@ void updateHaptics(void) {
         current->setForce(force);
         cVector3d sphereAcc = (force / current->getMass());
         current->setVelocity(
-            K_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
+            V_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
         // compute position
         cVector3d spherePos_change = timeInterval * current->getVelocity() +
                                      cSqr(timeInterval) * sphereAcc;
