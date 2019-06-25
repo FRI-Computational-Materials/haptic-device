@@ -143,7 +143,8 @@ vector<Atom *> spheres;
 cBackground *background;
 
 // a font for rendering text
-cFontPtr font = NEW_CFONTCALIBRI20();;
+cFontPtr font = NEW_CFONTCALIBRI20();
+;
 
 // a label to display the rate [Hz] at which the simulation is running
 cLabel *labelRates;
@@ -223,6 +224,9 @@ double centerCoords[3] = {50.0, 50.0, 50.0};
 
 // default potential is Lennard Jones
 Potential energySurface = LENNARD_JONES;
+
+// check if able to read in the global min
+bool global_min_known = true;
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -694,12 +698,20 @@ int main(int argc, char *argv[]) {
   scope->setTransparencyLevel(.7);
   global_minimum = getGlobalMinima(spheres.size());
   double lower_bound, upper_bound;
-  if (global_minimum > -50) {
-    upper_bound = 0;
-    lower_bound = global_minimum - .5;
+  if (global_minimum != 0) {
+    if (global_minimum > -50) {
+      upper_bound = 0;
+      lower_bound = global_minimum - .5;
+    } else {
+      upper_bound = 0 + (global_minimum * .2);
+      lower_bound = global_minimum - 3;
+    }
+    global_min_known = true;
   } else {
-    upper_bound = 0 + (global_minimum * .2);
-    lower_bound = global_minimum - 3;
+    upper_bound = 0; 
+    lower_bound = static_cast<int>(spheres.size()) * -3;
+    global_minimum = 0;
+    global_min_known = false;
   }
   scope->setRange(lower_bound, upper_bound);
 
@@ -1181,16 +1193,16 @@ void updateHaptics(void) {
 
             // compute distance between both spheres
             double distance = cDistance(pos0, pos1) / DIST_SCALE;
-            if(energySurface == LENNARD_JONES){
+            if (energySurface == LENNARD_JONES) {
               potentialEnergy += getLennardJonesEnergy(distance);
-            }else if (energySurface == MORSE){
+            } else if (energySurface == MORSE) {
               potentialEnergy += getMorseEnergy(distance);
             }
             if (!button0) {
               double appliedForce;
-              if(energySurface == LENNARD_JONES){
+              if (energySurface == LENNARD_JONES) {
                 appliedForce = getLennardJonesForce(distance);
-              }else if (energySurface == MORSE){
+              } else if (energySurface == MORSE) {
                 appliedForce = getMorseForce(distance);
               }
               force.add(appliedForce * dir01);
@@ -1258,6 +1270,22 @@ void updateHaptics(void) {
       // timescale
       if (fmod(currentTime, currentTimeRounded) <= .01) {
         scope->setSignalValues(potentialEnergy / 2, global_minimum);
+      }
+
+      // scale the graph if the minimum isn't known
+      if (!global_min_known) {
+        if ((potentialEnergy / 2) < global_minimum) {
+          global_minimum = (potentialEnergy / 2);
+        }
+
+        if (global_minimum < scope->getRangeMin()) {
+          cout << "adjusting scale!!" << endl;
+          auto new_lower = scope->getRangeMin() - 25;
+          auto new_upper = scope->getRangeMax() - 25;
+          //scope->setRange(new_lower, scope->getRangeMax());
+          scope->setRange(new_lower, new_upper);
+
+        }
       }
     }
     cVector3d force = current->getForce();
