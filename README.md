@@ -15,6 +15,7 @@ If you don't pass in anything, the default is five.
 ### Windows
 
 Windows development temporarily halted (unable to compile on Visual Studio).
+Check WINDOWS.md for details on installation.
 
 
 ### Linux
