@@ -1,4 +1,4 @@
-//==============================================================================
+ //==============================================================================
 /*
  Software License Agreement (BSD License)
  Copyright (c) 2003-2016, CHAI3D.
@@ -103,7 +103,7 @@ const double WALL_FRONT = 0.05;    // 0.08;
 const double WALL_BACK = -0.05;    //-0.08;
 const double SPHERE_STIFFNESS = 500.0;
 const double SPHERE_MASS = 0.02;
-const double K_DAMPING = 0.001;  // 0.996;
+const double V_DAMPING = 0.0001;  // 0.996;
 const double K_MAGNET = 500.0;
 const double HAPTIC_STIFFNESS = 1000.0;
 // Scales the distance betweens atoms
@@ -1206,6 +1206,7 @@ void updateHaptics(void) {
             }
           }
         }
+
         current->setForce(force);
         cVector3d sphereAcc = (force / current->getMass());
         current->setVelocity(
@@ -1213,9 +1214,12 @@ void updateHaptics(void) {
         // compute position
         cVector3d spherePos_change = timeInterval * current->getVelocity() +
                                      cSqr(timeInterval) * sphereAcc;
-        double magnitude = spherePos_change.length();
 
         cVector3d spherePos = current->getLocalPos() + spherePos_change;
+
+
+        double magnitude = force.length();
+
         if (magnitude > 5) {
           cout << i << " velocity " << current->getVelocity().length() << endl;
           cout << i << " force " << force.length() << endl;
@@ -1287,7 +1291,7 @@ void updateHaptics(void) {
     /////////////////////////////////////////////////////////////////////////
 
     // scale the force according to the max stiffness the device can render
-    double stiffnessRatio = 1.0;
+    double stiffnessRatio = 0.5;
     if (hapticDeviceMaxStiffness < HAPTIC_STIFFNESS)
       stiffnessRatio = hapticDeviceMaxStiffness / HAPTIC_STIFFNESS;
     if (force.length() > 10) force = 10. * cNormalize(force);
