@@ -25,6 +25,7 @@ double getGlobalMinima(int cluster_size) {
                 "\" doesn't have data for clusters of this size yet."
          << std::endl;
     std::cout << "The graph may not be accurate." << std::endl;
+    return 0;
   }
 
   int cluster_size_file;

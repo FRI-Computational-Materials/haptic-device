@@ -1,4 +1,4 @@
-//==============================================================================
+ //==============================================================================
 /*
  Software License Agreement (BSD License)
  Copyright (c) 2003-2016, CHAI3D.
@@ -103,7 +103,7 @@ const double WALL_FRONT = 0.05;    // 0.08;
 const double WALL_BACK = -0.05;    //-0.08;
 const double SPHERE_STIFFNESS = 500.0;
 const double SPHERE_MASS = 0.02;
-const double K_DAMPING = 0.001;  // 0.996;
+const double V_DAMPING = 0.0001;  // 0.996;
 const double K_MAGNET = 500.0;
 const double HAPTIC_STIFFNESS = 1000.0;
 // Scales the distance betweens atoms
@@ -143,7 +143,7 @@ vector<Atom *> spheres;
 cBackground *background;
 
 // a font for rendering text
-cFontPtr font = NEW_CFONTCALIBRI20();;
+cFontPtr font = NEW_CFONTCALIBRI20();
 
 // a label to display the rate [Hz] at which the simulation is running
 cLabel *labelRates;
@@ -223,6 +223,9 @@ double centerCoords[3] = {50.0, 50.0, 50.0};
 
 // default potential is Lennard Jones
 Potential energySurface = LENNARD_JONES;
+
+// check if able to read in the global min
+bool global_min_known = true;
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -526,7 +529,7 @@ int main(int argc, char *argv[]) {
             if (dist_between == 0) {
               continue;
             } else if (dist_between < 1.5) {
-              // The numebr dist between is being compared to
+              // The number dist between is being compared to
               // is the threshold for collision
               collision_detected = true;
               iter++;
@@ -537,8 +540,6 @@ int main(int argc, char *argv[]) {
             inside_atom = false;
           }
         }
-        cout << "Pos: " << new_atom->getLocalPos() << endl;
-        ;
       }
       // set graphic properties of sphere
       new_atom->setTexture(texture);
@@ -695,12 +696,20 @@ int main(int argc, char *argv[]) {
   scope->setTransparencyLevel(.7);
   global_minimum = getGlobalMinima(spheres.size());
   double lower_bound, upper_bound;
-  if (global_minimum > -50) {
-    upper_bound = 0;
-    lower_bound = global_minimum - .5;
+  if (global_minimum != 0) {
+    if (global_minimum > -50) {
+      upper_bound = 0;
+      lower_bound = global_minimum - .5;
+    } else {
+      upper_bound = 0 + (global_minimum * .2);
+      lower_bound = global_minimum - 3;
+    }
+    global_min_known = true;
   } else {
-    upper_bound = 0 + (global_minimum * .2);
-    lower_bound = global_minimum - 3;
+    upper_bound = 0;
+    lower_bound = static_cast<int>(spheres.size()) * -3;
+    global_minimum = 0;
+    global_min_known = false;
   }
   scope->setRange(lower_bound, upper_bound);
 
@@ -785,15 +794,10 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
   // filter calls that only include a key press
   if ((a_action != GLFW_PRESS) && (a_action != GLFW_REPEAT)) {
     return;
-  }
-
-  // option - exit
-  else if ((a_key == GLFW_KEY_ESCAPE) || (a_key == GLFW_KEY_Q)) {
+  } else if ((a_key == GLFW_KEY_ESCAPE) || (a_key == GLFW_KEY_Q)) {
+    // option - exit
     glfwSetWindowShouldClose(a_window, GLFW_TRUE);
-  }
-
-  // option - toggle fullscreen
-  else if (a_key == GLFW_KEY_F) {
+  } else if (a_key == GLFW_KEY_F) {  // option - toggle fullscreen
     // toggle state variable
     fullscreen = !fullscreen;
 
@@ -816,17 +820,15 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       glfwSetWindowMonitor(window, NULL, x, y, w, h, mode->refreshRate);
       glfwSwapInterval(swapInterval);
     }
-  }
-  // action - unanchor all key
-  else if (a_key == GLFW_KEY_U) {
+  } else if (a_key == GLFW_KEY_U) {
+    // action - unanchor all key
     for (auto i{0}; i < spheres.size(); i++) {
       if (spheres[i]->isAnchor()) {
         spheres[i]->setAnchor(false);
       }
     }
-  }
-  // option - save screenshot to file
-  else if (a_key == GLFW_KEY_S) {
+  } else if (a_key == GLFW_KEY_S) {
+    // option - save screenshot to file
     cImagePtr image = cImage::create();
     camera->m_frontLayer->removeChild(scope);
     camera->renderView(width, height);
@@ -895,6 +897,12 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       rho = camera->getSphericalRadius();
       updateCameraLabel(camera_pos, camera);
     }
+  } else if (a_key == GLFW_KEY_R) {
+    // Reset the camera to it's default pos
+    camera->setSphericalPolarRad(0);
+    camera->setSphericalAzimuthRad(0);
+    camera->setSphericalRadius(.35);
+    updateCameraLabel(camera_pos, camera);
   }
 }
 
@@ -1182,33 +1190,36 @@ void updateHaptics(void) {
 
             // compute distance between both spheres
             double distance = cDistance(pos0, pos1) / DIST_SCALE;
-            if(energySurface == LENNARD_JONES){
+            if (energySurface == LENNARD_JONES) {
               potentialEnergy += getLennardJonesEnergy(distance);
-            }else if (energySurface == MORSE){
+            } else if (energySurface == MORSE) {
               potentialEnergy += getMorseEnergy(distance);
             }
             if (!button0) {
               double appliedForce;
-              if(energySurface == LENNARD_JONES){
+              if (energySurface == LENNARD_JONES) {
                 appliedForce = getLennardJonesForce(distance);
-              }else if (energySurface == MORSE){
+              } else if (energySurface == MORSE) {
                 appliedForce = getMorseForce(distance);
               }
               force.add(appliedForce * dir01);
             }
           }
         }
+
         current->setForce(force);
-        // cVector3d sphereAcc = (force / SPHERE_MASS);
         cVector3d sphereAcc = (force / current->getMass());
         current->setVelocity(
-            K_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
-        // compute /position
+            V_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
+        // compute position
         cVector3d spherePos_change = timeInterval * current->getVelocity() +
                                      cSqr(timeInterval) * sphereAcc;
-        double magnitude = spherePos_change.length();
 
         cVector3d spherePos = current->getLocalPos() + spherePos_change;
+
+
+        double magnitude = force.length();
+
         if (magnitude > 5) {
           cout << i << " velocity " << current->getVelocity().length() << endl;
           cout << i << " force " << force.length() << endl;
@@ -1226,7 +1237,6 @@ void updateHaptics(void) {
       current = spheres[curr_atom];
       current->setLocalPos(position);
 
-      // cVector3d force = current->getForce();
       // JD: moved this out of nested for loop so that test is set only when
       // fully calculated update haptic and graphic rate data
       LJ_num->setText("Potential Energy: " + cStr((potentialEnergy / 2), 5));
@@ -1255,6 +1265,19 @@ void updateHaptics(void) {
       if (fmod(currentTime, currentTimeRounded) <= .01) {
         scope->setSignalValues(potentialEnergy / 2, global_minimum);
       }
+
+      // scale the graph if the minimum isn't known
+      if (!global_min_known) {
+        if ((potentialEnergy / 2) < global_minimum) {
+          global_minimum = (potentialEnergy / 2);
+        }
+
+        if (global_minimum < scope->getRangeMin()) {
+          auto new_lower = scope->getRangeMin() - 25;
+          auto new_upper = scope->getRangeMax() - 25;
+          scope->setRange(new_lower, new_upper);
+        }
+      }
     }
     cVector3d force = current->getForce();
     /////////////////////////////////////////////////////////////////////////
@@ -1268,7 +1291,7 @@ void updateHaptics(void) {
     /////////////////////////////////////////////////////////////////////////
 
     // scale the force according to the max stiffness the device can render
-    double stiffnessRatio = 1.0;
+    double stiffnessRatio = 0.5;
     if (hapticDeviceMaxStiffness < HAPTIC_STIFFNESS)
       stiffnessRatio = hapticDeviceMaxStiffness / HAPTIC_STIFFNESS;
     if (force.length() > 10) force = 10. * cNormalize(force);
