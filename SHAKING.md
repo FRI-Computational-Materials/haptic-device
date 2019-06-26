@@ -1,14 +1,14 @@
 ### ITEMS FOR TESTING
 
 1. Damping
-  A) Damp forces: FAIL
-  B) Damp acceleration: FAIL
-  C) Damp velocity: FAIL
+  A) Damp forces: IN PROGRESS
+  B) Damp acceleration: SEE A)
+  C) Damp velocity: IN PROGRESS
   D) Damp change in position: FAIL
 
 2. Change Haptic Movement
-  A) Increase stiffness: FAIL
-  B) Reduce movement of device due to forces: FAIL
+  A) Increase stiffness: NOT YET TESTED
+  B) Reduce movement of device due to forces: NOT YET TESTED
 
 3. Prevent Rapid Oscillations
   IDEAS:
