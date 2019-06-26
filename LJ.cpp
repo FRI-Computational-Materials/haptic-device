@@ -166,6 +166,10 @@ cLabel *camera_pos;
 // a label to identify the potential energy surface
 cLabel *potentialLabel;
 
+// labels for the scope 
+cLabel *scope_upper;
+cLabel *scope_lower;
+
 // a flag that indicates if the haptic simulation is currently running
 bool simulationRunning = false;
 
@@ -665,6 +669,10 @@ int main(int argc, char *argv[]) {
   // energy surface label
   addLabel(potentialLabel);
 
+  // Add labels to the graph
+  addLabel(scope_upper);
+  addLabel(scope_lower);
+
   // create a background
   background = new cBackground();
   camera->m_backLayer->addChild(background);
@@ -696,7 +704,7 @@ int main(int argc, char *argv[]) {
   scope->setTransparencyLevel(.7);
   global_minimum = getGlobalMinima(spheres.size());
   double lower_bound, upper_bound;
-  if (global_minimum != 0) {
+  if (global_minimum != 0 && (energySurface == LENNARD_JONES)) {
     if (global_minimum > -50) {
       upper_bound = 0;
       lower_bound = global_minimum - .5;
@@ -712,6 +720,15 @@ int main(int argc, char *argv[]) {
     global_min_known = false;
   }
   scope->setRange(lower_bound, upper_bound);
+  scope_upper->setText(cStr(upper_bound));
+  scope_lower->setText(cStr(lower_bound));
+  // Height was guessed and added manually - there's probably a better way
+  // To do this but the scope height is protected
+  scope_upper->setLocalPos(cAdd(scope->getLocalPos(), cVector3d(0, 180, 0)));
+  scope_lower->setLocalPos(scope->getLocalPos());
+  // TODO - make more legible
+  //scope_upper->m_fontColor.setRed();
+  //scope_lower->m_fontColor.setRed();
 
   //--------------------------------------------------------------------------
   // START SIMULATION
@@ -1276,6 +1293,8 @@ void updateHaptics(void) {
           auto new_lower = scope->getRangeMin() - 25;
           auto new_upper = scope->getRangeMax() - 25;
           scope->setRange(new_lower, new_upper);
+          scope_upper->setText(cStr(scope->getRangeMax()));
+          scope_lower->setText(cStr(scope->getRangeMin()));
         }
       }
     }
