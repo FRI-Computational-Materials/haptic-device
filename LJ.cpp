@@ -273,20 +273,12 @@ void updateCameraLabel(cLabel *&camera_pos, cCamera *&camera);
 // save configuration in .con file
 void writeToCon(string fileName);
 
-<<<<<<< HEAD
 
 
 // declare runAmp
 double runAmp();
 
-// compute Lennard Jones energy
-double getLennardJonesEnergy(double distance);
-
-//compute Lennard Jones force
-double getLennardJonesForce(double distance);
-
-=======
->>>>>>> dev
+vector<vector<double>> runAmpForces();
 //------------------------------------------------------------------------------
 // DECLARED MACROS
 //------------------------------------------------------------------------------
@@ -497,83 +489,6 @@ int main(int argc, char *argv[]) {
 #if defined(_MSVC)
     fileload = texture->loadFromFile("../resources/images/spheremap-3.jpg");
 #endif
-<<<<<<< HEAD
-    }
-    if (!fileload) {
-        cout << "Error - Texture image failed to load correctly." << endl;
-        close();
-        return (-1);
-    }
-
-    // either no arguments were given or argument was an integer
-    if (argc == 1 || isNumber(argv[1])) {
-        // set numSpheres to input; if none or negative, default is five
-        int numSpheres = argc > 1 ? atoi(argv[1]) : 5;
-        for (int i = 0; i < numSpheres; i++) {
-            // create a sphere and define its radius
-            Atom *new_atom = new Atom(SPHERE_RADIUS, SPHERE_MASS);
-
-            // store pointer to sphere primitive
-            spheres.push_back(new_atom);
-
-            // add sphere primitive to world
-            world->addChild(new_atom);
-
-            // add line to world
-            world->addChild(new_atom->getVelVector());
-
-            // set the position of the object at the center of the world
-
-            bool inside_atom = true;
-            if (i != 0) {
-                bool collision_detected;
-                auto iter {0};
-                while (inside_atom) {
-                    // Place atom at a random position
-                    if (iter > 1000) {
-                        // If there are too many failed attempts at placing the atom
-                        // increase the radius in which it can spawn
-                        new_atom->setInitialPosition(.115);
-                    } else {
-                        new_atom->setInitialPosition();
-                    }
-                    // Check that it doesn't collide with any others
-                    collision_detected = false;
-                    for (auto i{0}; i < spheres.size(); i++) {
-                        auto dist_between =
-                        cDistance(new_atom->getLocalPos(), spheres[i]->getLocalPos());
-                        dist_between = dist_between / .02;
-                        if (dist_between == 0) {
-                            continue;
-                        } else if (dist_between < 1.5) {
-                            // The numebr dist between is being compared to
-                            // is the threshold for collision
-                            collision_detected = true;
-                            iter++;
-                            break;
-                        }
-                    }
-                    if (!collision_detected) {
-                        inside_atom = false;
-                    }
-                }
-                cout << "Pos: " << new_atom->getLocalPos() << endl;
-            }
-
-            // set graphic properties of sphere
-            new_atom->setTexture(texture);
-            new_atom->m_texture->setSphericalMappingEnabled(true);
-            new_atom->setUseTexture(true);
-
-            // Set the first and second sphere (the one being controlled to red
-            // initially and the anchor in blue)
-            if (i == 0)  // sphere is current
-            {
-                new_atom->setCurrent(true);
-            } else if (i == 1)  // sphere is anchor
-            {
-                new_atom->setAnchor(true);
-=======
   }
   if (!fileload) {
     cout << "Error - Texture image failed to load correctly." << endl;
@@ -626,7 +541,6 @@ int main(int argc, char *argv[]) {
               collision_detected = true;
               iter++;
               break;
->>>>>>> dev
             }
           }
           if (!collision_detected) {
@@ -731,8 +645,10 @@ int main(int argc, char *argv[]) {
     for (char &c : arg) {
       c = tolower(c);
     }
-    if (arg == "morse" || "m") {
+    if (arg == "morse" || arg == "m") {
       energySurface = MORSE;
+    }else if(arg == "amp" || arg == "a"){
+      energySurface = MACHINE_LEARNING;
     }
   }
   //--------------------------------------------------------------------------
@@ -801,7 +717,7 @@ int main(int argc, char *argv[]) {
     }
     global_min_known = true;
   } else {
-    upper_bound = 0; 
+    upper_bound = 0;
     lower_bound = static_cast<int>(spheres.size()) * -3;
     global_minimum = 0;
     global_min_known = false;
@@ -979,28 +895,6 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
     camera->setSphericalAzimuthRad(camera->getSphericalAzimuthRad() +
                                    (M_PI / 50) * direction);
 
-<<<<<<< HEAD
-        // prevent overflow on camera position
-        if(camera->getSphericalAzimuthRad() > 1000 * M_PI){
-            camera->setSphericalAzimuthRad(camera-> getSphericalAzimuthRad() - 1000*M_PI);
-        }
-        if(camera->getSphericalAzimuthRad() < -1000 * M_PI){
-            camera->setSphericalAzimuthRad(camera-> getSphericalAzimuthRad() + 1000*M_PI);
-        }
-        camera_pos->setText("Camera located at: (" + cStr(rho*sin(camera->getSphericalPolarRad()) * cos(camera->getSphericalAzimuthRad())) + ", " + cStr(rho*sin(camera->getSphericalPolarRad()) * sin(camera->getSphericalAzimuthRad())) + ", " + cStr(rho*cos(camera->getSphericalPolarRad())) + ")");
-
-    } else if (a_key == GLFW_KEY_LEFT_BRACKET || a_key == GLFW_KEY_RIGHT_BRACKET){
-        int direction = (a_key == GLFW_KEY_RIGHT_BRACKET) ? 1 : -1;
-        if((direction == 1 && rho < 1) || (direction == -1 && rho > .15)){
-            camera->setSphericalRadius(camera->getSphericalRadius() + .01 * direction);
-            rho = camera->getSphericalRadius();
-            camera_pos->setText("Camera located at: (" + cStr(rho*sin(camera->getSphericalPolarRad()) * cos(camera->getSphericalAzimuthRad())) + ", " + cStr(rho*sin(camera->getSphericalPolarRad()) * sin(camera->getSphericalAzimuthRad())) + ", " + cStr(rho*cos(camera->getSphericalPolarRad())) + ")");
-        }
-  }else if(a_key == GLFW_KEY_M){
-    //writeToCon("atoms.con");
-    double amp_PE = runAmp();
-    std::cout << amp_PE <<endl;
-=======
     // prevent overflow on camera position
     if (camera->getSphericalAzimuthRad() > 1000 * M_PI) {
       camera->setSphericalAzimuthRad(camera->getSphericalAzimuthRad() -
@@ -1021,7 +915,6 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       rho = camera->getSphericalRadius();
       updateCameraLabel(camera_pos, camera);
     }
->>>>>>> dev
   }
 }
 
@@ -1288,65 +1181,98 @@ void updateHaptics(void) {
 
       // JD: edited this so that many operations are removed out of the inner
       // loop This loop is for computing the force on atom i
-      for (int i = 0; i < spheres.size(); i++) {
-        // compute force on atom
-        cVector3d force;
-        current = spheres[i];
-        cVector3d pos0 = current->getLocalPos();
-        // check forces with all other spheres
-        force.zero();
+      if (energySurface != MACHINE_LEARNING){
+        for (int i = 0; i < spheres.size(); i++) {
+          // compute force on atom
+          cVector3d force;
+          current = spheres[i];
+          cVector3d pos0 = current->getLocalPos();
+          // check forces with all other spheres
+          force.zero();
 
-        // this loop is for finding all of atom i's neighbors
-        for (int j = 0; j < spheres.size(); j++) {
-          // Don't compute forces between an atom and itself
-          if (i != j) {
-            // get position of sphere
-            cVector3d pos1 = spheres[j]->getLocalPos();
+          // this loop is for finding all of atom i's neighbors
+          for (int j = 0; j < spheres.size(); j++) {
+            // Don't compute forces between an atom and itself
+            if (i != j) {
+              // get position of sphere
+              cVector3d pos1 = spheres[j]->getLocalPos();
 
-            // compute direction vector from sphere 0 to 1
+              // compute direction vector from sphere 0 to 1
 
-            cVector3d dir01 = cNormalize(pos0 - pos1);
+              cVector3d dir01 = cNormalize(pos0 - pos1);
 
-            // compute distance between both spheres
-            double distance = cDistance(pos0, pos1) / DIST_SCALE;
-            if (energySurface == LENNARD_JONES) {
-              potentialEnergy += getLennardJonesEnergy(distance);
-            } else if (energySurface == MORSE) {
-              potentialEnergy += getMorseEnergy(distance);
-            }
-            if (!button0) {
-              double appliedForce;
+              // compute distance between both spheres
+              double distance = cDistance(pos0, pos1) / DIST_SCALE;
               if (energySurface == LENNARD_JONES) {
-                appliedForce = getLennardJonesForce(distance);
+                potentialEnergy += getLennardJonesEnergy(distance);
               } else if (energySurface == MORSE) {
-                appliedForce = getMorseForce(distance);
+                potentialEnergy += getMorseEnergy(distance);
               }
-              force.add(appliedForce * dir01);
+              if (!button0) {
+                double appliedForce;
+                if (energySurface == LENNARD_JONES) {
+                  appliedForce = getLennardJonesForce(distance);
+                } else if (energySurface == MORSE) {
+                  appliedForce = getMorseForce(distance);
+                }
+                force.add(appliedForce * dir01);
+              }
+            }
+          }
+          current->setForce(force);
+          // cVector3d sphereAcc = (force / SPHERE_MASS);
+          cVector3d sphereAcc = (force / current->getMass());
+          current->setVelocity(
+              K_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
+          // compute /position
+          cVector3d spherePos_change = timeInterval * current->getVelocity() +
+                                       cSqr(timeInterval) * sphereAcc;
+          double magnitude = spherePos_change.length();
+
+          cVector3d spherePos = current->getLocalPos() + spherePos_change;
+          if (magnitude > 5) {
+            cout << i << " velocity " << current->getVelocity().length() << endl;
+            cout << i << " force " << force.length() << endl;
+            cout << i << " acceleration " << sphereAcc.length() << endl;
+            cout << i << " time " << timeInterval << endl;
+            cout << i << " position of  " << timeInterval << endl;
+          }
+
+          if (!current->isCurrent()) {
+            if (!current->isAnchor()) {
+              current->setLocalPos(spherePos);
             }
           }
         }
-        current->setForce(force);
-        // cVector3d sphereAcc = (force / SPHERE_MASS);
-        cVector3d sphereAcc = (force / current->getMass());
-        current->setVelocity(
-            K_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
-        // compute /position
-        cVector3d spherePos_change = timeInterval * current->getVelocity() +
-                                     cSqr(timeInterval) * sphereAcc;
-        double magnitude = spherePos_change.length();
+      } else {
+        potentialEnergy += 2*runAmp();
+        vector<vector<double>> ampForces = runAmpForces();
+        for (int i = 0; i < spheres.size(); i++) {
+          cVector3d force = cVector3d(ampForces[i][0], ampForces[i][1], ampForces[i][2]);
+          current = spheres[i];
+          cVector3d pos0 = current->getLocalPos();
+          current->setForce(force);
+          cVector3d sphereAcc = (force / current->getMass());
+          current->setVelocity(
+              K_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
+              // compute /position
+          cVector3d spherePos_change = timeInterval * current->getVelocity() +
+                                           cSqr(timeInterval) * sphereAcc;
+          double magnitude = spherePos_change.length();
 
-        cVector3d spherePos = current->getLocalPos() + spherePos_change;
-        if (magnitude > 5) {
-          cout << i << " velocity " << current->getVelocity().length() << endl;
-          cout << i << " force " << force.length() << endl;
-          cout << i << " acceleration " << sphereAcc.length() << endl;
-          cout << i << " time " << timeInterval << endl;
-          cout << i << " position of  " << timeInterval << endl;
-        }
+          cVector3d spherePos = current->getLocalPos() + spherePos_change;
+          if (magnitude > 5) {
+            cout << i << " velocity " << current->getVelocity().length() << endl;
+            cout << i << " force " << force.length() << endl;
+            cout << i << " acceleration " << sphereAcc.length() << endl;
+            cout << i << " time " << timeInterval << endl;
+            cout << i << " position of  " << timeInterval << endl;
+          }
 
-        if (!current->isCurrent()) {
-          if (!current->isAnchor()) {
-            current->setLocalPos(spherePos);
+          if (!current->isCurrent()) {
+            if (!current->isAnchor()) {
+              current->setLocalPos(spherePos);
+            }
           }
         }
       }
@@ -1524,14 +1450,14 @@ double runAmp(){
   pName = PyString_FromString("calculator");
   PyObject* objectsRepresentation = PyObject_Repr(pName);
   const char* s = PyString_AsString(objectsRepresentation);
-  /* Error checking of pName left out */
+  // Error checking of pName left out
 
   pModule = PyImport_Import(pName);
   Py_DECREF(pName);
 
   if (pModule != NULL) {
     pFunc = PyObject_GetAttrString(pModule, "getPE");
-    /* pFunc is a new reference */
+    // pFunc is a new reference
     if (pFunc && PyCallable_Check(pFunc)) {
         pArgs = PyTuple_New(spheres.size() * 3);
         for (i = 0; i < spheres.size() * 3; ++i) {
@@ -1577,5 +1503,91 @@ double runAmp(){
     PyErr_Print();
     fprintf(stderr, "Failed to load");
     return 1;
+  }
+}
+
+vector<vector<double>> runAmpForces(){
+  // Prepare positions so they may be passed to python
+  double atomArray [spheres.size() * 3];
+  for (int i = 0; i < spheres.size() * 3; i+=3){
+    cVector3d pos = spheres[i/3]->getLocalPos();
+    atomArray[i] = pos.x()/.02 + centerCoords[0];
+    atomArray[i+1] = pos.y()/.02 + centerCoords[1];
+    atomArray[i+2] = pos.z()/.02 + centerCoords[2];
+  }
+
+  PyObject *pName, *pModule, *pFunc;
+  PyObject *pValue, *pTuple, *pResult, *pFinal;
+  int i;
+
+  Py_Initialize();
+
+  pName = PyString_FromString("calculator");
+  PyObject* objectsRepresentation = PyObject_Repr(pName);
+  const char* s = PyString_AsString(objectsRepresentation);
+  /* Error checking of pName left out */
+
+  pModule = PyImport_Import(pName);
+  Py_DECREF(pName);
+
+  if (pModule != NULL) {
+    pFunc = PyObject_GetAttrString(pModule, "getForce");
+    /* pFunc is a new reference */
+    if (pFunc && PyCallable_Check(pFunc)) {
+        pResult = PyTuple_New(spheres.size() * 3);
+        for (i = 0; i < spheres.size() * 3; ++i) {
+            pValue = PyFloat_FromDouble(atomArray[i]);
+            if (!pValue) {
+                Py_DECREF(pResult);
+                Py_DECREF(pModule);
+                fprintf(stderr, "Cannot convert argument\n");
+                //return 1;
+            }
+            // pValue reference stolen here:
+            PyTuple_SetItem(pResult, i, pValue);
+        }
+        //Create tuple to put pArgs inside of -- Becaue we need to pass one object to python
+
+        pTuple = PyTuple_New(1);
+        PyTuple_SetItem(pTuple, 0, pResult);
+        //pFinal = PyTuple_New(spheres.size() * 3);
+        pFinal = PyObject_CallObject(pFunc, pTuple);
+        if (pTuple != NULL){
+          Py_DECREF(pTuple);
+        }
+        if (pFinal != NULL) {
+          vector<vector<double>> forceArr;
+          for (int j = 0; j < spheres.size()*3; j+=3){
+            vector<double> temp;
+            temp.push_back(PyFloat_AsDouble(PyList_GetItem(pFinal,j)));
+            temp.push_back(PyFloat_AsDouble(PyList_GetItem(pFinal,j + 1)));
+            temp.push_back(PyFloat_AsDouble(PyList_GetItem(pFinal,j + 2)));
+            forceArr.push_back(temp);
+          }
+          return forceArr;
+          Py_DECREF(pValue);
+          Py_DECREF(pResult);
+          Py_DECREF(pFinal);
+        }
+        else {
+          Py_DECREF(pFunc);
+          Py_DECREF(pModule);
+          PyErr_Print();
+          fprintf(stderr,"Call failed\n");
+          //return 1;
+        }
+    }
+    else {
+        if (PyErr_Occurred())
+            PyErr_Print();
+        fprintf(stderr, "Cannot find function");
+    }
+    Py_XDECREF(pFunc);
+    Py_DECREF(pModule);
+}
+  else {
+    PyErr_Print();
+    fprintf(stderr, "Failed to load");
+    //return 1;
   }
 }
