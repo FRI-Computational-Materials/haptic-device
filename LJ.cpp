@@ -1,4 +1,4 @@
-//==============================================================================
+ //==============================================================================
 /*
  Software License Agreement (BSD License)
  Copyright (c) 2003-2016, CHAI3D.
@@ -43,6 +43,8 @@
 //------------------------------------------------------------------------------
 #include "atom.h"
 #include "chai3d.h"
+#include "potentials.h"
+#include "utility.h"
 //------------------------------------------------------------------------------
 #include <GLFW/glfw3.h>
 #include <math.h>
@@ -101,12 +103,9 @@ const double WALL_FRONT = 0.05;    // 0.08;
 const double WALL_BACK = -0.05;    //-0.08;
 const double SPHERE_STIFFNESS = 500.0;
 const double SPHERE_MASS = 0.02;
-const double K_DAMPING = 0.001;  // 0.996;
+const double V_DAMPING = 0.0001;  // 0.996;
 const double K_MAGNET = 500.0;
 const double HAPTIC_STIFFNESS = 1000.0;
-const double SIGMA = 1.0;
-const double EPSILON = 1.0;
-const double FORCE_DAMPING = .75;
 // Scales the distance betweens atoms
 const double DIST_SCALE = .02;
 
@@ -144,7 +143,7 @@ vector<Atom *> spheres;
 cBackground *background;
 
 // a font for rendering text
-cFontPtr font;
+cFontPtr font = NEW_CFONTCALIBRI20();
 
 // a label to display the rate [Hz] at which the simulation is running
 cLabel *labelRates;
@@ -163,6 +162,13 @@ cLabel *isFrozen;
 
 // a label to display the camera position
 cLabel *camera_pos;
+
+// a label to identify the potential energy surface
+cLabel *potentialLabel;
+
+// labels for the scope 
+cLabel *scope_upper;
+cLabel *scope_lower;
 
 // a flag that indicates if the haptic simulation is currently running
 bool simulationRunning = false;
@@ -222,6 +228,9 @@ double centerCoords[3] = {50.0, 50.0, 50.0};
 // default potential is Lennard Jones
 Potential energySurface = LENNARD_JONES;
 
+// check if able to read in the global min
+bool global_min_known = true;
+
 //------------------------------------------------------------------------------
 // DECLARED MACROS
 //------------------------------------------------------------------------------
@@ -258,23 +267,14 @@ void updateHaptics(void);
 // this function closes the application
 void close(void);
 
-// Reads in global minimum from global_minima.txt
-double getGlobalMinima(int cluster_size);
+// add a label to the world with default black text
+void addLabel(cLabel *&label);
 
-// checks if char array represents a number
-bool isNumber(char number[]);
-
-// checks if given file exists in directory
-inline bool fileExists(const string &name);
+// Update camera text
+void updateCameraLabel(cLabel *&camera_pos, cCamera *&camera);
 
 // save configuration in .con file
 void writeToCon(string fileName);
-
-// compute Lennard Jones energy
-double getLennardJonesEnergy(double distance);
-
-// compute Lennard Jones force
-double getLennardJonesForce(double distance);
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -533,7 +533,7 @@ int main(int argc, char *argv[]) {
             if (dist_between == 0) {
               continue;
             } else if (dist_between < 1.5) {
-              // The numebr dist between is being compared to
+              // The number dist between is being compared to
               // is the threshold for collision
               collision_detected = true;
               iter++;
@@ -544,8 +544,6 @@ int main(int argc, char *argv[]) {
             inside_atom = false;
           }
         }
-        cout << "Pos: " << new_atom->getLocalPos() << endl;
-        ;
       }
       // set graphic properties of sphere
       new_atom->setTexture(texture);
@@ -650,38 +648,30 @@ int main(int argc, char *argv[]) {
   // WIDGETS
   //--------------------------------------------------------------------------
 
-  // create a font
-  font = NEW_CFONTCALIBRI20();
-
   // create a label to display the haptic and graphic rate of the simulation
-  labelRates = new cLabel(font);
-  labelRates->m_fontColor.setBlack();
-  camera->m_frontLayer->addChild(labelRates);
+  addLabel(labelRates);
 
   // potential energy label
-  LJ_num = new cLabel(font);
-  LJ_num->m_fontColor.setBlack();
-  camera->m_frontLayer->addChild(LJ_num);
+  addLabel(LJ_num);
 
   // number anchored label
-  num_anchored = new cLabel(font);
-  num_anchored->m_fontColor.setBlack();
-  camera->m_frontLayer->addChild(num_anchored);
+  addLabel(num_anchored);
 
   // total energy label
-  total_energy = new cLabel(font);
-  total_energy->m_fontColor.setBlack();
-  camera->m_frontLayer->addChild(total_energy);
+  addLabel(total_energy);
 
   // frozen state label
-  isFrozen = new cLabel(font);
-  isFrozen->m_fontColor.setBlack();
-  camera->m_frontLayer->addChild(isFrozen);
+  addLabel(isFrozen);
 
   // camera position label
-  camera_pos = new cLabel(font);
-  camera_pos->m_fontColor.setBlack();
-  camera->m_frontLayer->addChild(camera_pos);
+  addLabel(camera_pos);
+
+  // energy surface label
+  addLabel(potentialLabel);
+
+  // Add labels to the graph
+  addLabel(scope_upper);
+  addLabel(scope_lower);
 
   // create a background
   background = new cBackground();
@@ -714,14 +704,31 @@ int main(int argc, char *argv[]) {
   scope->setTransparencyLevel(.7);
   global_minimum = getGlobalMinima(spheres.size());
   double lower_bound, upper_bound;
-  if (global_minimum > -50) {
-    upper_bound = 0;
-    lower_bound = global_minimum - .5;
+  if (global_minimum != 0 && (energySurface == LENNARD_JONES)) {
+    if (global_minimum > -50) {
+      upper_bound = 0;
+      lower_bound = global_minimum - .5;
+    } else {
+      upper_bound = 0 + (global_minimum * .2);
+      lower_bound = global_minimum - 3;
+    }
+    global_min_known = true;
   } else {
-    upper_bound = 0 + (global_minimum * .2);
-    lower_bound = global_minimum - 3;
+    upper_bound = 0;
+    lower_bound = static_cast<int>(spheres.size()) * -3;
+    global_minimum = 0;
+    global_min_known = false;
   }
   scope->setRange(lower_bound, upper_bound);
+  scope_upper->setText(cStr(upper_bound));
+  scope_lower->setText(cStr(lower_bound));
+  // Height was guessed and added manually - there's probably a better way
+  // To do this but the scope height is protected
+  scope_upper->setLocalPos(cAdd(scope->getLocalPos(), cVector3d(0, 180, 0)));
+  scope_lower->setLocalPos(scope->getLocalPos());
+  // TODO - make more legible
+  //scope_upper->m_fontColor.setRed();
+  //scope_lower->m_fontColor.setRed();
 
   //--------------------------------------------------------------------------
   // START SIMULATION
@@ -735,16 +742,18 @@ int main(int argc, char *argv[]) {
   atexit(close);
 
   // sets the text for the camera position to appear on screen
-  camera_pos->setLocalPos(0, 15, 0);
+  camera_pos->setLocalPos(0, 30, 0);
+  updateCameraLabel(camera_pos, camera);
 
-  camera_pos->setText("Camera located at: (" +
-                      cStr(rho * sin(camera->getSphericalPolarRad()) *
-                           cos(camera->getSphericalAzimuthRad())) +
-                      ", " +
-                      cStr(rho * sin(camera->getSphericalPolarRad()) *
-                           sin(camera->getSphericalAzimuthRad())) +
-                      ", " + cStr(rho * cos(camera->getSphericalPolarRad())) +
-                      ")");
+  // set energy surface label
+  potentialLabel->setLocalPos(0, 0);
+  string potentialName;
+  if (energySurface == LENNARD_JONES) {
+    potentialName = "Lennard Jones Potential";
+  } else if (energySurface == MORSE) {
+    potentialName = "Morse Potential";
+  }
+  potentialLabel->setText("Potential energy surface: " + potentialName);
 
   //--------------------------------------------------------------------------
   // MAIN GRAPHIC LOOP
@@ -802,15 +811,10 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
   // filter calls that only include a key press
   if ((a_action != GLFW_PRESS) && (a_action != GLFW_REPEAT)) {
     return;
-  }
-
-  // option - exit
-  else if ((a_key == GLFW_KEY_ESCAPE) || (a_key == GLFW_KEY_Q)) {
+  } else if ((a_key == GLFW_KEY_ESCAPE) || (a_key == GLFW_KEY_Q)) {
+    // option - exit
     glfwSetWindowShouldClose(a_window, GLFW_TRUE);
-  }
-
-  // option - toggle fullscreen
-  else if (a_key == GLFW_KEY_F) {
+  } else if (a_key == GLFW_KEY_F) {  // option - toggle fullscreen
     // toggle state variable
     fullscreen = !fullscreen;
 
@@ -833,17 +837,15 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       glfwSetWindowMonitor(window, NULL, x, y, w, h, mode->refreshRate);
       glfwSwapInterval(swapInterval);
     }
-  }
-  // action - unanchor all key
-  else if (a_key == GLFW_KEY_U) {
+  } else if (a_key == GLFW_KEY_U) {
+    // action - unanchor all key
     for (auto i{0}; i < spheres.size(); i++) {
       if (spheres[i]->isAnchor()) {
         spheres[i]->setAnchor(false);
       }
     }
-  }
-  // option - save screenshot to file
-  else if (a_key == GLFW_KEY_S) {
+  } else if (a_key == GLFW_KEY_S) {
+    // option - save screenshot to file
     cImagePtr image = cImage::create();
     camera->m_frontLayer->removeChild(scope);
     camera->renderView(width, height);
@@ -865,6 +867,13 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       index++;
     }
     writeToCon("atoms" + to_string(index) + ".con");
+  } else if (a_key == GLFW_KEY_A) {
+    // anchor all atoms while maintaing control
+    for (auto i{0}; i < spheres.size(); i++) {
+      if (!spheres[i]->isAnchor() && !(spheres[i]->isCurrent())) {
+        spheres[i]->setAnchor(true);
+      }
+    }
   } else if (a_key == GLFW_KEY_UP || a_key == GLFW_KEY_DOWN) {
     int direction = (a_key == GLFW_KEY_UP) ? 1 : -1;
     camera->setSphericalPolarRad(camera->getSphericalPolarRad() +
@@ -878,14 +887,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       camera->setSphericalPolarRad(camera->getSphericalPolarRad() +
                                    1000 * M_PI);
     }
-    camera_pos->setText("Camera located at: (" +
-                        cStr(rho * sin(camera->getSphericalPolarRad()) *
-                             cos(camera->getSphericalAzimuthRad())) +
-                        ", " +
-                        cStr(rho * sin(camera->getSphericalPolarRad()) *
-                             sin(camera->getSphericalAzimuthRad())) +
-                        ", " + cStr(rho * cos(camera->getSphericalPolarRad())) +
-                        ")");
+    updateCameraLabel(camera_pos, camera);
 
   } else if (a_key == GLFW_KEY_RIGHT || a_key == GLFW_KEY_LEFT) {
     int direction = (a_key == GLFW_KEY_RIGHT) ? 1 : -1;
@@ -901,14 +903,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       camera->setSphericalAzimuthRad(camera->getSphericalAzimuthRad() +
                                      1000 * M_PI);
     }
-    camera_pos->setText("Camera located at: (" +
-                        cStr(rho * sin(camera->getSphericalPolarRad()) *
-                             cos(camera->getSphericalAzimuthRad())) +
-                        ", " +
-                        cStr(rho * sin(camera->getSphericalPolarRad()) *
-                             sin(camera->getSphericalAzimuthRad())) +
-                        ", " + cStr(rho * cos(camera->getSphericalPolarRad())) +
-                        ")");
+    updateCameraLabel(camera_pos, camera);
 
   } else if (a_key == GLFW_KEY_LEFT_BRACKET ||
              a_key == GLFW_KEY_RIGHT_BRACKET) {
@@ -917,15 +912,14 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       camera->setSphericalRadius(camera->getSphericalRadius() +
                                  .01 * direction);
       rho = camera->getSphericalRadius();
-      camera_pos->setText(
-          "Camera located at: (" +
-          cStr(rho * sin(camera->getSphericalPolarRad()) *
-               cos(camera->getSphericalAzimuthRad())) +
-          ", " +
-          cStr(rho * sin(camera->getSphericalPolarRad()) *
-               sin(camera->getSphericalAzimuthRad())) +
-          ", " + cStr(rho * cos(camera->getSphericalPolarRad())) + ")");
+      updateCameraLabel(camera_pos, camera);
     }
+  } else if (a_key == GLFW_KEY_R) {
+    // Reset the camera to it's default pos
+    camera->setSphericalPolarRad(0);
+    camera->setSphericalAzimuthRad(0);
+    camera->setSphericalRadius(.35);
+    updateCameraLabel(camera_pos, camera);
   }
 }
 
@@ -1103,51 +1097,24 @@ void updateHaptics(void) {
           case 1:
             camera->setSphericalPolarRad(0);
             camera->setSphericalAzimuthRad(0);
-            camera_pos->setText(
-                "Camera located at: (" +
-                cStr(rho * sin(camera->getSphericalPolarRad()) *
-                     cos(camera->getSphericalAzimuthRad())) +
-                ", " +
-                cStr(rho * sin(camera->getSphericalPolarRad()) *
-                     sin(camera->getSphericalAzimuthRad())) +
-                ", " + cStr(rho * cos(camera->getSphericalPolarRad())) + ")");
+            updateCameraLabel(camera_pos, camera);
             break;
           case 2:
             camera->setSphericalPolarRad(0);
             camera->setSphericalAzimuthRad(M_PI);
-            camera_pos->setText(
-                "Camera located at: (" +
-                cStr(rho * sin(camera->getSphericalPolarRad()) *
-                     cos(camera->getSphericalAzimuthRad())) +
-                ", " +
-                cStr(rho * sin(camera->getSphericalPolarRad()) *
-                     sin(camera->getSphericalAzimuthRad())) +
-                ", " + cStr(rho * cos(camera->getSphericalPolarRad())) + ")");
+            updateCameraLabel(camera_pos, camera);
+            ;
             break;
           case 3:
             camera->setSphericalPolarRad(M_PI);
             camera->setSphericalAzimuthRad(M_PI);
-            camera_pos->setText(
-                "Camera located at: (" +
-                cStr(rho * sin(camera->getSphericalPolarRad()) *
-                     cos(camera->getSphericalAzimuthRad())) +
-                ", " +
-                cStr(rho * sin(camera->getSphericalPolarRad()) *
-                     sin(camera->getSphericalAzimuthRad())) +
-                ", " + cStr(rho * cos(camera->getSphericalPolarRad())) + ")");
+            updateCameraLabel(camera_pos, camera);
             break;
           case 4:
             curr_camera = 0;
             camera->setSphericalPolarRad(M_PI);
             camera->setSphericalAzimuthRad(0);
-            camera_pos->setText(
-                "Camera located at: (" +
-                cStr(rho * sin(camera->getSphericalPolarRad()) *
-                     cos(camera->getSphericalAzimuthRad())) +
-                ", " +
-                cStr(rho * sin(camera->getSphericalPolarRad()) *
-                     sin(camera->getSphericalAzimuthRad())) +
-                ", " + cStr(rho * cos(camera->getSphericalPolarRad())) + ")");
+            updateCameraLabel(camera_pos, camera);
             break;
         }
         curr_camera++;
@@ -1240,24 +1207,36 @@ void updateHaptics(void) {
 
             // compute distance between both spheres
             double distance = cDistance(pos0, pos1) / DIST_SCALE;
-            potentialEnergy += getLennardJonesEnergy(distance);
+            if (energySurface == LENNARD_JONES) {
+              potentialEnergy += getLennardJonesEnergy(distance);
+            } else if (energySurface == MORSE) {
+              potentialEnergy += getMorseEnergy(distance);
+            }
             if (!button0) {
-              double appliedForce = getLennardJonesForce(distance);
+              double appliedForce;
+              if (energySurface == LENNARD_JONES) {
+                appliedForce = getLennardJonesForce(distance);
+              } else if (energySurface == MORSE) {
+                appliedForce = getMorseForce(distance);
+              }
               force.add(appliedForce * dir01);
             }
           }
         }
+
         current->setForce(force);
-        // cVector3d sphereAcc = (force / SPHERE_MASS);
         cVector3d sphereAcc = (force / current->getMass());
         current->setVelocity(
-            K_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
-        // compute /position
+            V_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
+        // compute position
         cVector3d spherePos_change = timeInterval * current->getVelocity() +
                                      cSqr(timeInterval) * sphereAcc;
-        double magnitude = spherePos_change.length();
 
         cVector3d spherePos = current->getLocalPos() + spherePos_change;
+
+
+        double magnitude = force.length();
+
         if (magnitude > 5) {
           cout << i << " velocity " << current->getVelocity().length() << endl;
           cout << i << " force " << force.length() << endl;
@@ -1275,13 +1254,12 @@ void updateHaptics(void) {
       current = spheres[curr_atom];
       current->setLocalPos(position);
 
-      // cVector3d force = current->getForce();
       // JD: moved this out of nested for loop so that test is set only when
       // fully calculated update haptic and graphic rate data
       LJ_num->setText("Potential Energy: " + cStr((potentialEnergy / 2), 5));
 
       // update position of label
-      LJ_num->setLocalPos(0, 0);
+      LJ_num->setLocalPos(0, 15, 0);
 
       // count the number of anchored atoms
       auto anchored{0};
@@ -1304,6 +1282,21 @@ void updateHaptics(void) {
       if (fmod(currentTime, currentTimeRounded) <= .01) {
         scope->setSignalValues(potentialEnergy / 2, global_minimum);
       }
+
+      // scale the graph if the minimum isn't known
+      if (!global_min_known) {
+        if ((potentialEnergy / 2) < global_minimum) {
+          global_minimum = (potentialEnergy / 2);
+        }
+
+        if (global_minimum < scope->getRangeMin()) {
+          auto new_lower = scope->getRangeMin() - 25;
+          auto new_upper = scope->getRangeMax() - 25;
+          scope->setRange(new_lower, new_upper);
+          scope_upper->setText(cStr(scope->getRangeMax()));
+          scope_lower->setText(cStr(scope->getRangeMin()));
+        }
+      }
     }
     cVector3d force = current->getForce();
     /////////////////////////////////////////////////////////////////////////
@@ -1317,7 +1310,7 @@ void updateHaptics(void) {
     /////////////////////////////////////////////////////////////////////////
 
     // scale the force according to the max stiffness the device can render
-    double stiffnessRatio = 1.0;
+    double stiffnessRatio = 0.5;
     if (hapticDeviceMaxStiffness < HAPTIC_STIFFNESS)
       stiffnessRatio = hapticDeviceMaxStiffness / HAPTIC_STIFFNESS;
     if (force.length() > 10) force = 10. * cNormalize(force);
@@ -1329,32 +1322,6 @@ void updateHaptics(void) {
 
   // exit haptics thread
   simulationFinished = true;
-}
-
-double getGlobalMinima(int cluster_size) {
-  string file_path = "../resources/data/";
-  string file_name = "global_minima.txt";
-  ifstream infile(file_path + file_name);
-  if (!infile) {
-    cerr << "Could not open \"" + file_name + "\" for reading" << endl;
-    cerr << "Did you move it to \"" + file_path + "\"?" << endl;
-    exit(1);
-  } else if ((cluster_size < 2) || (cluster_size > 150)) {
-    cout << "WARNING: \"" + file_name +
-                "\" doesn't have data for clusters of this size yet."
-         << endl;
-    cout << "The graph may not be accurate." << endl;
-  }
-
-  int cluster_size_file;
-  double minimum;
-  while (infile >> cluster_size_file >> minimum) {
-    if (cluster_size_file == cluster_size) {
-      break;
-    }
-  }
-  cout << "Global minimum:" << minimum << endl;
-  return minimum;
 }
 
 void mouseMotionCallback(GLFWwindow *a_window, double a_posX, double a_posY) {
@@ -1395,20 +1362,6 @@ void mouseMotionCallback(GLFWwindow *a_window, double a_posX, double a_posY) {
   }
 }
 
-// check if char array represents a number
-bool isNumber(char number[]) {
-  for (int i = 0; number[i] != 0; i++) {
-    if (!isdigit(number[i])) return false;
-  }
-  return true;
-}
-
-// check if file already exists in directory
-inline bool fileExists(const string &name) {
-  struct stat buffer;
-  return (stat(name.c_str(), &buffer) == 0);
-}
-
 void writeToCon(string fileName) {
   ofstream writeFile;
   writeFile.open(fileName);
@@ -1434,11 +1387,19 @@ void writeToCon(string fileName) {
   writeFile.close();
 }
 
-double getLennardJonesEnergy(double distance) {
-  return 4 * EPSILON * (pow(SIGMA / distance, 12) - pow(SIGMA / distance, 6));
+void addLabel(cLabel *&label) {
+  label = new cLabel(font);
+  label->m_fontColor.setBlack();
+  camera->m_frontLayer->addChild(label);
 }
 
-double getLennardJonesForce(double distance) {
-  return -4 * FORCE_DAMPING * EPSILON *
-         ((-12 * pow(SIGMA / distance, 13)) - (-6 * pow(SIGMA / distance, 7)));
+void updateCameraLabel(cLabel *&camera_pos, cCamera *&camera) {
+  camera_pos->setText("Camera located at: (" +
+                      cStr(rho * sin(camera->getSphericalPolarRad()) *
+                           cos(camera->getSphericalAzimuthRad())) +
+                      ", " +
+                      cStr(rho * sin(camera->getSphericalPolarRad()) *
+                           sin(camera->getSphericalAzimuthRad())) +
+                      ", " + cStr(rho * cos(camera->getSphericalPolarRad())) +
+                      ")");
 }

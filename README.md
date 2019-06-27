@@ -10,6 +10,18 @@ Specify the # of atoms at launch like so:
 ```
 If you don't pass in anything, the default is five.
 
+You can also read in an existing configuration:
+```
+./haptic-device example.con
+```
+Make sure the .con file is in ../resources/data.
+
+Choose the potential energy surface by adding a second argument:
+```
+./haptic-device 25 morse
+```
+The default is Lennard-Jones.
+
 ## Build Instructions
 
 ### Windows
@@ -110,3 +122,5 @@ The textbook is too big to upload so here's the link: http://www.charleshouserjr
         * move camera
     * `[` and `]`
         * zoom in/out
+    * `r`
+        * reset camera
