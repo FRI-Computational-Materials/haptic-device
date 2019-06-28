@@ -109,6 +109,40 @@ const double HAPTIC_STIFFNESS = 1000.0;
 // Scales the distance betweens atoms
 const double DIST_SCALE = .02;
 
+//boundary conditions
+const double BOUNDARY_LIMIT = .5;
+
+const cVector3d northPlanePos = cVector3d(0,BOUNDARY_LIMIT,0);
+const cVector3d northPlaneP1 = cVector3d(1,BOUNDARY_LIMIT,0);
+const cVector3d northPlaneP2 = cVector3d(1,BOUNDARY_LIMIT,1);
+const cVector3d northPlaneNorm = cComputeSurfaceNormal(northPlanePos,northPlaneP1,northPlaneP2);
+
+const cVector3d southPlanePos = cVector3d(0,-BOUNDARY_LIMIT,0);
+const cVector3d southPlaneP1 = cVector3d(1,-BOUNDARY_LIMIT,0);
+const cVector3d southPlaneP2 = cVector3d(1,-BOUNDARY_LIMIT,1);
+const cVector3d southPlaneNorm = cComputeSurfaceNormal(southPlanePos,southPlaneP1,southPlaneP2);
+
+const cVector3d eastPlanePos = cVector3d(BOUNDARY_LIMIT,0,0);
+const cVector3d eastPlaneP1 = cVector3d(BOUNDARY_LIMIT,1,0);
+const cVector3d eastPlaneP2 = cVector3d(BOUNDARY_LIMIT,1,1);
+const cVector3d eastPlaneNorm = cComputeSurfaceNormal(eastPlanePos,eastPlaneP1,eastPlaneP2);
+
+const cVector3d westPlanePos = cVector3d(-BOUNDARY_LIMIT,0,0);
+const cVector3d westPlaneP1 = cVector3d(-BOUNDARY_LIMIT,1,0);
+const cVector3d westPlaneP2 = cVector3d(-BOUNDARY_LIMIT,1,1);
+const cVector3d westPlaneNorm = cComputeSurfaceNormal(westPlanePos,westPlaneP1,westPlaneP2);
+
+const cVector3d forwardPlanePos = cVector3d(0,0,BOUNDARY_LIMIT);
+const cVector3d forwardPlaneP1 = cVector3d(0,1,BOUNDARY_LIMIT);
+const cVector3d forwardPlaneP2 = cVector3d(1,1,BOUNDARY_LIMIT);
+const cVector3d forwardPlaneNorm = cComputeSurfaceNormal(forwardPlanePos,forwardPlaneP1,forwardPlaneP2);
+
+const cVector3d backPlanePos = cVector3d(0,0,-BOUNDARY_LIMIT);
+const cVector3d backPlaneP1 = cVector3d(0,1,-BOUNDARY_LIMIT);
+const cVector3d backPlaneP2 = cVector3d(1,1,-BOUNDARY_LIMIT);
+const cVector3d backPlaneNorm = cComputeSurfaceNormal(backPlanePos,backPlaneP1,backPlaneP2);
+
+
 //------------------------------------------------------------------------------
 // DECLARED VARIABLES
 //------------------------------------------------------------------------------
@@ -1010,6 +1044,13 @@ void updateGraphics(void) {
 }
 
 //------------------------------------------------------------------------------
+bool checkBounds(cVector3d location){
+    if(location.y() > BOUNDARY_LIMIT || location.y() < -BOUNDARY_LIMIT || location.x() > BOUNDARY_LIMIT || location.x() < -BOUNDARY_LIMIT || location.z() > BOUNDARY_LIMIT || location.z() < -BOUNDARY_LIMIT){
+        return false;
+    }
+    return true;
+}
+//------------------------------------------------------------------------------
 
 void updateHaptics(void) {
   Atom *current;
@@ -1224,10 +1265,21 @@ void updateHaptics(void) {
           }
         }
 
+        if(force.length() > 10000){
+            force.normalize();
+            force.mul(10000);
+        }
+          
         current->setForce(force);
         cVector3d sphereAcc = (force / current->getMass());
         current->setVelocity(
             V_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
+          
+        if(current->getVelocity().length() > 100){
+            current->getVelocity().normalize();
+            current->getVelocity().mul(100);
+        }
+          
         // compute position
         cVector3d spherePos_change = timeInterval * current->getVelocity() +
                                      cSqr(timeInterval) * sphereAcc;
@@ -1245,12 +1297,94 @@ void updateHaptics(void) {
           cout << i << " position of  " << timeInterval << endl;
         }
 
-        if (!current->isCurrent()) {
-          if (!current->isAnchor()) {
-            current->setLocalPos(spherePos);
+          //A is the current position, B is the position to move to
+          cVector3d A = current->getLocalPos();
+          cVector3d B = spherePos;
+          
+          //holds intersect point/norm if an intersect is made
+          cVector3d intersectPoint;
+          cVector3d intersectNorm;
+          
+          cVector3d tempPos;
+          cVector3d tempA;
+          tempA.copyfrom(A);
+          
+          tempPos.copyfrom(spherePos);
+          
+          
+          //north plane
+          if(cIntersectionSegmentPlane(A, B, northPlanePos, northPlaneNorm, intersectPoint, intersectNorm) == 1){
+              spherePos.zero();
+              spherePos.copyfrom(intersectPoint);
+              spherePos.y(spherePos.y() - (BOUNDARY_LIMIT*2-.01));
+              if(!checkBounds(spherePos)){
+                  spherePos.copyfrom(tempPos);
+              }
           }
-        }
+          
+          //south plane
+          if(cIntersectionSegmentPlane(A, B, southPlanePos, southPlaneNorm, intersectPoint, intersectNorm) == 1){
+              spherePos.zero();
+              spherePos.copyfrom(intersectPoint);
+              spherePos.y(spherePos.y() + (BOUNDARY_LIMIT*2-.01));
+              if(!checkBounds(spherePos)){
+                  spherePos.copyfrom(tempPos);
+              }
+          }
+          
+          //east plane
+          if(cIntersectionSegmentPlane(A, B, eastPlanePos, eastPlaneNorm, intersectPoint, intersectNorm) == 1){
+              spherePos.zero();
+              spherePos.copyfrom(intersectPoint);
+              spherePos.x(spherePos.x() - (BOUNDARY_LIMIT*2-.01));
+              if(!checkBounds(spherePos)){
+                  spherePos.copyfrom(tempPos);
+              }
+          }
+          
+          //west plane
+          if(cIntersectionSegmentPlane(A, B, westPlanePos, westPlaneNorm, intersectPoint, intersectNorm) == 1){
+              spherePos.zero();
+              spherePos.copyfrom(intersectPoint);
+              spherePos.x(spherePos.x() + (BOUNDARY_LIMIT*2-.01));
+              if(!checkBounds(spherePos)){
+                  spherePos.copyfrom(tempPos);
+              }
+          }
+          
+          //forward plane
+          if(cIntersectionSegmentPlane(A, B, forwardPlanePos, forwardPlaneNorm, intersectPoint, intersectNorm) == 1){
+              spherePos.zero();
+              spherePos.copyfrom(intersectPoint);
+              spherePos.z(spherePos.z() - (BOUNDARY_LIMIT*2-.01));
+              if(!checkBounds(spherePos)){
+                  spherePos.copyfrom(tempPos);
+              }
+          }
+          
+          //back plane
+          if(cIntersectionSegmentPlane(A, B, backPlanePos, backPlaneNorm, intersectPoint, intersectNorm) == 1){
+              spherePos.zero();
+              spherePos.copyfrom(intersectPoint);
+              spherePos.z(spherePos.z() + (BOUNDARY_LIMIT*2-.01));
+              if(!checkBounds(spherePos)){
+                  spherePos = tempPos;
+              }
+          }
+          
+          
+          if (!current->isCurrent()) {
+              if (!current->isAnchor()) {
+                  current->setLocalPos(spherePos);
+              }
+          }
+          
+          if(!checkBounds(current->getLocalPos())){
+              cout << "ATOM OUT OF BOUNDS";
+              
+          }
       }
+        
       current = spheres[curr_atom];
       current->setLocalPos(position);
 
