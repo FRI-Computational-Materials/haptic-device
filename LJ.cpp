@@ -276,7 +276,7 @@ void writeToCon(string fileName);
 
 
 // declare runAmp
-double runAmp();
+//double runAmp();
 
 vector<vector<double>> runAmpForces();
 //------------------------------------------------------------------------------
@@ -1246,8 +1246,8 @@ void updateHaptics(void) {
           }
         }
       } else {
-        potentialEnergy += 2*runAmp();
         vector<vector<double>> ampForces = runAmpForces();
+        potentialEnergy += 2*ampForces[spheres.size()][0];
         for (int i = 0; i < spheres.size(); i++) {
           cVector3d force = cVector3d(ampForces[i][0], ampForces[i][1], ampForces[i][2]);
           current = spheres[i];
@@ -1432,7 +1432,7 @@ void updateCameraLabel(cLabel *&camera_pos, cCamera *&camera) {
                       ")");
 }
 
-double runAmp(){
+/**double runAmp(){
   // Prepare positions so they may be passed to python
   double atomArray [spheres.size() * 3];
   for (int i = 0; i < spheres.size()*3; i+=3){
@@ -1505,7 +1505,7 @@ double runAmp(){
     return 1;
   }
 }
-
+**/
 vector<vector<double>> runAmpForces(){
   // Prepare positions so they may be passed to python
   double atomArray [spheres.size() * 3];
@@ -1529,7 +1529,7 @@ vector<vector<double>> runAmpForces(){
   Py_DECREF(pName);
 
   if (pModule != NULL) {
-    pFunc = PyObject_GetAttrString(pModule, "getForce");
+    pFunc = PyObject_GetAttrString(pModule, "getValues");
     /* pFunc is a new reference */
     if (pFunc && PyCallable_Check(pFunc)) {
         pResult = PyTuple_New(spheres.size() * 3);
@@ -1562,6 +1562,11 @@ vector<vector<double>> runAmpForces(){
             temp.push_back(PyFloat_AsDouble(PyList_GetItem(pFinal,j + 2)));
             forceArr.push_back(temp);
           }
+          // For the Potential Energy
+          vector<double> temp;
+          temp.push_back(PyFloat_AsDouble(PyList_GetItem(pFinal, spheres.size() * 3)));
+          forceArr.push_back(temp);
+
           return forceArr;
           Py_DECREF(pValue);
           Py_DECREF(pResult);
