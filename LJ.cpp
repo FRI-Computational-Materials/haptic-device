@@ -649,6 +649,7 @@ int main(int argc, char *argv[]) {
       energySurface = MORSE;
     }else if(arg == "amp" || arg == "a"){
       energySurface = MACHINE_LEARNING;
+      Py_Initialize();
     }
   }
   //--------------------------------------------------------------------------
@@ -1445,8 +1446,6 @@ double runAmp(){
   PyObject *pArgs, *pValue, *pTuple;
   int i;
 
-  Py_Initialize();
-
   pName = PyString_FromString("calculator");
   PyObject* objectsRepresentation = PyObject_Repr(pName);
   const char* s = PyString_AsString(objectsRepresentation);
@@ -1495,6 +1494,7 @@ double runAmp(){
         if (PyErr_Occurred())
             PyErr_Print();
         fprintf(stderr, "Cannot find function");
+        return 0;
     }
     Py_XDECREF(pFunc);
     Py_DECREF(pModule);
@@ -1519,8 +1519,6 @@ vector<vector<double>> runAmpForces(){
   PyObject *pName, *pModule, *pFunc;
   PyObject *pValue, *pTuple, *pResult, *pFinal;
   int i;
-
-  Py_Initialize();
 
   pName = PyString_FromString("calculator");
   PyObject* objectsRepresentation = PyObject_Repr(pName);
