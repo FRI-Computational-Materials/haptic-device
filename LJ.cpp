@@ -949,11 +949,12 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       updateCameraLabel(camera_pos, camera);
     }
   } else if (a_key == GLFW_KEY_R) {
-    // Reset the camera to it's default pos
-    camera->setSphericalPolarRad(0);
-    camera->setSphericalAzimuthRad(0);
-    camera->setSphericalRadius(.35);
-    updateCameraLabel(camera_pos, camera);
+      // Reset the camera to its default pos
+      camera->setSphericalPolarRad(0);
+      camera->setSphericalAzimuthRad(0);
+      camera->setSphericalRadius(.35);
+      rho = .35;
+      updateCameraLabel(camera_pos, camera);
   }
 }
 
