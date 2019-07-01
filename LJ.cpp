@@ -1275,23 +1275,19 @@ void updateHaptics(void) {
             force.normalize();
             force.mul(10000);
         }
-          
+
         current->setForce(force);
         // cVector3d sphereAcc = (force / SPHERE_MASS);
         cVector3d sphereAcc = A_DAMPING * (force / current->getMass());
         current->setVelocity(
             V_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
-<<<<<<< HEAD
-        // compute /position
-=======
-          
+
         if(current->getVelocity().length() > 100){
             current->getVelocity().normalize();
             current->getVelocity().mul(100);
         }
-          
+
         // compute position
->>>>>>> 7fff24a95f2854507d84cb0d594061086c914637
         cVector3d spherePos_change = timeInterval * current->getVelocity() +
                                      cSqr(timeInterval) * sphereAcc;
 
@@ -1311,18 +1307,18 @@ void updateHaptics(void) {
           //A is the current position, B is the position to move to
           cVector3d A = current->getLocalPos();
           cVector3d B = spherePos;
-          
+
           //holds intersect point/norm if an intersect is made
           cVector3d intersectPoint;
           cVector3d intersectNorm;
-          
+
           cVector3d tempPos;
           cVector3d tempA;
           tempA.copyfrom(A);
-          
+
           tempPos.copyfrom(spherePos);
-          
-          
+
+
           //north plane
           if(cIntersectionSegmentPlane(A, B, northPlanePos, northPlaneNorm, intersectPoint, intersectNorm) == 1){
               spherePos.zero();
@@ -1332,7 +1328,7 @@ void updateHaptics(void) {
                   spherePos.copyfrom(tempPos);
               }
           }
-          
+
           //south plane
           if(cIntersectionSegmentPlane(A, B, southPlanePos, southPlaneNorm, intersectPoint, intersectNorm) == 1){
               spherePos.zero();
@@ -1342,7 +1338,7 @@ void updateHaptics(void) {
                   spherePos.copyfrom(tempPos);
               }
           }
-          
+
           //east plane
           if(cIntersectionSegmentPlane(A, B, eastPlanePos, eastPlaneNorm, intersectPoint, intersectNorm) == 1){
               spherePos.zero();
@@ -1352,7 +1348,7 @@ void updateHaptics(void) {
                   spherePos.copyfrom(tempPos);
               }
           }
-          
+
           //west plane
           if(cIntersectionSegmentPlane(A, B, westPlanePos, westPlaneNorm, intersectPoint, intersectNorm) == 1){
               spherePos.zero();
@@ -1362,7 +1358,7 @@ void updateHaptics(void) {
                   spherePos.copyfrom(tempPos);
               }
           }
-          
+
           //forward plane
           if(cIntersectionSegmentPlane(A, B, forwardPlanePos, forwardPlaneNorm, intersectPoint, intersectNorm) == 1){
               spherePos.zero();
@@ -1372,7 +1368,7 @@ void updateHaptics(void) {
                   spherePos.copyfrom(tempPos);
               }
           }
-          
+
           //back plane
           if(cIntersectionSegmentPlane(A, B, backPlanePos, backPlaneNorm, intersectPoint, intersectNorm) == 1){
               spherePos.zero();
@@ -1382,20 +1378,20 @@ void updateHaptics(void) {
                   spherePos = tempPos;
               }
           }
-          
-          
+
+
           if (!current->isCurrent()) {
               if (!current->isAnchor()) {
                   current->setLocalPos(spherePos);
               }
           }
-          
+
           if(!checkBounds(current->getLocalPos())){
               cout << "ATOM OUT OF BOUNDS";
-              
+
           }
       }
-        
+
       current = spheres[curr_atom];
       current->setLocalPos(position);
 
