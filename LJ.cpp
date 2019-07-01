@@ -103,9 +103,14 @@ const double WALL_FRONT = 0.05;    // 0.08;
 const double WALL_BACK = -0.05;    //-0.08;
 const double SPHERE_STIFFNESS = 500.0;
 const double SPHERE_MASS = 0.02;
-const double V_DAMPING = 0.0001;  // 0.996;
+const double F_DAMPING = 0.25; // 0.25
+const double V_DAMPING = 0.8; // 0.1
+const double A_DAMPING = 0.99; // 0.5
 const double K_MAGNET = 500.0;
 const double HAPTIC_STIFFNESS = 1000.0;
+const double SIGMA = 1.0;
+const double EPSILON = 1.0;
+
 // Scales the distance betweens atoms
 const double DIST_SCALE = .02;
 
@@ -166,7 +171,7 @@ cLabel *camera_pos;
 // a label to identify the potential energy surface
 cLabel *potentialLabel;
 
-// labels for the scope 
+// labels for the scope
 cLabel *scope_upper;
 cLabel *scope_lower;
 
@@ -1225,10 +1230,11 @@ void updateHaptics(void) {
         }
 
         current->setForce(force);
-        cVector3d sphereAcc = (force / current->getMass());
+        // cVector3d sphereAcc = (force / SPHERE_MASS);
+        cVector3d sphereAcc = A_DAMPING * (force / current->getMass());
         current->setVelocity(
             V_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
-        // compute position
+        // compute /position
         cVector3d spherePos_change = timeInterval * current->getVelocity() +
                                      cSqr(timeInterval) * sphereAcc;
 
