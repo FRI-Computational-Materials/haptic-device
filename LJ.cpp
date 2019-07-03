@@ -1123,8 +1123,9 @@ void updateHaptics(void) {
     // stop the simulation clock
     clock.stop();
 
+    double freq = freqCounterHaptics.getFrequency()/1000000;
     // read the time increment in seconds
-    double timeInterval = cMin(0.001, clock.getCurrentTimeSeconds());
+    double timeInterval = cMin(freq, clock.getCurrentTimeSeconds());
 
     // restart the simulation clock
     // clock.reset();
@@ -1142,7 +1143,7 @@ void updateHaptics(void) {
     hapticDevice->getPosition(position);
     // Scale position to use more of the screen
     // increase to use more of the screen
-    position *= 2.0;
+    position *= 2.5;
     // read user-switch status (button 0)
 
     /////////////////////////////////////////////////////////////////////////
@@ -1321,13 +1322,13 @@ void updateHaptics(void) {
 
         double magnitude = force.length();
 
-        if (magnitude > 5) {
+        /* if (magnitude > 5) {
           cout << i << " velocity " << current->getVelocity().length() << endl;
           cout << i << " force " << force.length() << endl;
           cout << i << " acceleration " << sphereAcc.length() << endl;
           cout << i << " time " << timeInterval << endl;
           cout << i << " position of  " << timeInterval << endl;
-        }
+        } */
 
           //A is the current position, B is the position to move to
           cVector3d A = current->getLocalPos();
