@@ -187,6 +187,9 @@ cBackground *background;
 // a font for rendering text
 cFontPtr font = NEW_CFONTCALIBRI20();
 
+// font for help screen
+cFontPtr helpFont = NEW_CFONTCALIBRI32();
+
 // a label to display the rate [Hz] at which the simulation is running
 cLabel *labelRates;
 
@@ -273,6 +276,12 @@ Potential energySurface = LENNARD_JONES;
 // check if able to read in the global min
 bool global_min_known = true;
 
+// panel that displays hotkeys
+cPanel *helpPanel;
+
+// vector holding hotkey labels
+vector<cLabel *> hotkeys;
+
 //------------------------------------------------------------------------------
 // DECLARED MACROS
 //------------------------------------------------------------------------------
@@ -317,6 +326,9 @@ void updateCameraLabel(cLabel *&camera_pos, cCamera *&camera);
 
 // save configuration in .con file
 void writeToCon(string fileName);
+
+//add hotkey help labels
+void addHotkeyLabel(string text);
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -772,6 +784,28 @@ int main(int argc, char *argv[]) {
   //scope_upper->m_fontColor.setRed();
   //scope_lower->m_fontColor.setRed();
 
+  //create help panel
+  helpPanel = new cPanel();
+  helpPanel->setSize(400, 500);
+  camera->m_frontLayer->addChild(helpPanel);
+  helpPanel->setShowPanel(false);
+
+  //create hotkey labels
+  addHotkeyLabel("f              toggle fullscreen");
+  addHotkeyLabel("q, ESC         quit program");
+  addHotkeyLabel("a              anchor all atoms");
+  addHotkeyLabel("u              unanchor all atoms");
+  addHotkeyLabel("ARROW KEYS     rotate camera");
+  addHotkeyLabel("[              zoom in");
+  addHotkeyLabel("]              zoom out");
+  addHotkeyLabel("r              reset camera");
+  addHotkeyLabel("s              screenshot atoms");
+  addHotkeyLabel("c              save configuration to .con");
+  addHotkeyLabel("SPACE          freeze atoms");
+  addHotkeyLabel("CTRL           toggle help panel");
+
+  //cout << helpPanel->getShowPanel() << endl;
+
   //--------------------------------------------------------------------------
   // START SIMULATION
   //--------------------------------------------------------------------------
@@ -942,7 +976,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
     writeToCon("./log/atoms" + to_string(index) + ".con");
     cout << "LOGGED: " << "atoms" + to_string(index) + ".con" << endl;
   } else if (a_key == GLFW_KEY_A) {
-    // anchor all atoms while maintaing control
+    // anchor all atoms while maintaining control
     for (auto i{0}; i < spheres.size(); i++) {
       if (!spheres[i]->isAnchor() && !(spheres[i]->isCurrent())) {
         spheres[i]->setAnchor(true);
@@ -995,6 +1029,17 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       camera->setSphericalRadius(.35);
       rho = .35;
       updateCameraLabel(camera_pos, camera);
+  }else if(a_key == GLFW_KEY_LEFT_CONTROL || a_key == GLFW_KEY_RIGHT_CONTROL){
+      helpPanel->setShowPanel(!helpPanel->getShowPanel());
+      if(helpPanel->getShowPanel()){
+        for(cLabel *hLabel : hotkeys){
+          camera->m_frontLayer->addChild(hLabel);
+        }
+      }else{
+        for(cLabel *hLabel : hotkeys){
+          camera->m_frontLayer->removeChild(hLabel);
+        }
+      }
   }
 }
 
@@ -1430,6 +1475,16 @@ void updateHaptics(void) {
       current = spheres[curr_atom];
       current->setLocalPos(position);
 
+      //rescale helpPanel
+      helpPanel->setLocalPos(width - 450, height - 550);
+
+      // rescale hotkey labels
+      for(int i = 0; i < hotkeys.size(); i++){
+        cLabel *tempLabel = hotkeys[i];
+        tempLabel->setLocalPos(width - 440, height - 90 - i * 25);
+        cout << tempLabel->getText() << endl;
+      }
+
       // JD: moved this out of nested for loop so that test is set only when
       // fully calculated update haptic and graphic rate data
       LJ_num->setText("Potential Energy: " + cStr((potentialEnergy / 2), 5));
@@ -1578,4 +1633,12 @@ void updateCameraLabel(cLabel *&camera_pos, cCamera *&camera) {
                            sin(camera->getSphericalAzimuthRad())) +
                       ", " + cStr(rho * cos(camera->getSphericalPolarRad())) +
                       ")");
+}
+
+void addHotkeyLabel(string text){
+  cLabel *tempLabel = new cLabel(helpFont);
+  tempLabel->m_fontColor.setBlack();
+  tempLabel->setText(text);
+  tempLabel->setShowPanel(false);
+  hotkeys.push_back(tempLabel);
 }

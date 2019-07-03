@@ -128,3 +128,5 @@ The textbook is too big to upload so here's the link: http://www.charleshouserjr
         * zoom in/out
     * `r`
         * reset camera
+    * `CTRL`
+        * toggle help panel
