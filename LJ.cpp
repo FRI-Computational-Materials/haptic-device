@@ -255,8 +255,14 @@ bool global_min_known = true;
 // panel that displays hotkeys
 cPanel *helpPanel;
 
-// vector holding hotkey labels
-vector<cLabel *> hotkeys;
+// vector holding hotkey key labels
+vector<cLabel *> hotkeyKeys;
+
+//vector holding function key labels (must be separate for formatting)
+vector<cLabel *> hotkeyFunctions;
+
+// help panel header
+cLabel *helpHeader;
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -284,7 +290,7 @@ void mouseButtonCallback(GLFWwindow *a_window, int a_button, int a_action,
 void mouseMotionCallback(GLFWwindow *a_window, double a_posX, double a_posY);
 
 //add hotkey help labels
-void addHotkeyLabel(string text);
+void addHotkeyLabel(string key, string text);
 //------------------------------------------------------------------------------
 // DECLARED MACROS
 //------------------------------------------------------------------------------
@@ -660,6 +666,7 @@ int main(int argc, char *argv[]) {
             energySurface = MORSE;
         }
     }
+    cout << "Press CTRL to view the help panel" << endl;
     //--------------------------------------------------------------------------
     // WIDGETS
     //--------------------------------------------------------------------------
@@ -742,24 +749,35 @@ int main(int argc, char *argv[]) {
     // TODO - make more legible
     //scope_upper->m_fontColor.setRed();
     //scope_lower->m_fontColor.setRed();
+    cColorf panelColor = cColorf();
+    //BlueCadet
+    panelColor.setBlueCadet();
 
     helpPanel = new cPanel();
-    helpPanel->setSize(400, 500);
+    helpPanel->setColor(panelColor);
+    helpPanel->setSize(520, 500);
     camera->m_frontLayer->addChild(helpPanel);
     helpPanel->setShowPanel(false);
+
+    cFontPtr headerFont = NEW_CFONTCALIBRI40();
+    helpHeader = new cLabel(headerFont);
+    helpHeader->m_fontColor.setBlack();
+    helpHeader->setText("HOTKEYS AND INSTRUCTIONS");
+    helpHeader->setShowPanel(false);
+
     //create hotkey labels
-    addHotkeyLabel("f              toggle fullscreen");
-    addHotkeyLabel("q, ESC         quit program");
-    addHotkeyLabel("a              anchor all atoms");
-    addHotkeyLabel("u              unanchor all atoms");
-    addHotkeyLabel("ARROW KEYS     rotate camera");
-    addHotkeyLabel("[              zoom in");
-    addHotkeyLabel("]              zoom out");
-    addHotkeyLabel("r              reset camera");
-    addHotkeyLabel("s              screenshot atoms");
-    addHotkeyLabel("c              save configuration to .con");
-    addHotkeyLabel("SPACE          freeze atoms");
-    addHotkeyLabel("CTRL           toggle help panel");
+    addHotkeyLabel("f", "toggle fullscreen");
+    addHotkeyLabel("q, ESC", "quit program");
+    addHotkeyLabel("a", "anchor all atoms");
+    addHotkeyLabel("u", "unanchor all atoms");
+    addHotkeyLabel("ARROW KEYS", "rotate camera");
+    addHotkeyLabel("[", "zoom in");
+    addHotkeyLabel("]", "zoom out");
+    addHotkeyLabel("r", "reset camera");
+    addHotkeyLabel("s", "screenshot atoms");
+    addHotkeyLabel("c", "save configuration to .con");
+    addHotkeyLabel("SPACE", "freeze atoms");
+    addHotkeyLabel("CTRL", "toggle help panel");
 
     //--------------------------------------------------------------------------
     // START SIMULATION
@@ -972,12 +990,16 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
   }else if(a_key == GLFW_KEY_LEFT_CONTROL || a_key == GLFW_KEY_RIGHT_CONTROL){
       helpPanel->setShowPanel(!helpPanel->getShowPanel());
       if(helpPanel->getShowPanel()){
-        for(cLabel *hLabel : hotkeys){
-          camera->m_frontLayer->addChild(hLabel);
+        camera->m_frontLayer->addChild(helpHeader);
+        for(int i = 0; i < hotkeyKeys.size(); i++){
+          camera->m_frontLayer->addChild(hotkeyKeys[i]);
+          camera->m_frontLayer->addChild(hotkeyFunctions[i]);
         }
       }else{
-        for(cLabel *hLabel : hotkeys){
-          camera->m_frontLayer->removeChild(hLabel);
+        camera->m_frontLayer->removeChild(helpHeader);
+        for(int i = 0; i < hotkeyKeys.size(); i++){
+          camera->m_frontLayer->removeChild(hotkeyKeys[i]);
+          camera->m_frontLayer->removeChild(hotkeyFunctions[i]);
         }
       }
   }
@@ -1387,13 +1409,15 @@ void updateHaptics(void) {
             current->setLocalPos(position);
 
             //rescale helpPanel
-            helpPanel->setLocalPos(width - 450, height - 550);
+            helpPanel->setLocalPos(width - 550, height - 530);
+            helpHeader->setLocalPos(width - 490, height - 70);
 
             // rescale hotkey labels
-            for(int i = 0; i < hotkeys.size(); i++){
-              cLabel *tempLabel = hotkeys[i];
-              tempLabel->setLocalPos(width - 440, height - 90 - i * 25);
-              cout << tempLabel->getText() << endl;
+            for(int i = 0; i < hotkeyKeys.size(); i++){
+              cLabel *tempKeyLabel = hotkeyKeys[i];
+              cLabel *tempFuncLabel = hotkeyFunctions[i];
+              tempKeyLabel->setLocalPos(width - 540, height - 130 - i * 25);
+              tempFuncLabel->setLocalPos(width - 350, height - 130 - i * 25);
             }
 
             // JD: moved this out of nested for loop so that test is set only when
@@ -1569,10 +1593,15 @@ void updateCameraLabel(cLabel *&camera_pos, cCamera *&camera) {
                         ", " + cStr(rho * cos(camera->getSphericalPolarRad())) +
                         ")");
 }
-void addHotkeyLabel(string text){
-  cLabel *tempLabel = new cLabel(helpFont);
-  tempLabel->m_fontColor.setBlack();
-  tempLabel->setText(text);
-  tempLabel->setShowPanel(false);
-  hotkeys.push_back(tempLabel);
+void addHotkeyLabel(string keys, string function){
+  cLabel *tempKeyLabel = new cLabel(helpFont);
+  cLabel *tempFuncLabel = new cLabel(helpFont);
+  tempKeyLabel->m_fontColor.setBlack();
+  tempFuncLabel->m_fontColor.setBlack();
+  tempKeyLabel->setText(keys);
+  tempFuncLabel->setText(function);
+  tempKeyLabel->setShowPanel(false);
+  tempFuncLabel->setShowPanel(false);
+  hotkeyKeys.push_back(tempKeyLabel);
+  hotkeyFunctions.push_back(tempFuncLabel);
 }
