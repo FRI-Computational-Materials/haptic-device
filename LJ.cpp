@@ -897,35 +897,44 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
   } else if (a_key == GLFW_KEY_SPACE) {  // freeze simulation
     freezeAtoms = !freezeAtoms;
   } else if (a_key == GLFW_KEY_C) {  // save atoms to con file
-    ofstream writeFile;
-    string dir1 = "./log/";
-    struct stat buffer;
-    if (stat(dir1.c_str(), &buffer) != 0) { // Check if log directory exists
-      char cstr[dir1.size() + 1];
-      strcpy(cstr, dir1.c_str());
-      mkdir(cstr, 0777);
-    }
+    auto timenow = chrono::system_clock::to_time_t(chrono::system_clock::now());
+    std::stringstream ss;
+    ss << ctime(&timenow);
+    std::string ts = ss.str();
 
-    // Find local date
-    time_t now = time(0);
-    tm *ltm = localtime(&now);
-    int year = 1900 + ltm -> tm_year;
-    int month = 1 + ltm -> tm_mon;
-    int day = ltm -> tm_mday;
-    string date = to_string(month) + "-" + to_string(day) + "-" + to_string(year);
-    string dir2 = dir1 + date + "/";
-    if (stat(dir2.c_str(), &buffer) != 0) { // Check if date directory exists
-      char cstr[dir2.size() + 1];
-      strcpy(cstr, dir2.c_str());
-      mkdir(cstr, 0777);
+    // remove spaces and colons in string
+    int count = 0;
+    for (int i = 0; ts[i]; i++) {
+      if (ts[i] != ' ') {
+        ts[count++] = ts[i];
+      }
     }
-    // Prevent overwriting .con files
+    ts[count] = '\0';
+    count = 0;
+    for (int i = 0; ts[i]; i++) {
+      if (ts[i] != ':') {
+        ts[count++] = ts[i];
+      }
+    }
+    ts[count] = '\0';
+    string dirname = "./log/" + ts + '/';
+    char cstr[dirname.size()-5];
+    strcpy(cstr, dirname.c_str());
+    if (mkdir(cstr, 0777) == -1){
+      cerr << "Error: " << strerror(errno) << endl;
+    }
+    else {
+      cout << "Directory Created " << cstr << endl;
+    }
+    ofstream writeFile;
+
+    // prevent overwriting .con files
     int index = 0;
-    while (fileExists(dir2 + "atoms" + to_string(index) + ".con")) {
+    while (fileExists("./log/atoms" + to_string(index) + ".con")) {
       index++;
     }
-    writeToCon(dir2 + "atoms" + to_string(index) + ".con");
-cout << "LOGGED AT " + date + " atoms" + to_string(index) + ".con" << endl;
+    writeToCon("./log/atoms" + to_string(index) + ".con");
+    cout << "LOGGED: " << "atoms" + to_string(index) + ".con" << endl;
   } else if (a_key == GLFW_KEY_A) {
     // anchor all atoms while maintaining control
     for (auto i{0}; i < spheres.size(); i++) {
@@ -1042,40 +1051,9 @@ void close(void) {
     // stop the simulation
     simulationRunning = false;
 
-//------------------------------------------------------------------------------
-
-void updateGraphics(void) {
-  /////////////////////////////////////////////////////////////////////
-  // UPDATE WIDGETS
-  /////////////////////////////////////////////////////////////////////
-
-  // update haptic and graphic rate data
-  labelRates->setText(cStr(freqCounterGraphics.quency(), 0) + " Hz / " +
-                      cStr(freqCounterHaptics.getFrequency(), 0) + " Hz");
-
-  // update position of label
-  labelRates->setLocalPos((int)(0.5 * (width - labelRates->getWidth())), 15);
-
-  /////////////////////////////////////////////////////////////////////
-  // RENDER SCENE
-  /////////////////////////////////////////////////////////////////////
-
-  // update shadow maps (if any)
-  world->updateShadowMaps(false, false);
-
-  // render world
-  camera->renderView(width, height);
-  // wait until all GL commands are completed
-  glFinish();
-  // check for any OpenGL errors
-  GLenum err = glGetError();
-  if (err != GL_NO_ERROR) cout << "Error: " << gluErrorString(err) << endl;
-}
-
-//------------------------------------------------------------------------------
-bool checkBounds(cVector3d location){
-    if(location.y() > BOUNDARY_LIMIT || location.y() < -BOUNDARY_LIMIT || location.x() > BOUNDARY_LIMIT || location.x() < -BOUNDARY_LIMIT || location.z() > BOUNDARY_LIMIT || location.z() < -BOUNDARY_LIMIT){
-        return false;
+    // wait for graphics and haptics loops to terminate
+    while (!simulationFinished) {
+        cSleepMs(100);
     }
     // delete resources
     delete hapticsThread;
@@ -1100,100 +1078,8 @@ void updateGraphics(void) {
     // update shadow maps (if any)
     world->updateShadowMaps(false, false);
 
-    // stop the simulation clock
-    clock.stop();
-
-    double freq = freqCounterHaptics.getFrequency()/1000000;
-    // read the time increment in seconds
-    double timeInterval = cMin(freq, clock.getCurrentTimeSeconds());
-
-    // restart the simulation clock
-    // clock.reset();
-    clock.start();
-
-    // signal frequency counter
-    freqCounterHaptics.signal(1);
-
-    /////////////////////////////////////////////////////////////////////////
-    // READ HAPTIC DEVICE
-    /////////////////////////////////////////////////////////////////////////
-
-    // read position
-    cVector3d position;
-    hapticDevice->getPosition(position);
-    // Scale position to use more of the screen
-    // increase to use more of the screen
-    position *= 2.5;
-    // read user-switch status (button 0)
-
-    /////////////////////////////////////////////////////////////////////////
-    // UPDATE SIMULATION
-    /////////////////////////////////////////////////////////////////////////
-
-    // Update current atom based on if the user pressed the far left button
-    // The point of button2_changed is to make it so that it only switches one
-    // atom if the button is touched Otherwise it flips out
-
-    bool button0;
-    hapticDevice->getUserSwitch(0, button0);
-    bool button1;
-    hapticDevice->getUserSwitch(1, button1);
-    bool button2;
-    hapticDevice->getUserSwitch(2, button2);
-    bool button3;
-    hapticDevice->getUserSwitch(3, button3);
-    // Changes the camera when button2 is pressed
-    if (button2) {
-      if (!button2_changed) {
-        // rotates camera around in square
-        switch (curr_camera) {
-          case 1:
-            camera->setSphericalPolarRad(0);
-            camera->setSphericalAzimuthRad(0);
-            updateCameraLabel(camera_pos, camera);
-            break;
-          case 2:
-            camera->setSphericalPolarRad(0);
-            camera->setSphericalAzimuthRad(M_PI);
-            updateCameraLabel(camera_pos, camera);
-            ;
-            break;
-          case 3:
-            camera->setSphericalPolarRad(M_PI);
-            camera->setSphericalAzimuthRad(M_PI);
-            updateCameraLabel(camera_pos, camera);
-            break;
-          case 4:
-            curr_camera = 0;
-            camera->setSphericalPolarRad(M_PI);
-            camera->setSphericalAzimuthRad(0);
-            updateCameraLabel(camera_pos, camera);
-            break;
-        }
-        curr_camera++;
-        button2_changed = true;
-      }
-    } else
-      button2_changed = false;
-    // Changes the current atom being controlled when button 1 is pressed
-    // JD: edit so that we use remainder function in C++ and remove previous if
-    // else statement
-    if (button1) {
-      if (!button1_changed) {
-        // computes current atom by taking the remainder of the curr_atom +1 and
-        // number of spheres
-        int previous_curr_atom = curr_atom;
-        curr_atom = remainder(curr_atom + 1, spheres.size());
-        if (curr_atom < 0) {
-          curr_atom = spheres.size() + curr_atom;
-        }
-        // Skip anchored atoms; will eventually terminate at previous_curr_atom
-        while (spheres[curr_atom]->isAnchor()) {
-          curr_atom = remainder(curr_atom + 1, spheres.size());
-          if (curr_atom < 0) {
-            curr_atom = spheres.size() + curr_atom;
-          }
-        }
+    // render world
+    camera->renderView(width, height);
 
     // wait until all GL commands are completed
     glFinish();
