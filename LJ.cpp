@@ -880,44 +880,35 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
   } else if (a_key == GLFW_KEY_SPACE) {  // freeze simulation
     freezeAtoms = !freezeAtoms;
   } else if (a_key == GLFW_KEY_C) {  // save atoms to con file
-    auto timenow = chrono::system_clock::to_time_t(chrono::system_clock::now());
-    std::stringstream ss;
-    ss << ctime(&timenow);
-    std::string ts = ss.str();
-
-    // remove spaces and colons in string
-    int count = 0;
-    for (int i = 0; ts[i]; i++) {
-      if (ts[i] != ' ') {
-        ts[count++] = ts[i];
-      }
-    }
-    ts[count] = '\0';
-    count = 0;
-    for (int i = 0; ts[i]; i++) {
-      if (ts[i] != ':') {
-        ts[count++] = ts[i];
-      }
-    }
-    ts[count] = '\0';
-    string dirname = "./log/" + ts + '/';
-    char cstr[dirname.size()-5];
-    strcpy(cstr, dirname.c_str());
-    if (mkdir(cstr, 0777) == -1){
-      cerr << "Error: " << strerror(errno) << endl;
-    }
-    else {
-      cout << "Directory Created " << cstr << endl;
-    }
     ofstream writeFile;
+    string dir1 = "./log/";
+    struct stat buffer;
+    if (stat(dir1.c_str(), &buffer) != 0) { // Check if log directory exists
+      char cstr[dir1.size() + 1];
+      strcpy(cstr, dir1.c_str());
+      mkdir(cstr, 0777);
+    }
 
-    // prevent overwriting .con files
+    // Find local date
+    time_t now = time(0);
+    tm *ltm = localtime(&now);
+    int year = 1900 + ltm -> tm_year;
+    int month = 1 + ltm -> tm_mon;
+    int day = ltm -> tm_mday;
+    string date = to_string(month) + "-" + to_string(day) + "-" + to_string(year);
+    string dir2 = dir1 + date + "/";
+    if (stat(dir2.c_str(), &buffer) != 0) { // Check if date directory exists
+      char cstr[dir2.size() + 1];
+      strcpy(cstr, dir2.c_str());
+      mkdir(cstr, 0777);
+    }
+    // Prevent overwriting .con files
     int index = 0;
-    while (fileExists("./log/atoms" + to_string(index) + ".con")) {
+    while (fileExists(dir2 + "atoms" + to_string(index) + ".con")) {
       index++;
     }
-    writeToCon("./log/atoms" + to_string(index) + ".con");
-    cout << "LOGGED: " << "atoms" + to_string(index) + ".con" << endl;
+    writeToCon(dir2 + "atoms" + to_string(index) + ".con");
+cout << "LOGGED AT " + date + " atoms" + to_string(index) + ".con" << endl;
   } else if (a_key == GLFW_KEY_A) {
     // anchor all atoms while maintaining control
     for (auto i{0}; i < spheres.size(); i++) {
@@ -1030,20 +1021,18 @@ void mouseButtonCallback(GLFWwindow *a_window, int a_button, int a_action,
     }
 }
 
-void close(void) {
-    // stop the simulation
-    simulationRunning = false;
-
-    // wait for graphics and haptics loops to terminate
-    while (!simulationFinished) {
-        cSleepMs(100);
-    }
-    // delete resources
-    delete hapticsThread;
-    delete world;
-    delete handler;
+void close(void) {  // stop the simulation
+  simulationRunning = false;
+  // wait for graphics and haptics loops to terminate
+  while (!simulationFinished) {
+    cSleepMs(100);
+  }
+  // delete resources
+  delete hapticsThread;
+  delete world;
+  delete handler;
 }
-
+//-----------------------------------------------------------------------------
 void updateGraphics(void) {
     /////////////////////////////////////////////////////////////////////
     // UPDATE WIDGETS
@@ -1118,7 +1107,8 @@ void updateHaptics(void) {
         clock.stop();
 
         // read the time increment in seconds
-        double timeInterval = cMin(0.001, clock.getCurrentTimeSeconds());
+        double time = freqCounterHaptics.getFrequency()/1000000;
+        double timeInterval = cMin(time, clock.getCurrentTimeSeconds());
 
         // restart the simulation clock
         // clock.reset();
