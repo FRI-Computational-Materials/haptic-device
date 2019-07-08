@@ -127,3 +127,6 @@ The textbook is too big to upload so here's the link: http://www.charleshouserjr
         * Zoom in/out
     * `r`
         * Reset camera
+    * 'c'
+        * Logs current configuration in the /log folder. Writes coordinates of
+        all atoms in the system.
