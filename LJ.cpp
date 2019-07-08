@@ -1047,20 +1047,18 @@ void mouseButtonCallback(GLFWwindow *a_window, int a_button, int a_action,
     }
 }
 
-void close(void) {
-    // stop the simulation
-    simulationRunning = false;
-
-    // wait for graphics and haptics loops to terminate
-    while (!simulationFinished) {
-        cSleepMs(100);
-    }
-    // delete resources
-    delete hapticsThread;
-    delete world;
-    delete handler;
+void close(void) {  // stop the simulation
+  simulationRunning = false;
+  // wait for graphics and haptics loops to terminate
+  while (!simulationFinished) {
+    cSleepMs(100);
+  }
+  // delete resources
+  delete hapticsThread;
+  delete world;
+  delete handler;
 }
-
+//-----------------------------------------------------------------------------
 void updateGraphics(void) {
     /////////////////////////////////////////////////////////////////////
     // UPDATE WIDGETS
