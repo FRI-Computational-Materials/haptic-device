@@ -1124,7 +1124,8 @@ void updateHaptics(void) {
         clock.stop();
 
         // read the time increment in seconds
-        double timeInterval = cMin(0.001, clock.getCurrentTimeSeconds());
+        double time = freqCounterHaptics.getFrequency()/1000000;
+        double timeInterval = cMin(time, clock.getCurrentTimeSeconds());
 
         // restart the simulation clock
         // clock.reset();
