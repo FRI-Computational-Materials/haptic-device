@@ -897,35 +897,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
   } else if (a_key == GLFW_KEY_SPACE) {  // freeze simulation
     freezeAtoms = !freezeAtoms;
   } else if (a_key == GLFW_KEY_C) {  // save atoms to con file
-    auto timenow = chrono::system_clock::to_time_t(chrono::system_clock::now());
-    std::stringstream ss;
-    ss << ctime(&timenow);
-    std::string ts = ss.str();
-
-    // remove spaces and colons in string
-    int count = 0;
-    for (int i = 0; ts[i]; i++) {
-      if (ts[i] != ' ') {
-        ts[count++] = ts[i];
-      }
-    }
-    ts[count] = '\0';
-    count = 0;
-    for (int i = 0; ts[i]; i++) {
-      if (ts[i] != ':') {
-        ts[count++] = ts[i];
-      }
-    }
-    ts[count] = '\0';
-    string dirname = "./log/" + ts + '/';
-    char cstr[dirname.size()-5];
-    strcpy(cstr, dirname.c_str());
-    if (mkdir(cstr, 0777) == -1){
-      cerr << "Error: " << strerror(errno) << endl;
-    }
-    else {
-      cout << "Directory Created " << cstr << endl;
-    }
+    
     ofstream writeFile;
 
     // prevent overwriting .con files
