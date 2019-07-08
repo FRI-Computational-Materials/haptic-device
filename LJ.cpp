@@ -1052,7 +1052,7 @@ void updateGraphics(void) {
   /////////////////////////////////////////////////////////////////////
 
   // update haptic and graphic rate data
-  labelRates->setText(cStr(freqCounterGraphics.quency(), 0) + " Hz / " +
+  labelRates->setText(cStr(freqCounterGraphics.getFrequency(), 0) + " Hz / " +
                       cStr(freqCounterHaptics.getFrequency(), 0) + " Hz");
 
   // update position of label
