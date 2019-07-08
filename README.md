@@ -97,34 +97,33 @@ The textbook is too big to upload so here's the link: http://www.charleshouserjr
 ## Notes
 
 * The buttons are labeled 0-3, starting at the center and going clockwise for user switches
-* Button naming convention in LJ-test.cpp (example = name in LJ-test.cp
-* p)
+* Button naming convention in LJ-test.cpp (example = name in LJ-test.cpp)
     * button 0 = button
-        * does nothing
+        * No function.
     * button 1 = button2
-        * this button changes the current atom being used
-    * button3 = freebutton
-        * also does nothing
-    * button2  = button3
-        * this changes the camera position
+        * Changes the current atom being controlled by the haptic device.
+    * button 2  = button3
+        * Changes the camera position.
+    * button 3 = freebutton
+        * No function.
 * Keyboard hotkeys:
     * `q` or `ESC`
-        * quit program
+        * Quit program
     * `f`
-        * toggle fullscreen
+        * Toggle full screen
     * `u`
-        * unanchor all atoms
+        * Un-anchor all atoms
     * `s`
-        * screenshot atomic configuration without graph
+        * Screenshot atomic configuration without graph
     * `SPACE`
-        * freeze atom movement
+        * Freeze atom movement
     * `c`
-        * save configuration to .con file
+        * Save configuration to .con file
     * `a`
-        * anchor all atoms     
+        * Anchor all atoms     
     * `ARROW KEYS`
-        * move camera
+        * Move camera
     * `[` and `]`
-        * zoom in/out
+        * Zoom in/out
     * `r`
-        * reset camera
+        * Reset camera
