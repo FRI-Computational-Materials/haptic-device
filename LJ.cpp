@@ -166,6 +166,13 @@ vector< vector<Atom *> > repeats;
 bool changeBox = false;
 cShapeBox *box;
 
+// for choosing bcc/fcc miller indices
+bool checkIndices = false;
+int millerIndices[3];
+int millIndCount = 0;
+bool bcc = false;
+bool fcc = false;
+
 // cToolCursor* tool;
 
 // a haptic device handler
@@ -871,7 +878,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
         }
         glfwSetWindowShouldClose(a_window, GLFW_TRUE);
         
-    } else if (a_key == GLFW_KEY_F) {  // option - toggle fullscreen
+    } else if (a_key == GLFW_KEY_F && !changeBox) {  // option - toggle fullscreen
         // toggle state variable
         fullscreen = !fullscreen;
         
@@ -978,7 +985,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
         camera->setSphericalRadius(.35);
         rho = .35;
         updateCameraLabel(camera_pos, camera);
-    } else if (a_key == GLFW_KEY_1 && !changeBox){
+    } else if (a_key == GLFW_KEY_1 && !changeBox && !checkIndices){
         //set a repeat flag on all anchored atoms
         
         
@@ -1064,7 +1071,6 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
         }
     } else if (a_key == GLFW_KEY_ENTER){
         
-        //TODO: fix this
         if(changeBox){
             changeBox = false;
             box->setTransparencyLevel(0);
@@ -1093,8 +1099,9 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
             }
             
             int numLayers = maxLen/box->getSizeY() - 1;
-            int numRepeatAtoms = pow((1 + (2*numLayers)),2);
-            numRepeatAtoms *= 3;
+            int numRepeatAtoms = pow(((2*numLayers)+1),2);
+            int numZLayers = 3;
+            numRepeatAtoms *= numZLayers;
             if (numLayers == 0){
                 numRepeatAtoms = 0;
             }
@@ -1110,6 +1117,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
                     int ycount = -numLayers;
                     int zcount = 0;
                     for(int j = 0; j < numRepeatAtoms; j++){
+                        //cout << "(" << xcount << ", " << ycount << ", " << zcount << ")\n";
                         Atom *temp = new Atom(SPHERE_RADIUS, SPHERE_MASS);
                         world->addChild(temp);
                         world->addChild(temp->getVelVector());
@@ -1147,6 +1155,211 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
             
             if(repCount == 0){
                 repeats.resize(0);
+            }
+        }
+    } else if (a_key == GLFW_KEY_B){
+        bcc = true;
+        
+        //!!TO BE MOVED!!
+        if(changeBox){
+            changeBox = false;
+            box->setTransparencyLevel(0);
+            freezeAtoms = !freezeAtoms;
+            
+            cTexture2dPtr texture = cTexture2d::create();
+            
+            // load texture file
+            bool fileload = texture->loadFromFile(
+                                                  RESOURCE_PATH("../resources/images/spheremap-3.jpg"));
+            if (!fileload) {
+#if defined(_MSVC)
+                fileload = texture->loadFromFile("../resources/images/spheremap-3.jpg");
+#endif
+            }
+            if (!fileload) {
+                cout << "Error - Texture image failed to load correctly." << endl;
+                close();
+            }
+            
+            //sets up lattice constants
+            double horzlc = .02;
+            double vertlc = horzlc;
+            
+            double maxLen = BOUNDARY_LIMIT;
+            
+            if(horzlc < BOUNDARY_LIMIT/5 || horzlc < BOUNDARY_LIMIT/5 || vertlc < BOUNDARY_LIMIT/5){
+                maxLen = BOUNDARY_LIMIT/10;
+            }
+            
+            int numLayers = maxLen/horzlc - 1;
+            int numRepeatAtoms = pow(((2*numLayers)+1),2);
+            //cout << "(" << numLayers << ", " << numRepeatAtoms << ")";
+            int numZLayers = 3;
+            numRepeatAtoms *= numZLayers;
+            if (numLayers == 0){
+                numRepeatAtoms = 0;
+            }
+            //bcc
+            repeats.resize(numRepeatAtoms);
+            int xlay = -numLayers;
+            int ylay = -numLayers;
+            int zlay = 0;
+            bool offset = false;
+            for(int i = 0; i < numRepeatAtoms; i++){
+                //cout << "(" << xlay << ", " << ylay << ", " << zlay << ")\n";
+                Atom *temp = new Atom(SPHERE_RADIUS, SPHERE_MASS);
+                world->addChild(temp);
+                world->addChild(temp->getVelVector());
+                temp->setTexture(texture);
+                temp->m_texture->setSphericalMappingEnabled(true);
+                temp->setUseTexture(true);
+                
+                //offsets every other layer
+                cVector3d repPos = cVector3d(xlay*horzlc, ylay*horzlc, (zlay+2)*vertlc);
+                if(offset){
+                    repPos.sub(horzlc/2, horzlc/2, 0);
+                }
+                
+                temp->setRepeating(true);
+                temp->setLocalPos(repPos);
+                
+                //   if(zlay > 0){     -- this is too slow to work properly
+                temp->setAnchor(true);
+                //  }
+                
+                repeats.at(i).push_back(temp);
+                
+                xlay++;
+                
+                if(xlay > numLayers){
+                    xlay = -numLayers;
+                    ylay++;
+                }
+                
+                if(ylay > numLayers){
+                    xlay = -numLayers;
+                    ylay = -numLayers;
+                    zlay++;
+                    offset = !offset;
+                }
+            }
+        }
+        
+    } else if (a_key == GLFW_KEY_F){
+        fcc = true;
+        
+        //!!TO BE MOVED!!
+        if(changeBox){
+            changeBox = false;
+            box->setTransparencyLevel(0);
+            freezeAtoms = !freezeAtoms;
+            
+            cTexture2dPtr texture = cTexture2d::create();
+            
+            // load texture file
+            bool fileload = texture->loadFromFile(
+                                                  RESOURCE_PATH("../resources/images/spheremap-3.jpg"));
+            if (!fileload) {
+#if defined(_MSVC)
+                fileload = texture->loadFromFile("../resources/images/spheremap-3.jpg");
+#endif
+            }
+            if (!fileload) {
+                cout << "Error - Texture image failed to load correctly." << endl;
+                close();
+            }
+            
+            //sets up lattice constants
+            double horzlc = .02;
+            double vertlc = horzlc;
+            
+            double maxLen = BOUNDARY_LIMIT;
+            
+            if(horzlc < BOUNDARY_LIMIT/5 || horzlc < BOUNDARY_LIMIT/5 || vertlc < BOUNDARY_LIMIT/5){
+                maxLen = BOUNDARY_LIMIT/10;
+            }
+            
+            int numLayers = maxLen/horzlc - 1;
+            int numRepeatAtoms = pow(((2*numLayers)+1),2);
+            //cout << "(" << numLayers << ", " << numRepeatAtoms << ")";
+            int numZLayers = 3;
+            numRepeatAtoms *= numZLayers;
+            if (numLayers == 0){
+                numRepeatAtoms = 0;
+            }
+            //fcc
+            repeats.resize(numRepeatAtoms);
+            int xlay = -numLayers;
+            int ylay = -numLayers;
+            int zlay = 0;
+            bool xoffset = true;
+            bool offsetLayer = false;
+            
+            for(int i = 0; i < numRepeatAtoms; i++){
+                cout << "(" << xlay << ", " << ylay << ", " << zlay << ")\n";
+                Atom *temp = new Atom(SPHERE_RADIUS, SPHERE_MASS);
+                world->addChild(temp);
+                world->addChild(temp->getVelVector());
+                temp->setTexture(texture);
+                temp->m_texture->setSphericalMappingEnabled(true);
+                temp->setUseTexture(true);
+                
+                //offsets every other layer
+                cVector3d repPos = cVector3d(xlay*horzlc, ylay*horzlc, (zlay+2)*vertlc);
+                
+                if(offsetLayer){
+                    if(xoffset){
+                        repPos.sub(horzlc/2, 0, 0);
+                    }
+                }
+                
+                temp->setRepeating(true);
+                temp->setLocalPos(repPos);
+                
+                //   if(zlay > 0){     -- this is too slow to work properly
+                temp->setAnchor(true);
+                //  }
+                
+                repeats.at(i).push_back(temp);
+                
+                
+                xlay++;
+                
+                if(xlay > numLayers){
+                    xlay = -numLayers;
+                    ylay++;
+                    if(offsetLayer){
+                        xoffset = !xoffset;
+                    }
+                }
+                
+                if(ylay > numLayers){
+                    xlay = -numLayers;
+                    ylay = -numLayers;
+                    zlay++;
+                    offsetLayer = !offsetLayer;
+                }
+                
+            }
+        }
+        
+    } else if (a_key == GLFW_KEY_0){
+        if(checkIndices){
+            if(millIndCount < 3){
+                millerIndices[millIndCount] = 0;
+                millIndCount++;
+            } else {
+                //bcc or fcc
+            }
+        }
+        
+    } else if (a_key == GLFW_KEY_1){
+        if(checkIndices){
+            if(millIndCount < 3){
+                millerIndices[millIndCount] = 1;
+                millIndCount++;
+            } else {
+                //bcc or fcc
             }
         }
     }
