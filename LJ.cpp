@@ -895,9 +895,11 @@ void updateHaptics(void) {
         // stop the simulation clock
         clock.stop();
 
-        // read the time increment in seconds
+        // read the haptic refresh rate and scale it to milliseconds
         double time = freqCounterHaptics.getFrequency()/1000000;
-        double timeInterval = cMin(time, clock.getCurrentTimeSeconds());
+        // cout << time << endl;
+        // set the time interval for the simulation based on refresh time
+        double timeInterval = cMin(0.001 - time, clock.getCurrentTimeSeconds());
 
         // restart the simulation clock
         // clock.reset();
