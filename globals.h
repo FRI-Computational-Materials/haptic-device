@@ -61,3 +61,5 @@ extern cLabel *camera_pos;
 extern cLabel *helpHeader;
 
 extern cPanel *helpPanel;
+
+extern int screenshotCounter;

@@ -254,6 +254,18 @@ vector<cLabel *> hotkeyKeys;
 //vector holding function key labels (must be separate for formatting)
 vector<cLabel *> hotkeyFunctions;
 
+// keep track of how long screenshot label has been displayed
+int screenshotCounter = -2;
+
+//keep track of how long write to con label has been displayed
+int writeConCounter = -2;
+
+// screenshot notification label
+cLabel *screenshotLabel;
+
+// write to con notification label
+cLabel *writeConLabel;
+
 //------------------------------------------------------------------------------
 // DECLARED MACROS
 //------------------------------------------------------------------------------
@@ -662,6 +674,9 @@ int main(int argc, char *argv[]) {
     addLabel(scope_upper);
     addLabel(scope_lower);
 
+    addLabel(writeConLabel);
+    addLabel(screenshotLabel);
+
     // create a background
     background = new cBackground();
     camera->m_backLayer->addChild(background);
@@ -745,6 +760,9 @@ int main(int argc, char *argv[]) {
     addHotkeyLabel("c", "save configuration to .con");
     addHotkeyLabel("SPACE", "freeze atoms");
     addHotkeyLabel("CTRL", "toggle help panel");
+
+    //
+    screenshotLabel->setText("Screenshot taken");
 
     //--------------------------------------------------------------------------
     // START SIMULATION
@@ -1025,6 +1043,19 @@ void updateHaptics(void) {
         isFrozen->setText("Freeze simulation: " + trueFalse);
         auto isFrozenWidth = (width - isFrozen->getWidth()) - 5;
         isFrozen->setLocalPos(isFrozenWidth, 15);
+
+        screenshotLabel->setLocalPos(5, height - 20);
+        if(screenshotCounter == 5000){
+          camera->m_frontLayer->addChild(screenshotLabel);
+          screenshotCounter--;
+        }else if(screenshotCounter > 0){
+          screenshotCounter--;
+        }else if(screenshotCounter == 0){
+          camera->m_frontLayer->removeChild(screenshotLabel);
+          screenshotCounter--;
+        }else if(screenshotCounter == -2){
+          camera->m_frontLayer->removeChild(screenshotLabel);
+        }
 
         if (!freezeAtoms) {
             // compute forces for all spheres

@@ -55,6 +55,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       index++;
     }
     image->saveToFile(filename_stem + to_string(index) + ".png");
+    screenshotCounter = 5000;
   } else if (a_key == GLFW_KEY_SPACE) {  // freeze simulation
     freezeAtoms = !freezeAtoms;
   } else if (a_key == GLFW_KEY_C) {  // save atoms to con file
