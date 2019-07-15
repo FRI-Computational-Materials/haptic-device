@@ -10,6 +10,7 @@ Atom::Atom(double radius, double sphere_mass, cColorf color)
     anchor = false;
     current = false;
     repeating = false;
+    skipCalc = false;
     velVector = new cShapeLine(cVector3d(0, 0, 0), cVector3d(0, 0, 0));
     force.zero();
     this->sphere_mass = sphere_mass;
@@ -62,6 +63,12 @@ void Atom::setRepeating(bool newRepeat) {
         m_material->setColor(base_color);
     }
     repeating = newRepeat;
+}
+
+bool Atom::getSkipCalc() { return skipCalc; }
+
+void Atom::setSkipCalc(bool newCalc) {
+    skipCalc = newCalc;
 }
 
 cVector3d Atom::getVelocity() { return velocity; }

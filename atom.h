@@ -11,6 +11,7 @@ private:
     bool anchor;
     bool current;
     bool repeating;
+    bool skipCalc;
     cVector3d velocity;
     cVector3d force;
     cShapeLine *velVector;
@@ -25,6 +26,8 @@ public:
     void setRepeating(bool newRepeat);
     bool isCurrent();
     void setCurrent(bool newCurrent);
+    bool getSkipCalc();
+    void setSkipCalc(bool newCalc);
     cVector3d getVelocity();
     void setVelocity(cVector3d newVel);
     cVector3d getForce();
