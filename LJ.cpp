@@ -1790,7 +1790,6 @@ void updateHaptics(void) {
                     
                     //if statement seems redundant, but an error will be thrown occasionally if not checking every time
                     
-                    
                     if(repeats.at(i-spheres.size()).size() > 0 && count < repeats.at(i-spheres.size()).size()){
                         if(repeats.at(i-spheres.size()).at(count)->getSkipCalc()){
                             continue;
@@ -1825,9 +1824,6 @@ void updateHaptics(void) {
                             
                             //if statement seems redundant, but an error will be thrown occasionally if not checking every time
                             if(repeats.at(j-spheres.size()).size() > 0 && innerCount < repeats.at(j-spheres.size()).size()){
-                                if(repeats.at(j-spheres.size()).at(innerCount)->getSkipCalc()){
-                                    continue;
-                                }
                                 pos1 = repeats.at(j-spheres.size()).at(innerCount)->getLocalPos();
                                 innerCount++;
                                 if(innerCount >= repeats.at(j-spheres.size()).size()){
