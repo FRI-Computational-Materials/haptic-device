@@ -63,3 +63,5 @@ extern cLabel *helpHeader;
 extern cPanel *helpPanel;
 
 extern int screenshotCounter;
+
+extern int writeConCounter;

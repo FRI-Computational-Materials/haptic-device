@@ -86,8 +86,9 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
     while (fileExists(dir2 + "atoms" + to_string(index) + ".con")) {
       index++;
     }
+    writeConCounter = 5000;
     writeToCon(dir2 + "atoms" + to_string(index) + ".con");
-cout << "LOGGED AT " + date + " atoms" + to_string(index) + ".con" << endl;
+    cout << "LOGGED AT " + date + " atoms" + to_string(index) + ".con" << endl;
   } else if (a_key == GLFW_KEY_A) {
     // anchor all atoms while maintaining control
     for (auto i{0}; i < spheres.size(); i++) {
