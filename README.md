@@ -26,7 +26,9 @@ The default is Lennard-Jones.
 
 ### Windows
 
-Windows release has been halted, development all on Linux now ~
+Windows development temporarily halted (unable to compile on Visual Studio).
+Check WINDOWS.md for details on installation.
+
 
 ### Linux
 1. Download the multiplatform release from [chai3d](http://www.chai3d.org/download/releases)
@@ -73,7 +75,7 @@ bool fileload = texture->loadFromFile(RESOURCE_PATH("../resources/images/spherem
 ```
 to the absolute file path.
 
-10. Run the following commands while in chai3d-3.20/: 
+10. Run the following commands while in chai3d-3.20/:
   * `sudo cp ./external/DHD/doc/linux/51-forcedimension.rules /etc/udev/rules.d`
   * `sudo udevadm control --reload-rules && udevadm trigger`
 
@@ -84,6 +86,8 @@ to the absolute file path.
 ### MacOS
 1. Download the latest release of CHAI3D for Mac OS X from [chai3d](http://www.chai3d.org/download/releases)
 2. Make sure you have XCode downloaded, and follow instructions from the file entitled "getting-started.html" located in the doc folder of chai3d
+3. Copy over all of the files from haptic-device into one of the CHAI3D examples, and rename LJ.cpp to to the same name of the .cpp file already in the CHAI3D example, such as "01-mydevice.cpp". If you're getting an error, make sure that you don't have a dupicate LJ.cpp file.
+4. Run the example.
 
 
 ## Reference
@@ -124,3 +128,5 @@ The textbook is too big to upload so here's the link: http://www.charleshouserjr
         * zoom in/out
     * `r`
         * reset camera
+    * `CTRL`
+        * toggle help panel
