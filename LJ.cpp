@@ -1237,9 +1237,8 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
                 
                 temp->setAnchor(true);
                 
-                if(zlay > 0){
-                    temp->setSkipCalc(true);
-                }
+                temp->setSkipCalc(true);
+                
                 
                 repeats.at(i).push_back(temp);
                 
@@ -1311,7 +1310,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
             bool offsetLayer = false;
             
             for(int i = 0; i < numRepeatAtoms; i++){
-                cout << "(" << xlay << ", " << ylay << ", " << zlay << ")\n";
+                //cout << "(" << xlay << ", " << ylay << ", " << zlay << ")\n";
                 Atom *temp = new Atom(SPHERE_RADIUS, SPHERE_MASS);
                 world->addChild(temp);
                 world->addChild(temp->getVelVector());
@@ -1333,9 +1332,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
                 
                 temp->setAnchor(true);
                 
-                if(zlay > 0){
-                    temp->setSkipCalc(true);
-                }
+                temp->setSkipCalc(true);
                 
                 repeats.at(i).push_back(temp);
                 
@@ -1443,10 +1440,8 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
                         temp->setRepeating(true);
                         temp->setLocalPos(repPos);
                         temp->setAnchor(true);
+                        temp->setSkipCalc(true);
                         
-                        if(zlay > 0){
-                            temp->setSkipCalc(true);
-                        }
                         
                         repeats.at(i).push_back(temp);
                         
