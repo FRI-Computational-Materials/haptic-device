@@ -518,7 +518,7 @@ int main(int argc, char *argv[]) {
       // add line to world
       world->addChild(new_atom->getVelVector());
 
-      // set the position of the object at the center of the world
+      // Atom spawning
       bool inside_atom = true;
       if (i != 0) {
         bool collision_detected;
@@ -532,6 +532,7 @@ int main(int argc, char *argv[]) {
           } else {
             new_atom->setInitialPosition();
           }
+
           // Check that it doesn't collide with any others
           collision_detected = false;
           for (auto i{0}; i < spheres.size(); i++) {
@@ -548,25 +549,22 @@ int main(int argc, char *argv[]) {
               break;
             }
           }
+
           if (!collision_detected) {
             inside_atom = false;
           }
         }
       }
+
       // set graphic properties of sphere
       new_atom->setTexture(texture);
       new_atom->m_texture->setSphericalMappingEnabled(true);
       new_atom->setUseTexture(true);
 
-      // Set the first and second sphere (the one being controlled to red
-      // initially and the anchor in blue)
-      if (i == 0)  // sphere is current
-      {
+      // set the first sphere to the current
+      if (i == 0)  {
         new_atom->setCurrent(true);
-      } else if (i == 1)  // sphere is anchor
-      {
-        new_atom->setAnchor(true);
-      }
+      } 
     }
   } else {  // read in specified file
     string file_path = "../resources/data/";
