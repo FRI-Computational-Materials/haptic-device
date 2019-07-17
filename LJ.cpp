@@ -562,9 +562,9 @@ int main(int argc, char *argv[]) {
       new_atom->setUseTexture(true);
 
       // set the first sphere to the current
-      if (i == 0)  {
+      if (i == 0) {
         new_atom->setCurrent(true);
-      } 
+      }
     }
   } else {  // read in specified file
     string file_path = "../resources/data/";
@@ -731,9 +731,7 @@ int main(int argc, char *argv[]) {
   // To do this but the scope height is protected
   scope_upper->setLocalPos(cAdd(scope->getLocalPos(), cVector3d(0, 180, 0)));
   scope_lower->setLocalPos(scope->getLocalPos());
-  // TODO - make more legible
-  // scope_upper->m_fontColor.setRed();
-  // scope_lower->m_fontColor.setRed();
+
   cColorf panelColor = cColorf();
   // BlueCadet
   panelColor.setBlueCadet();
@@ -790,9 +788,11 @@ int main(int argc, char *argv[]) {
     potentialName = "Morse Potential";
   }
   potentialLabel->setText("Potential energy surface: " + potentialName);
+
   //--------------------------------------------------------------------------
   // MAIN GRAPHIC LOOP
   //--------------------------------------------------------------------------
+
   // call window size callback at initialization
   windowSizeCallback(window, width, height);
   // main graphic loop
@@ -842,7 +842,7 @@ void close(void) {  // stop the simulation
   delete world;
   delete handler;
 }
-//-----------------------------------------------------------------------------
+
 void updateGraphics(void) {
   /////////////////////////////////////////////////////////////////////
   // UPDATE WIDGETS
@@ -930,6 +930,7 @@ void updateHaptics(void) {
 
     // signal frequency counter
     freqCounterHaptics.signal(1);
+
     /////////////////////////////////////////////////////////////////////////
     // READ HAPTIC DEVICE
     /////////////////////////////////////////////////////////////////////////
@@ -941,7 +942,6 @@ void updateHaptics(void) {
     // increase to use more of the screen
     position *= 2.0;
 
-    // read user-switch status (button 0)
     /////////////////////////////////////////////////////////////////////////
     // UPDATE SIMULATION
     /////////////////////////////////////////////////////////////////////////
@@ -1063,18 +1063,17 @@ void updateHaptics(void) {
     }
 
     writeConLabel->setLocalPos(5, height - 40);
-    if(writeConCounter == 5000){
-        camera->m_frontLayer->addChild(writeConLabel);
-        writeConCounter--;
-    }else if(writeConCounter > 0){
-        writeConCounter--;
-    }else if(writeConCounter == 0){
-        camera->m_frontLayer->removeChild(writeConLabel);
-        writeConCounter--;
-    }else if(writeConCounter == -2){
-        camera->m_frontLayer->removeChild(writeConLabel);
+    if (writeConCounter == 5000) {
+      camera->m_frontLayer->addChild(writeConLabel);
+      writeConCounter--;
+    } else if (writeConCounter > 0) {
+      writeConCounter--;
+    } else if (writeConCounter == 0) {
+      camera->m_frontLayer->removeChild(writeConLabel);
+      writeConCounter--;
+    } else if (writeConCounter == -2) {
+      camera->m_frontLayer->removeChild(writeConLabel);
     }
-
 
     if (!freezeAtoms) {
       // compute forces for all spheres
