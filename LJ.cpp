@@ -271,6 +271,12 @@ cLabel *screenshotLabel;
 // write to con notification label
 cLabel *writeConLabel;
 
+// keeps track of whether logging is on
+bool logging = false;
+
+// logfile filename, TODO -- get rid of this lol
+string logfile_dir;
+
 //------------------------------------------------------------------------------
 // DECLARED MACROS
 //------------------------------------------------------------------------------
@@ -562,9 +568,9 @@ int main(int argc, char *argv[]) {
       new_atom->setUseTexture(true);
 
       // set the first sphere to the current
-      if (i == 0)  {
+      if (i == 0) {
         new_atom->setCurrent(true);
-      } 
+      }
     }
   } else {  // read in specified file
     string file_path = "../resources/data/";
@@ -1063,18 +1069,17 @@ void updateHaptics(void) {
     }
 
     writeConLabel->setLocalPos(5, height - 40);
-    if(writeConCounter == 5000){
-        camera->m_frontLayer->addChild(writeConLabel);
-        writeConCounter--;
-    }else if(writeConCounter > 0){
-        writeConCounter--;
-    }else if(writeConCounter == 0){
-        camera->m_frontLayer->removeChild(writeConLabel);
-        writeConCounter--;
-    }else if(writeConCounter == -2){
-        camera->m_frontLayer->removeChild(writeConLabel);
+    if (writeConCounter == 5000) {
+      camera->m_frontLayer->addChild(writeConLabel);
+      writeConCounter--;
+    } else if (writeConCounter > 0) {
+      writeConCounter--;
+    } else if (writeConCounter == 0) {
+      camera->m_frontLayer->removeChild(writeConLabel);
+      writeConCounter--;
+    } else if (writeConCounter == -2) {
+      camera->m_frontLayer->removeChild(writeConLabel);
     }
-
 
     if (!freezeAtoms) {
       // compute forces for all spheres
@@ -1143,6 +1148,20 @@ void updateHaptics(void) {
           cout << i << " acceleration " << sphereAcc.length() << endl;
           cout << i << " time " << timeInterval << endl;
           cout << i << " position of  " << timeInterval << endl;
+        }
+
+        /////////////////////////////
+        //// WRITE TO LOGFILE
+        /////////////////////////////
+        if (logging) {
+          ofstream logfile;
+          logfile.open(logfile_dir, ios::app);
+          logfile << to_string(i) << " ";
+          logfile << to_string(spherePos_change.length()) << " ";
+          logfile << to_string(current->getVelocity().length()) << " ";
+          logfile << to_string(sphereAcc.length()) << " ";
+          logfile << to_string(force.length()) << " " << endl;
+          logfile.close();
         }
         // A is the current position, B is the position to move to
         cVector3d A = current->getLocalPos();
