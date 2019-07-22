@@ -59,41 +59,19 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
   } else if (a_key == GLFW_KEY_SPACE) {  // freeze simulation
     freezeAtoms = !freezeAtoms;
   } else if (a_key == GLFW_KEY_C) {  // save atoms to con file
-    ofstream writeFile;
-    string dir1 = "./structures/";
-    struct stat buffer;
-    if (stat(dir1.c_str(), &buffer) !=
-        0) {  // Check if structures directory exists
-      char cstr[dir1.size() + 1];
-      strcpy(cstr, dir1.c_str());
-      mkdir(cstr, 0777);
-    }
+    createDir("./structures/");
+    string date_dir = createDateDir("./structures/");
 
-    // Find local date
-    time_t now = time(0);
-    tm *ltm = localtime(&now);
-    int year = 1900 + ltm->tm_year;
-    int month = 1 + ltm->tm_mon;
-    int day = ltm->tm_mday;
-    string date =
-        to_string(month) + "-" + to_string(day) + "-" + to_string(year);
-    string dir2 = dir1 + date + "/";
-    if (stat(dir2.c_str(), &buffer) != 0) {  // Check if date directory exists
-      char cstr[dir2.size() + 1];
-      strcpy(cstr, dir2.c_str());
-      mkdir(cstr, 0777);
-    }
     // Prevent overwriting .con files
     int index = 0;
-    while (fileExists(dir2 + "atoms" + to_string(index) + ".con")) {
+    string con_file_stem = date_dir + "lj" + to_string(spheres.size()) + "_";
+    while (fileExists(con_file_stem + to_string(index) + ".con")) {
       index++;
     }
+    string con_file = con_file_stem + to_string(index) + ".con";
     writeConCounter = 5000;
-    writeToCon(dir2 + "atoms" + to_string(index) + ".con");
-    cout << "STRUCTURE SAVED AT " + date + " atoms" + to_string(index) + ".con"
-         << endl;
-    writeFile.close();
-
+    writeToCon(con_file);
+    cout << "STRUCTURE SAVED TO " + con_file << endl;
   } else if (a_key == GLFW_KEY_A) {
     // anchor all atoms while maintaining control
     for (auto i{0}; i < spheres.size(); i++) {
@@ -168,41 +146,15 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       // TODO - split up into funcs
       logging = true;
       ofstream logFile;
-      string log_dir = "./logs/";
-      struct stat buffer;
-      if (stat(log_dir.c_str(), &buffer) !=
-          0) {  // Check if log directory exists
-        char cstr[log_dir.size() + 1];
-        strcpy(cstr, log_dir.c_str());
-        mkdir(cstr, 0777);
-      }
-
-      // Find local date
-      time_t now = time(0);
-      tm *ltm = localtime(&now);
-      int year = 1900 + ltm->tm_year;
-      int month = 1 + ltm->tm_mon;
-      int day = ltm->tm_mday;
-      string date =
-          to_string(month) + "-" + to_string(day) + "-" + to_string(year);
-      string date_dir = log_dir + date + "/";
-      if (stat(date_dir.c_str(), &buffer) !=
-          0) {  // Check if date directory exists
-        char cstr[date_dir.size() + 1];
-        strcpy(cstr, date_dir.c_str());
-        mkdir(cstr, 0777);
-      }
-
-      // TODO - save filename as a var first before looping
-      // TODO - save filename as a var first before looping
+      createDir("./logs/");
+      string date_dir = createDateDir("./logs/");
       int index = 0;
-      while (fileExists(date_dir + "lj" + to_string(spheres.size()) + "_" +
-                        to_string(index))) {
+      string logfile_stem = date_dir + "lj" + to_string(spheres.size()) + "_";
+      while (fileExists(logfile_stem + to_string(index))) {
         index++;
       }
+      logfile_dir = logfile_stem + to_string(index) + ".log";
 
-      logfile_dir = date_dir + "lj" + to_string(spheres.size()) + "_" +
-                    to_string(index);
       // init file
       ofstream logfile;
       logfile.open(logfile_dir);
@@ -213,7 +165,6 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
     logging = false;
   }
 }
-
 
 void mouseMotionCallback(GLFWwindow *a_window, double a_posX, double a_posY) {
   if ((selectedAtom != NULL) && (mouseState == MOUSE_SELECTION) &&

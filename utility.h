@@ -21,3 +21,9 @@ void updateCameraLabel(chai3d::cLabel *&camera_pos, chai3d::cCamera *&camera);
 
 // save configuration in .con file
 void writeToCon(std::string fileName);
+
+// Create directory if it doesn't exist
+void createDir(std::string dir_name);
+
+// Create date directory
+std::string createDateDir(std::string root_dir);
