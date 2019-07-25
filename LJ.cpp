@@ -1124,31 +1124,25 @@ void updateHaptics(void) {
             }
           }
         }
-        if (force.length() > 10000) {
+
+        // Cap forces
+        if (force.length() > 250) {
           force.normalize();
-          force.mul(10000);
+          force.mul(250);
         }
         current->setForce(force);
-        // cVector3d sphereAcc = (force / SPHERE_MASS);
-        cVector3d sphereAcc = A_DAMPING * (force / current->getMass());
+        cVector3d sphereAcc = A_DAMPING * (current->getForce() / current->getMass());
         current->setVelocity(
             V_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
-        if (current->getVelocity().length() > 100) {
+        if (current->getVelocity().length() > 25) {
+          // cap velocity
           current->getVelocity().normalize();
-          current->getVelocity().mul(100);
+          current->getVelocity().mul(25);
         }
         // compute position
         cVector3d spherePos_change = timeInterval * current->getVelocity() +
                                      cSqr(timeInterval) * sphereAcc;
         cVector3d spherePos = current->getLocalPos() + spherePos_change;
-        double magnitude = force.length();
-        if (magnitude > 5) {
-          cout << i << " velocity " << current->getVelocity().length() << endl;
-          cout << i << " force " << force.length() << endl;
-          cout << i << " acceleration " << sphereAcc.length() << endl;
-          cout << i << " time " << timeInterval << endl;
-          cout << i << " position of  " << timeInterval << endl;
-        }
 
         /////////////////////////////
         //// WRITE TO LOGFILE
@@ -1160,7 +1154,7 @@ void updateHaptics(void) {
           logfile << to_string(spherePos_change.length()) << " ";
           logfile << to_string(current->getVelocity().length()) << " ";
           logfile << to_string(sphereAcc.length()) << " ";
-          logfile << to_string(force.length()) << " " << endl;
+          logfile << to_string(current->getForce().length()) << " " << endl;
           logfile.close();
         }
         // A is the current position, B is the position to move to
