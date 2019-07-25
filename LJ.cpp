@@ -196,6 +196,8 @@ cBackground *background;
 
 // a font for rendering text
 cFontPtr font = NEW_CFONTCALIBRI20();
+cFontPtr bigFont = NEW_CFONTCALIBRI72();
+
 
 // a label to display the rate [Hz] at which the simulation is running
 cLabel *labelRates;
@@ -336,6 +338,8 @@ void close(void);
 
 // add a label to the world with default black text
 void addLabel(cLabel *&label);
+void addBigLabel(cLabel *&label);
+
 
 // Update camera text
 void updateCameraLabel(cLabel *&camera_pos, cCamera *&camera);
@@ -827,7 +831,7 @@ int main(int argc, char *argv[]) {
     dragPanelInner->setShowPanel(false);
     
     // add text label
-    addLabel(dragText);
+    addBigLabel(dragText);
     
     
     //--------------------------------------------------------------------------
@@ -1111,7 +1115,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
             dragText->setText("DRAG FILE HERE");
             
             //this looks bad, sharpen if possible
-            dragText->setFontScale(5);
+            //dragText->setFontScale(5);
             
             dragText->setLocalPos((int)((width/2) - (dragText->getTextWidth()/2)), (int)((height/2) - (dragText->getTextHeight()/2)));
             
@@ -2199,6 +2203,12 @@ void writeToCon(string fileName) {
 
 void addLabel(cLabel *&label) {
     label = new cLabel(font);
+    label->m_fontColor.setBlack();
+    camera->m_frontLayer->addChild(label);
+}
+
+void addBigLabel(cLabel *&label) {
+    label = new cLabel(bigFont);
     label->m_fontColor.setBlack();
     camera->m_frontLayer->addChild(label);
 }
