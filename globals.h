@@ -65,3 +65,7 @@ extern cPanel *helpPanel;
 extern int screenshotCounter;
 
 extern int writeConCounter;
+
+extern bool logging;
+
+extern string logfile_dir;
