@@ -52,8 +52,12 @@
 #include <unistd.h>
 #include <chrono>
 #include <ctime>
+#include <thread>
 #include <fstream>
+#include <iostream>
 #include <string>
+
+
 
 //------------------------------------------------------------------------------
 using namespace chai3d;
@@ -282,6 +286,15 @@ Potential energySurface = LENNARD_JONES;
 // check if able to read in the global min
 bool global_min_known = true;
 
+// panel to appear when dragging and dropping a file
+cPanel *dragPanel;
+cPanel *dragPanelInner;
+cLabel *dragText;
+
+vector<string> droppedPaths;
+bool dropped = false;
+bool dropState = true;
+
 //------------------------------------------------------------------------------
 // DECLARED MACROS
 //------------------------------------------------------------------------------
@@ -309,6 +322,9 @@ void mouseButtonCallback(GLFWwindow *a_window, int a_button, int a_action,
 // callback to handle mouse motion
 void mouseMotionCallback(GLFWwindow *a_window, double a_posX, double a_posY);
 
+// callback to handle drag and drop
+void drop_callback(GLFWwindow* window, int count, const char** paths);
+
 // this function renders the scene
 void updateGraphics(void);
 
@@ -326,6 +342,8 @@ void updateCameraLabel(cLabel *&camera_pos, cCamera *&camera);
 
 // save configuration in .con file
 void writeToCon(string fileName);
+
+vector<vector<Atom *>> generateSlab(vector<vector<Atom * >> vatoms, char surface, int indices[3], int size, int a, int c);
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -425,6 +443,10 @@ int main(int argc, char *argv[]) {
     
     // sets the swap interval for the current display context
     glfwSwapInterval(swapInterval);
+    
+    //set drag and drop callback
+    glfwSetDropCallback(window, drop_callback);
+    
     
 #ifdef GLEW_VERSION
     // initialize GLEW library
@@ -725,7 +747,6 @@ int main(int argc, char *argv[]) {
     addLabel(scope_lower);
     
     // slab info label
-    
     addLabel(slab_info);
     
     // create a background
@@ -784,6 +805,30 @@ int main(int argc, char *argv[]) {
     // TODO - make more legible
     //scope_upper->m_fontColor.setRed();
     //scope_lower->m_fontColor.setRed();
+    
+    
+    
+    //sets up panels for drag-and-drop
+    cColorf dragPanelColor = cColorf();
+    dragPanelColor.setGrayLight();
+    
+    dragPanel = new cPanel();
+    dragPanel->setColor(dragPanelColor);
+    camera->m_frontLayer->addChild(dragPanel);
+    dragPanel->setShowPanel(false);
+    
+    cColorf dragPanelInnerColor = cColorf();
+    dragPanelInnerColor.setWhiteMintCream();
+    
+    
+    dragPanelInner = new cPanel();
+    dragPanelInner->setColor(dragPanelInnerColor);
+    camera->m_frontLayer->addChild(dragPanelInner);
+    dragPanelInner->setShowPanel(false);
+    
+    // add text label
+    addLabel(dragText);
+    
     
     //--------------------------------------------------------------------------
     // START SIMULATION
@@ -985,7 +1030,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
             rho = camera->getSphericalRadius();
             updateCameraLabel(camera_pos, camera);
         }
-    } else if (a_key == GLFW_KEY_R) {
+    } else if (a_key == GLFW_KEY_R && !changeBox) {
         // Reset the camera to its default pos
         camera->setSphericalPolarRad(0);
         camera->setSphericalAzimuthRad(0);
@@ -997,7 +1042,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
         
         freezeAtoms = !freezeAtoms;
         
-        slab_info->setText("Use the QWEASD keys to move the blue box on screen.\nPress enter to repeat all atoms within the blue box.\nPress f to generate a generic FCC structure.\nPress b to generate a generic BCC structure.");
+        slab_info->setText("Use the QWEASD keys to move the blue box on screen.\nPress enter to repeat all atoms within the blue box.\nPress f to generate a FCC structure.\nPress b to generate a BCC structure.\nPress r to read in a structure from a file.");
         slab_info->setLocalPos((int)((width - slab_info->getWidth())/2),(int)(height - slab_info->getHeight() - 10));
         
         cTexture2dPtr texture = cTexture2d::create();
@@ -1046,6 +1091,54 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
         
         // this will not work more than once without resizing
         repeats.resize(0);
+    } else if (a_key == GLFW_KEY_R){
+        if(changeBox){
+            changeBox = false;
+            slab_info->setText("");
+            
+            box->setTransparencyLevel(0);
+            
+            
+            dragPanel->setSize(width-50, height-50);
+            dragPanel->setLocalPos(25, 25);
+            dragPanel->setShowPanel(true);
+            
+            
+            dragPanelInner->setSize(width-70, height-70);
+            dragPanelInner->setLocalPos(35, 35);
+            dragPanelInner->setShowPanel(true);
+            
+            dragText->setText("DRAG FILE HERE");
+            
+            //this looks bad, sharpen if possible
+            dragText->setFontScale(5);
+            
+            dragText->setLocalPos((int)((width/2) - (dragText->getTextWidth()/2)), (int)((height/2) - (dragText->getTextHeight()/2)));
+            
+            
+            
+            dropState = true;
+            
+            //wait until drop
+            
+            //for debug
+            //std::this_thread::sleep_for(std::chrono::seconds(5));
+            
+            dropState = false;
+            /*
+             dragText->setText("");
+             dragPanel->setShowPanel(false);
+             dragPanelInner->setShowPanel(false);
+             */
+            if(dropped){
+                for(int i = 0; i < droppedPaths.size(); i++){
+                    cout << droppedPaths[i] << "\n";
+                }
+            }
+            
+            
+            freezeAtoms = !freezeAtoms;
+        }
         
     } else if (a_key == GLFW_KEY_Q){
         if(changeBox){
@@ -1136,7 +1229,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
                         temp->m_texture->setSphericalMappingEnabled(true);
                         temp->setUseTexture(true);
                         
-                        cVector3d repPos = cVector3d(spheres[i]->getLocalPos().x() + (box->getSizeX()*xcount), spheres[i]->getLocalPos().y() +  (box->getSizeY()*ycount), spheres[i]->getLocalPos().z() + (box->getSizeZ()*(zcount+2)));
+                        cVector3d repPos = cVector3d(spheres[i]->getLocalPos().x() + (box->getSizeX()*xcount), spheres[i]->getLocalPos().y() +  (box->getSizeY()*ycount), spheres[i]->getLocalPos().z() + (box->getSizeZ()*(zcount)));
                         
                         temp->setRepeating(true);
                         temp->setLocalPos(repPos);
@@ -1194,7 +1287,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
             }
             
             //sets up lattice constants
-            double horzlc = .02;
+            double horzlc = .018;
             double vertlc = horzlc;
             
             double maxLen = BOUNDARY_LIMIT;
@@ -1284,7 +1377,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
             }
             
             //sets up lattice constants
-            double horzlc = .02;
+            double horzlc = .018;
             double vertlc = horzlc;
             
             double maxLen = BOUNDARY_LIMIT;
@@ -1364,16 +1457,11 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
                 millerIndices[millIndCount] = 0;
                 millIndCount++;
             } else {
-                /*
-                 !!! NOT WORKING !!!
-                 if anyone else works on this code, anything in this else statement can be deleted
-                 */
-                
-                
-                //bcc or fcc
-                
                 if(fcc){
-                    //generates a(n?) fcc structure with given miller indices.
+                    slab_info->setText("");
+                    changeBox = false;
+                    fcc = true;
+                    //checkIndices = true;
                     
                     box->setTransparencyLevel(0);
                     freezeAtoms = !freezeAtoms;
@@ -1394,7 +1482,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
                     }
                     
                     //sets up lattice constants
-                    double horzlc = .02;
+                    double horzlc = .018;
                     double vertlc = horzlc;
                     
                     double maxLen = BOUNDARY_LIMIT;
@@ -1420,7 +1508,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
                     bool offsetLayer = false;
                     
                     for(int i = 0; i < numRepeatAtoms; i++){
-                        cout << "(" << xlay << ", " << ylay << ", " << zlay << ")\n";
+                        //cout << "(" << xlay << ", " << ylay << ", " << zlay << ")\n";
                         Atom *temp = new Atom(SPHERE_RADIUS, SPHERE_MASS);
                         world->addChild(temp);
                         world->addChild(temp->getVelVector());
@@ -1439,9 +1527,10 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
                         
                         temp->setRepeating(true);
                         temp->setLocalPos(repPos);
-                        temp->setAnchor(true);
-                        temp->setSkipCalc(true);
                         
+                        temp->setAnchor(true);
+                        
+                        temp->setSkipCalc(true);
                         
                         repeats.at(i).push_back(temp);
                         
@@ -1464,29 +1553,11 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
                         }
                     }
                     
-                    //adapt to indices here
-                    int layerOff = numRepeatAtoms/numZLayers;
-                    Atom* leftPivotN = repeats.at(0).at(0);
-                    Atom* rightPivotN = repeats.at(((layerOff/3)/numLayers)-1).at(0);
-                    Atom* leftPivotS = repeats.at(0).at(0);
-                    Atom* rightPivotS = repeats.at(((layerOff/3)/numLayers)-1).at(0);
-                    
-                    cVector3d hyperplanePosL = cVector3d(leftPivotN->getLocalPos().x()-millerIndices[0]*horzlc,leftPivotN->getLocalPos().y()-millerIndices[1]*horzlc,leftPivotN->getLocalPos().z()-millerIndices[2]*vertlc);
-                    cVector3d hyperplaneP1L = leftPivotN->getLocalPos();
-                    cVector3d hyperplaneP2L = leftPivotS->getLocalPos();
-                    cVector3d hyperplaneNormL = cComputeSurfaceNormal(hyperplanePosL,hyperplaneP1L,hyperplaneP2L);
-                    
-                    cVector3d hyperplanePosR = cVector3d(rightPivotN->getLocalPos().x()-millerIndices[0]*horzlc,rightPivotN->getLocalPos().y()-millerIndices[1]*horzlc,rightPivotN->getLocalPos().z()-millerIndices[2]*vertlc);
-                    cVector3d hyperplaneP1R = rightPivotN->getLocalPos();
-                    cVector3d hyperplaneP2R = rightPivotS->getLocalPos();
-                    cVector3d hyperplaneNormR = cComputeSurfaceNormal(hyperplanePosR,hyperplaneP1R,hyperplaneP2R);
                     
                     
-                    
-                    for(int i = 0; i < repeats.size(); i++){
-                        
-                    }
-                    
+                    //repeats = generateSlab(repeats, 'f', millerIndices, numZLayers, apos, bpos);
+                }
+                if(bcc){
                     
                 }
                 
@@ -1500,7 +1571,13 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
                 millerIndices[millIndCount] = 1;
                 millIndCount++;
             } else {
-                //bcc or fcc
+                if(fcc){
+                    
+                }
+                if(bcc){
+                    
+                }
+                
             }
         }
     }
@@ -2085,6 +2162,16 @@ void mouseMotionCallback(GLFWwindow *a_window, double a_posX, double a_posY) {
     }
 }
 
+void drop_callback(GLFWwindow* window, int count, const char** paths)
+{
+    if(dropState){
+        for (int i = 0;  i < count;  i++){
+            droppedPaths.push_back(paths[i]);
+        }
+        dropped = true;
+    }
+}
+
 void writeToCon(string fileName) {
     ofstream writeFile;
     writeFile.open(fileName);
@@ -2126,3 +2213,168 @@ void updateCameraLabel(cLabel *&camera_pos, cCamera *&camera) {
                         ", " + cStr(rho * cos(camera->getSphericalPolarRad())) +
                         ")");
 }
+
+
+
+vector<vector<Atom *>> generateSlab(vector<vector<Atom * >> vatoms, char surface, int indices[3], int size, int a, int c){
+    //a = lattice constant
+    //c = ??
+    
+}
+
+
+/*
+ def _surface(symbol, structure, face, size, a, c, vacuum, periodic,
+ orthogonal=True):
+ """Function to build often used surfaces.
+ 
+ Don't call this function directly - use fcc100, fcc110, bcc111, ..."""
+ 
+ Z = atomic_numbers[symbol]
+ 
+ if a is None:
+ sym = reference_states[Z]['symmetry']
+ if sym != structure:
+ raise ValueError("Can't guess lattice constant for %s-%s!" %
+ (structure, symbol))
+ a = reference_states[Z]['a']
+ 
+ if structure == 'hcp' and c is None:
+ if reference_states[Z]['symmetry'] == 'hcp':
+ c = reference_states[Z]['c/a'] * a
+ else:
+ c = sqrt(8 / 3.0) * a
+ 
+ positions = np.empty((size[2], size[1], size[0], 3))
+ positions[..., 0] = np.arange(size[0]).reshape((1, 1, -1))
+ positions[..., 1] = np.arange(size[1]).reshape((1, -1, 1))
+ positions[..., 2] = np.arange(size[2]).reshape((-1, 1, 1))
+ 
+ numbers = np.ones(size[0] * size[1] * size[2], int) * Z
+ 
+ tags = np.empty((size[2], size[1], size[0]), int)
+ tags[:] = np.arange(size[2], 0, -1).reshape((-1, 1, 1))
+ 
+ slab = Atoms(numbers,
+ tags=tags.ravel(),
+ pbc=(True, True, periodic),
+ cell=size)
+ 
+ surface_cell = None
+ sites = {'ontop': (0, 0)}
+ surf = structure + face
+ if surf == 'fcc100':
+ cell = (sqrt(0.5), sqrt(0.5), 0.5)
+ positions[-2::-2, ..., :2] += 0.5
+ sites.update({'hollow': (0.5, 0.5), 'bridge': (0.5, 0)})
+ elif surf == 'diamond100':
+ cell = (sqrt(0.5), sqrt(0.5), 0.5 / 2)
+ positions[-4::-4, ..., :2] += (0.5, 0.5)
+ positions[-3::-4, ..., :2] += (0.0, 0.5)
+ positions[-2::-4, ..., :2] += (0.0, 0.0)
+ positions[-1::-4, ..., :2] += (0.5, 0.0)
+ elif surf == 'fcc110':
+ cell = (1.0, sqrt(0.5), sqrt(0.125))
+ positions[-2::-2, ..., :2] += 0.5
+ sites.update({'hollow': (0.5, 0.5), 'longbridge': (0.5, 0),
+ 'shortbridge': (0, 0.5)})
+ elif surf == 'bcc100':
+ cell = (1.0, 1.0, 0.5)
+ positions[-2::-2, ..., :2] += 0.5
+ sites.update({'hollow': (0.5, 0.5), 'bridge': (0.5, 0)})
+ else:
+ if orthogonal and size[1] % 2 == 1:
+ raise ValueError(("Can't make orthorhombic cell with size=%r.  " %
+ (tuple(size),)) +
+ 'Second number in size must be even.')
+ if surf == 'fcc111':
+ cell = (sqrt(0.5), sqrt(0.375), 1 / sqrt(3))
+ if orthogonal:
+ positions[-1::-3, 1::2, :, 0] += 0.5
+ positions[-2::-3, 1::2, :, 0] += 0.5
+ positions[-3::-3, 1::2, :, 0] -= 0.5
+ positions[-2::-3, ..., :2] += (0.0, 2.0 / 3)
+ positions[-3::-3, ..., :2] += (0.5, 1.0 / 3)
+ else:
+ positions[-2::-3, ..., :2] += (-1.0 / 3, 2.0 / 3)
+ positions[-3::-3, ..., :2] += (1.0 / 3, 1.0 / 3)
+ sites.update({'bridge': (0.5, 0), 'fcc': (1.0 / 3, 1.0 / 3),
+ 'hcp': (2.0 / 3, 2.0 / 3)})
+ elif surf == 'diamond111':
+ cell = (sqrt(0.5), sqrt(0.375), 1 / sqrt(3) / 2)
+ assert not orthogonal
+ positions[-1::-6, ..., :3] += (0.0, 0.0, 0.5)
+ positions[-2::-6, ..., :2] += (0.0, 0.0)
+ positions[-3::-6, ..., :3] += (-1.0 / 3, 2.0 / 3, 0.5)
+ positions[-4::-6, ..., :2] += (-1.0 / 3, 2.0 / 3)
+ positions[-5::-6, ..., :3] += (1.0 / 3, 1.0 / 3, 0.5)
+ positions[-6::-6, ..., :2] += (1.0 / 3, 1.0 / 3)
+ elif surf == 'hcp0001':
+ cell = (1.0, sqrt(0.75), 0.5 * c / a)
+ if orthogonal:
+ positions[:, 1::2, :, 0] += 0.5
+ positions[-2::-2, ..., :2] += (0.0, 2.0 / 3)
+ else:
+ positions[-2::-2, ..., :2] += (-1.0 / 3, 2.0 / 3)
+ sites.update({'bridge': (0.5, 0), 'fcc': (1.0 / 3, 1.0 / 3),
+ 'hcp': (2.0 / 3, 2.0 / 3)})
+ elif surf == 'hcp10m10':
+ cell = (1.0, 0.5 * c / a, sqrt(0.75))
+ assert orthogonal
+ positions[-2::-2, ..., 0] += 0.5
+ positions[:, ::2, :, 2] += 2.0 / 3
+ elif surf == 'bcc110':
+ cell = (1.0, sqrt(0.5), sqrt(0.5))
+ if orthogonal:
+ positions[:, 1::2, :, 0] += 0.5
+ positions[-2::-2, ..., :2] += (0.0, 1.0)
+ else:
+ positions[-2::-2, ..., :2] += (-0.5, 1.0)
+ sites.update({'shortbridge': (0, 0.5),
+ 'longbridge': (0.5, 0),
+ 'hollow': (0.375, 0.25)})
+ elif surf == 'bcc111':
+ cell = (sqrt(2), sqrt(1.5), sqrt(3) / 6)
+ if orthogonal:
+ positions[-1::-3, 1::2, :, 0] += 0.5
+ positions[-2::-3, 1::2, :, 0] += 0.5
+ positions[-3::-3, 1::2, :, 0] -= 0.5
+ positions[-2::-3, ..., :2] += (0.0, 2.0 / 3)
+ positions[-3::-3, ..., :2] += (0.5, 1.0 / 3)
+ else:
+ positions[-2::-3, ..., :2] += (-1.0 / 3, 2.0 / 3)
+ positions[-3::-3, ..., :2] += (1.0 / 3, 1.0 / 3)
+ sites.update({'hollow': (1.0 / 3, 1.0 / 3)})
+ else:
+ 2 / 0
+ 
+ surface_cell = a * np.array([(cell[0], 0),
+ (cell[0] / 2, cell[1])])
+ if not orthogonal:
+ cell = np.array([(cell[0], 0, 0),
+ (cell[0] / 2, cell[1], 0),
+ (0, 0, cell[2])])
+ 
+ if surface_cell is None:
+ surface_cell = a * np.diag(cell[:2])
+ 
+ if isinstance(cell, tuple):
+ cell = np.diag(cell)
+ 
+ slab.set_positions(positions.reshape((-1, 3)))
+ slab.set_cell([a * v * n for v, n in zip(cell, size)], scale_atoms=True)
+ 
+ if not periodic:
+ slab.cell[2] = 0.0
+ 
+ if vacuum is not None:
+ slab.center(vacuum, axis=2)
+ 
+ if 'adsorbate_info' not in slab.info:
+ slab.info.update({'adsorbate_info': {}})
+ 
+ slab.info['adsorbate_info']['cell'] = surface_cell
+ slab.info['adsorbate_info']['sites'] = sites
+ return slab
+ 
+ */
