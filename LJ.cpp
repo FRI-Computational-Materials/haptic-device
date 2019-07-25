@@ -1255,7 +1255,11 @@ void updateHaptics(void) {
 
       // JD: moved this out of nested for loop so that test is set only when
       // fully calculated update haptic and graphic rate data
-      LJ_num->setText("Potential Energy: " + cStr((potentialEnergy / 2), 5));
+      if (global_min_known) {
+        LJ_num->setText("Potential Energy: " + cStr((potentialEnergy / 2), 3) + " Global Minimum: " + cStr(global_minimum, 3));
+      } else {
+        LJ_num->setText("Potential Energy: " + cStr((potentialEnergy / 2), 3) + " Lowest Potential Energy Found: " + cStr(global_minimum, 3));
+      }
       // update position of label
       LJ_num->setLocalPos(0, 15, 0);
       // count the number of anchored atoms
