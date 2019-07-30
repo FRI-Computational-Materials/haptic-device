@@ -132,4 +132,5 @@ The textbook is too big to upload so here's the link: http://www.charleshouserjr
         * begins slab generation
     * `2`
         * removes any generated slabs
-
+    * `l`
+        * load in configuration from a .con file
