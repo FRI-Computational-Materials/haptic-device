@@ -354,7 +354,7 @@ void updateCameraLabel(cLabel *&camera_pos, cCamera *&camera);
 void writeToCon(string fileName);
 
 // read in configuration from .con file
-void readFromCon(string path);
+void readFromCon(string path, bool dropped = false);
 
 // ready file drop
 void readyToDrop(void);
@@ -581,93 +581,116 @@ int main(int argc, char *argv[]) {
         close();
         return (-1);
     }
-    // either no arguments were given or argument was an integer
-    if (argc == 1 || isNumber(argv[1])) {
-        // set numSpheres to input; if none or negative, default is five
-        int numSpheres = argc > 1 ? atoi(argv[1]) : 5;
-        for (int i = 0; i < numSpheres; i++) {
-            // create a sphere and define its radius
-            Atom *new_atom = new Atom(SPHERE_RADIUS, SPHERE_MASS);
-            
-            // store pointer to sphere primitive
-            spheres.push_back(new_atom);
-            
-            // add sphere primitive to world
-            world->addChild(new_atom);
-            
-            // add line to world
-            world->addChild(new_atom->getVelVector());
-            
-            // set the position of the object at the center of the world
-            
-            bool inside_atom = true;
-            if (i != 0) {
-                bool collision_detected;
-                auto iter{0};
-                while (inside_atom) {
-                    // Place atom at a random position
-                    if (iter > 1000) {
-                        // If there are too many failed attempts at placing the atom
-                        // increase the radius in which it can spawn
-                        new_atom->setInitialPosition(.115);
-                    } else {
-                        new_atom->setInitialPosition();
-                    }
-                    // Check that it doesn't collide with any others
-                    collision_detected = false;
-                    for (auto i{0}; i < spheres.size(); i++) {
-                        auto dist_between =
-                        cDistance(new_atom->getLocalPos(), spheres[i]->getLocalPos());
-                        dist_between = dist_between / .02;
-                        if (dist_between == 0) {
-                            continue;
-                        } else if (dist_between < 1.5) {
-                            // The number dist between is being compared to
-                            // is the threshold for collision
-                            collision_detected = true;
-                            iter++;
-                            break;
-                        }
-                    }
-                    if (!collision_detected) {
-                        inside_atom = false;
-                    }
-                }
-            }
-            // set graphic properties of sphere
-            new_atom->setTexture(texture);
-            new_atom->m_texture->setSphericalMappingEnabled(true);
-            new_atom->setUseTexture(true);
-            // Set the first and second sphere (the one being controlled to red
-            // initially and the anchor in blue)
-            if (i == 0)  // sphere is current
-            {
-                new_atom->setCurrent(true);
-            } else if (i == 1)  // sphere is anchor
-            {
-                new_atom->setAnchor(true);
-            }
+
+    // Handle other arguments
+    int numSpheres = 5;
+    if (argc > 1) {
+      // Cycle through args
+      for (auto x = 1; x < argc; x++) {
+        if (!isNumber(argv[x])) {
+          // Convert arguments to lowercase string
+          string arg = argv[x];
+          for (char &c : arg) {
+            c = tolower(c);
+          }
+
+          if ((arg == "-m") || (arg == "--morse")) {
+            energySurface = MORSE;
+          }
+
+          bool slab = false;
+          if ((arg == "-s") || (arg == "--slab")) {
+            slab = true;
+            cout << "using slab geometry" << endl;
+          }
+
+          // Con file detected
+          if ((arg.length() > 4) && (arg.substr(arg.length() - 4) == ".con")) {
+            string file_path = "../resources/data/";
+            string file_name = argv[x];
+            firstFromCon = true;
+            readFromCon(file_path + file_name);
+            numSpheres = -1;
+          }
+        } else {
+          // Arg is an int
+          numSpheres = atoi(argv[x]);
         }
-    } else {  // read in specified file
-        string file_path = "../resources/data/";
-        string file_name = argv[1];
-        firstFromCon = true;
-        readFromCon(file_path + file_name);
+      }
+
+    } 
+
+    // need to randomly spawn in spheres
+    if (numSpheres != -1) {
+      for (int i = 0; i < numSpheres; i++) {
+        // create a sphere and define its radius
+        Atom *new_atom = new Atom(SPHERE_RADIUS, SPHERE_MASS);
+
+        // store pointer to sphere primitive
+        spheres.push_back(new_atom);
+
+        // add sphere primitive to world
+        world->addChild(new_atom);
+
+        // add line to world
+        world->addChild(new_atom->getVelVector());
+
+        // set the position of the object at the center of the world
+
+        bool inside_atom = true;
+        if (i != 0) {
+          bool collision_detected;
+          auto iter{0};
+          while (inside_atom) {
+            // Place atom at a random position
+            if (iter > 1000) {
+              // If there are too many failed attempts at placing the atom
+              // increase the radius in which it can spawn
+              new_atom->setInitialPosition(.115);
+            } else {
+              new_atom->setInitialPosition();
+            }
+            // Check that it doesn't collide with any others
+            collision_detected = false;
+            for (auto i{0}; i < spheres.size(); i++) {
+              auto dist_between =
+                  cDistance(new_atom->getLocalPos(), spheres[i]->getLocalPos());
+              dist_between = dist_between / .02;
+              if (dist_between == 0) {
+                continue;
+              } else if (dist_between < 1.5) {
+                // The number dist between is being compared to
+                // is the threshold for collision
+                collision_detected = true;
+                iter++;
+                break;
+              }
+            }
+            if (!collision_detected) {
+              inside_atom = false;
+            }
+          }
+        }
+        // set graphic properties of sphere
+        new_atom->setTexture(texture);
+        new_atom->m_texture->setSphericalMappingEnabled(true);
+        new_atom->setUseTexture(true);
+        // Set the first and second sphere (the one being controlled to red
+        // initially and the anchor in blue)
+        if (i == 0)  // sphere is current
+        {
+          new_atom->setCurrent(true);
+        } else if (i == 1)  // sphere is anchor
+        {
+          new_atom->setAnchor(true);
+        }
+      }
     }
+
     for (int i = 0; i < spheres.size(); i++) {
         spheres[i]->setVelocity(0);
     }
-    // determine potential if specified
-    if (argc > 2) {
-        // convert to lowercase
-        string arg = argv[2];
-        for (char &c : arg) {
-            c = tolower(c);
-        }
-        if (arg == "morse" || "m") {
-            energySurface = MORSE;
-        }
-    }
+
     //--------------------------------------------------------------------------
     // WIDGETS
     //--------------------------------------------------------------------------
@@ -2123,7 +2146,7 @@ void drop_callback(GLFWwindow* window, int count, const char** paths)
         if(readSlab){   //if reading in a slab .con, set up slightly differently
             readSlab = false;
         } else {    //otherwise, set up normally
-            readFromCon(droppedPath);
+            readFromCon(droppedPath, true);
         }
     }
 }
@@ -2151,7 +2174,7 @@ void readyToDrop(){
     dropState = true;
 }
 
-void readFromCon(string path){
+void readFromCon(string path, bool dropped){
     ifstream readFile(path);
     // file not found, so terminate program
     if (!readFile.good()) {
@@ -2159,7 +2182,8 @@ void readFromCon(string path){
         cout << "Input file should be in " << path.substr(0, path.find_last_of('/')) << endl;
         return;
     }
-    if(droppedPath.substr(droppedPath.find_last_of('.') + 1) != "con"){
+
+    if((dropped) && (droppedPath.substr(droppedPath.find_last_of('.') + 1) != "con")){
         cout << "ERROR: Input file " << path.substr(path.find_last_of('/') + 1) << " is not a valid .con file." << endl;
         return;
     }
