@@ -866,7 +866,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
     // filter calls that only include a key press
     if ((a_action != GLFW_PRESS) && (a_action != GLFW_REPEAT)) {
         return;
-    } else if ((a_key == GLFW_KEY_ESCAPE) || (a_key == GLFW_KEY_Q && !changeBox)) {
+    } else if (((a_key == GLFW_KEY_ESCAPE) || (a_key == GLFW_KEY_Q && !changeBox)) && !dropState) {
         // option - exit
         for(int i = 0; i < repeats.size(); i++){
             for(int j = 0; j < repeats.at(i).size(); j++){
@@ -930,9 +930,19 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
         }
         writeToCon("atoms" + to_string(index) + ".con");
     } else if(a_key == GLFW_KEY_L){   //drag and drop .con file
+        freezeAtoms = !freezeAtoms;
         readyToDrop();
         //finished in the drop section
-        
+    } else if (a_key == GLFW_KEY_ESCAPE){   //exit out of drop window
+        if(dropState){
+            dropState = false;
+            
+            dragText->setText("");
+            dragPanel->setShowPanel(false);
+            dragPanelInner->setShowPanel(false);
+            
+            freezeAtoms = !freezeAtoms;
+        }
     } else if (a_key == GLFW_KEY_A && !changeBox) {
         // anchor all atoms while maintaing control
         for (auto i{0}; i < spheres.size(); i++) {
@@ -2133,9 +2143,6 @@ void readFromCon(string path){
         cout << "ERROR: Input file " << path.substr(path.find_last_of('/') + 1) << " is not a valid .con file." << endl;
         return;
     }
-    // if(path.substr(path.find_last_of('/')) == '0'){
-    //     cout << "doot";
-    // }
     string line;
     for (int i = 0; i < 11; i++) {
         getline(readFile, line);
