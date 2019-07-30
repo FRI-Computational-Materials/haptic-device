@@ -294,7 +294,6 @@ cPanel *dragPanelInner;
 cLabel *dragText;
 
 string droppedPath;
-bool dropped = false;
 bool dropState = true;
 bool readSlab = false;
 
@@ -2092,7 +2091,6 @@ void drop_callback(GLFWwindow* window, int count, const char** paths)
 {
     if(dropState){
         droppedPath = paths[0];
-        dropped = true;
         dropState = false;
         
         dragText->setText("");
