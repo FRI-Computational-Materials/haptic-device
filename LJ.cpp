@@ -293,9 +293,11 @@ cPanel *dragPanel;
 cPanel *dragPanelInner;
 cLabel *dragText;
 
-vector<string> droppedPaths;
+string droppedPath;
 bool dropped = false;
 bool dropState = true;
+bool readSlab = false;
+
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -346,6 +348,12 @@ void updateCameraLabel(cLabel *&camera_pos, cCamera *&camera);
 
 // save configuration in .con file
 void writeToCon(string fileName);
+
+// read in configuration from .con file
+void readFromCon(string path);
+
+// ready file drop
+void readyToDrop(void);
 
 vector<vector<Atom *>> generateSlab(vector<vector<Atom * >> vatoms, char surface, int indices[3], int size, int a, int c);
 
@@ -639,73 +647,7 @@ int main(int argc, char *argv[]) {
     } else {  // read in specified file
         string file_path = "../resources/data/";
         string file_name = argv[1];
-        ifstream readFile(file_path + file_name);
-        // file not found, so terminate program
-        if (!readFile.good()) {
-            cout << "ERROR: Input file " << file_name << " not found" << endl;
-            cout << "Input file should be in " << file_path << endl;
-            exit(EXIT_FAILURE);
-        }
-        string line;
-        for (int i = 0; i < 11; i++) {
-            getline(readFile, line);
-        }
-        bool firstAtom = true;
-        
-        vector<double> inputCoords;  // Create vector to hold our coordinates
-        
-        while (true) {
-            // read in next coordinates
-            inputCoords.clear();
-            getline(readFile, line);
-            if (readFile.eof()) {
-                break;
-            }
-            string buffer;          // Have a buffer string
-            stringstream ss(line);  // Insert the string into a stream
-            
-            while (ss >> buffer) {
-                inputCoords.push_back(stod(buffer));
-            }
-            
-            // create a sphere and define its radius
-            Atom *new_atom = new Atom(SPHERE_RADIUS, SPHERE_MASS);
-            
-            // store pointer to sphere primitive
-            spheres.push_back(new_atom);
-            
-            // add sphere primitive to world
-            world->addChild(new_atom);
-            
-            // add line to world
-            world->addChild(new_atom->getVelVector());
-            // set graphic properties of sphere
-            new_atom->setTexture(texture);
-            new_atom->m_texture->setSphericalMappingEnabled(true);
-            new_atom->setUseTexture(true);
-            
-            // Set the first and second sphere (the one being controlled to red
-            // initially and the anchor in blue)
-            if (inputCoords[4] == 0) {  // sphere is current
-                new_atom->setCurrent(true);
-            } else if (inputCoords[4] == 1) {  // sphere is anchor
-                new_atom->setAnchor(true);
-            }
-            if (firstAtom) {
-                for (int i = 0; i < 3; i++) {
-                    centerCoords[i] = inputCoords[i];
-                }
-                new_atom->setLocalPos(0.0, 0.0, 0.0);
-                firstAtom = !firstAtom;
-            } else {
-                // scale coordinates
-                for (int i = 0; i < 3; i++) {
-                    inputCoords[i] = 0.02 * (inputCoords[i] - centerCoords[i]);
-                }
-                new_atom->setLocalPos(inputCoords[0], inputCoords[1], inputCoords[2]);
-            }
-        }
-        readFile.close();
+        readFromCon(file_path + file_name);
     }
     for (int i = 0; i < spheres.size(); i++) {
         spheres[i]->setVelocity(0);
@@ -987,6 +929,10 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
             index++;
         }
         writeToCon("atoms" + to_string(index) + ".con");
+    } else if(a_key == GLFW_KEY_L){   //drag and drop .con file
+        readyToDrop();
+        //finished in the drop section
+        
     } else if (a_key == GLFW_KEY_A && !changeBox) {
         // anchor all atoms while maintaing control
         for (auto i{0}; i < spheres.size(); i++) {
@@ -1102,46 +1048,12 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
             
             box->setTransparencyLevel(0);
             
+            readSlab = true;
             
-            dragPanel->setSize(width-50, height-50);
-            dragPanel->setLocalPos(25, 25);
-            dragPanel->setShowPanel(true);
+            readyToDrop();
             
+            //finished in the drop function
             
-            dragPanelInner->setSize(width-70, height-70);
-            dragPanelInner->setLocalPos(35, 35);
-            dragPanelInner->setShowPanel(true);
-            
-            dragText->setText("DRAG FILE HERE");
-            
-            //this looks bad, sharpen if possible
-            //dragText->setFontScale(5);
-            
-            dragText->setLocalPos((int)((width/2) - (dragText->getTextWidth()/2)), (int)((height/2) - (dragText->getTextHeight()/2)));
-            
-            
-            
-            dropState = true;
-            
-            //wait until drop
-            
-            //for debug
-            //std::this_thread::sleep_for(std::chrono::seconds(5));
-            
-            dropState = false;
-            /*
-             dragText->setText("");
-             dragPanel->setShowPanel(false);
-             dragPanelInner->setShowPanel(false);
-             */
-            if(dropped){
-                for(int i = 0; i < droppedPaths.size(); i++){
-                    cout << droppedPaths[i] << "\n";
-                }
-            }
-            
-            
-            freezeAtoms = !freezeAtoms;
         }
         
     } else if (a_key == GLFW_KEY_Q){
@@ -2169,12 +2081,142 @@ void mouseMotionCallback(GLFWwindow *a_window, double a_posX, double a_posY) {
 void drop_callback(GLFWwindow* window, int count, const char** paths)
 {
     if(dropState){
-        for (int i = 0;  i < count;  i++){
-            droppedPaths.push_back(paths[i]);
-        }
+        droppedPath = paths[0];
         dropped = true;
+        dropState = false;
+        
+        dragText->setText("");
+        dragPanel->setShowPanel(false);
+        dragPanelInner->setShowPanel(false);
+        
+        // Prints out path to the console.
+        cout << droppedPath << "\n";
+        
+        freezeAtoms = !freezeAtoms;
+        
+        if(readSlab){   //if reading in a slab .con, set up slightly differently
+            readSlab = false;
+        } else {    //otherwise, set up normally
+            readFromCon(droppedPath);
+        }
     }
 }
+
+void readyToDrop(){
+    dragPanel->setSize(width-50, height-50);
+    dragPanel->setLocalPos(25, 25);
+    dragPanel->setShowPanel(true);
+    
+    
+    dragPanelInner->setSize(width-70, height-70);
+    dragPanelInner->setLocalPos(35, 35);
+    dragPanelInner->setShowPanel(true);
+    
+    dragText->setText("DRAG FILE HERE");
+    
+    dragText->setLocalPos((int)((width/2) - (dragText->getTextWidth()/2)), (int)((height/2) - (dragText->getTextHeight()/2)));
+    
+    
+    
+    dropState = true;
+}
+
+void readFromCon(string path){
+    ifstream readFile(path);
+    // file not found, so terminate program
+    if (!readFile.good()) {
+        cout << "ERROR: Input file " << path.substr(path.find_last_of('/') + 1) << " not found" << endl;
+        cout << "Input file should be in " << path.substr(0, path.find_last_of('/')) << endl;
+        return;
+    }
+    if(droppedPath.substr(droppedPath.find_last_of('.') + 1) != "con"){
+        cout << "ERROR: Input file " << path.substr(path.find_last_of('/') + 1) << " is not a valid .con file." << endl;
+        return;
+    }
+    // if(path.substr(path.find_last_of('/')) == '0'){
+    //     cout << "doot";
+    // }
+    string line;
+    for (int i = 0; i < 11; i++) {
+        getline(readFile, line);
+    }
+    bool firstAtom = true;
+    
+    vector<double> inputCoords;  // Create vector to hold our coordinates
+    
+    while (true) {
+        // read in next coordinates
+        inputCoords.clear();
+        getline(readFile, line);
+        if (readFile.eof()) {
+            break;
+        }
+        string buffer;          // Have a buffer string
+        stringstream ss(line);  // Insert the string into a stream
+        
+        while (ss >> buffer) {
+            inputCoords.push_back(stod(buffer));
+        }
+        
+        // create a sphere and define its radius
+        Atom *new_atom = new Atom(SPHERE_RADIUS, SPHERE_MASS);
+        
+        // store pointer to sphere primitive
+        spheres.push_back(new_atom);
+        
+        // add sphere primitive to world
+        world->addChild(new_atom);
+        
+        // add line to world
+        world->addChild(new_atom->getVelVector());
+        
+        // set graphic properties of sphere
+        
+        // create texture
+        cTexture2dPtr texture = cTexture2d::create();
+        
+        // load texture file
+        bool fileload = texture->loadFromFile(
+                                              RESOURCE_PATH("../resources/images/spheremap-3.jpg"));
+        if (!fileload) {
+#if defined(_MSVC)
+            fileload = texture->loadFromFile("../resources/images/spheremap-3.jpg");
+#endif
+        }
+        if (!fileload) {
+            cout << "Error - Texture image failed to load correctly." << endl;
+            close();
+            return;
+        }
+        
+        new_atom->setTexture(texture);
+        new_atom->m_texture->setSphericalMappingEnabled(true);
+        new_atom->setUseTexture(true);
+        
+        // Set the first and second sphere (the one being controlled to red
+        // initially and the anchor in blue)
+        if (inputCoords[4] == 0) {  // sphere is current
+            new_atom->setCurrent(true);
+        } else if (inputCoords[4] == 1) {  // sphere is anchor
+            new_atom->setAnchor(true);
+        }
+        if (firstAtom) {
+            for (int i = 0; i < 3; i++) {
+                centerCoords[i] = inputCoords[i];
+            }
+            new_atom->setLocalPos(0.0, 0.0, 0.0);
+            firstAtom = !firstAtom;
+        } else {
+            // scale coordinates
+            for (int i = 0; i < 3; i++) {
+                inputCoords[i] = 0.02 * (inputCoords[i] - centerCoords[i]);
+            }
+            new_atom->setLocalPos(inputCoords[0], inputCoords[1], inputCoords[2]);
+        }
+    }
+    readFile.close();
+}
+
 
 void writeToCon(string fileName) {
     ofstream writeFile;
@@ -2223,7 +2265,6 @@ void updateCameraLabel(cLabel *&camera_pos, cCamera *&camera) {
                         ", " + cStr(rho * cos(camera->getSphericalPolarRad())) +
                         ")");
 }
-
 
 
 vector<vector<Atom *>> generateSlab(vector<vector<Atom * >> vatoms, char surface, int indices[3], int size, int a, int c){
