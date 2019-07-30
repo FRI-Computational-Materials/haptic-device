@@ -769,7 +769,7 @@ int main(int argc, char *argv[]) {
     dragPanel->setShowPanel(false);
     
     cColorf dragPanelInnerColor = cColorf();
-    dragPanelInnerColor.setWhiteMintCream();
+    dragPanelInnerColor.setGraySilver();
     
     
     dragPanelInner = new cPanel();
@@ -940,8 +940,10 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
             index++;
         }
         writeToCon("atoms" + to_string(index) + ".con");
-    } else if(a_key == GLFW_KEY_L){   //drag and drop .con file
-        freezeAtoms = !freezeAtoms;
+    } else if(a_key == GLFW_KEY_L && !changeBox){   //drag and drop .con file
+        if(!dropState){
+            freezeAtoms = !freezeAtoms;
+        }
         readyToDrop();
         //finished in the drop section
     } else if (a_key == GLFW_KEY_ESCAPE){   //exit out of drop window
