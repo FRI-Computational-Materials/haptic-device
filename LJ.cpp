@@ -292,10 +292,15 @@ bool global_min_known = true;
 cPanel *dragPanel;
 cPanel *dragPanelInner;
 cLabel *dragText;
+cLabel *dragWarning1;
+cLabel *dragWarning2;
 
 string droppedPath;
-bool dropState = true;
+bool dropState = false;
 bool readSlab = false;
+
+// if reading in positions initally from a .con file
+bool firstFromCon = false;
 
 
 //------------------------------------------------------------------------------
@@ -646,6 +651,7 @@ int main(int argc, char *argv[]) {
     } else {  // read in specified file
         string file_path = "../resources/data/";
         string file_name = argv[1];
+        firstFromCon = true;
         readFromCon(file_path + file_name);
     }
     for (int i = 0; i < spheres.size(); i++) {
@@ -773,6 +779,12 @@ int main(int argc, char *argv[]) {
     
     // add text label
     addBigLabel(dragText);
+    addLabel(dragWarning1);
+    addLabel(dragWarning2);
+    
+    
+    dragWarning1->m_fontColor.setRedCrimson();
+    dragWarning2->m_fontColor.setRedCrimson();
     
     
     //--------------------------------------------------------------------------
@@ -937,6 +949,8 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
             dropState = false;
             
             dragText->setText("");
+            dragWarning1->setText("");
+            dragWarning2->setText("");
             dragPanel->setShowPanel(false);
             dragPanelInner->setShowPanel(false);
             
@@ -2094,6 +2108,8 @@ void drop_callback(GLFWwindow* window, int count, const char** paths)
         dropState = false;
         
         dragText->setText("");
+        dragWarning1->setText("");
+        dragWarning2->setText("");
         dragPanel->setShowPanel(false);
         dragPanelInner->setShowPanel(false);
         
@@ -2124,6 +2140,10 @@ void readyToDrop(){
     
     dragText->setLocalPos((int)((width/2) - (dragText->getTextWidth()/2)), (int)((height/2) - (dragText->getTextHeight()/2)));
     
+    dragWarning1->setText("WARNING: System may explode when reading in a file.");
+    dragWarning1->setLocalPos((int)((width/2) - (dragWarning1->getTextWidth()/2)), dragWarning1->getTextHeight() + dragWarning2->getTextHeight() + 2 + 25);
+    dragWarning2->setText("Recommended to anchor all atoms in advance.");
+    dragWarning2->setLocalPos((int)((width/2) - (dragWarning2->getTextWidth()/2)), dragWarning2->getTextHeight() + 25);
     
     
     dropState = true;
@@ -2142,12 +2162,18 @@ void readFromCon(string path){
         return;
     }
     string line;
-    for (int i = 0; i < 11; i++) {
+    
+    while (true) {
         getline(readFile, line);
+        if(line.find("Coordinates") != -1){
+            break;
+        }
     }
+    
     bool firstAtom = true;
     
     vector<double> inputCoords;  // Create vector to hold our coordinates
+    
     
     while (true) {
         // read in next coordinates
@@ -2160,7 +2186,14 @@ void readFromCon(string path){
         stringstream ss(line);  // Insert the string into a stream
         
         while (ss >> buffer) {
-            inputCoords.push_back(stod(buffer));
+            // For some reason, the earlier break statement is not working- not exactly sure why.
+            // This bandages it over and exits at the correct time
+            try {
+                inputCoords.push_back(stod(buffer));
+            } catch(exception e) {
+                cout << "Done";
+                break;
+            }
         }
         
         // create a sphere and define its radius
@@ -2198,14 +2231,31 @@ void readFromCon(string path){
         new_atom->m_texture->setSphericalMappingEnabled(true);
         new_atom->setUseTexture(true);
         
+        new_atom->setAnchor(true);
+        
+        /*
+         for(int i = 0; i < 3; i++){
+         if(i != 2){
+         cout << inputCoords[i] << ", ";
+         } else {
+         cout << inputCoords[i] << ": " << inputCoords[4] << "\n";
+         }
+         }
+         */
+        
         // Set the first and second sphere (the one being controlled to red
         // initially and the anchor in blue)
-        if (inputCoords[4] == 0) {  // sphere is current
-            new_atom->setCurrent(true);
-        } else if (inputCoords[4] == 1) {  // sphere is anchor
-            new_atom->setAnchor(true);
+        
+        if(firstFromCon){
+            if (inputCoords[4] == 0) {  // sphere is current
+                new_atom->setCurrent(true);
+            } else if (inputCoords[4] == 1) {  // sphere is anchor
+                new_atom->setAnchor(true);
+            }
+            firstFromCon = false;
         }
-        if (firstAtom) {
+        
+        if (firstAtom && firstFromCon) {
             for (int i = 0; i < 3; i++) {
                 centerCoords[i] = inputCoords[i];
             }
@@ -2219,6 +2269,7 @@ void readFromCon(string path){
             new_atom->setLocalPos(inputCoords[0], inputCoords[1], inputCoords[2]);
         }
     }
+    
     readFile.close();
 }
 
