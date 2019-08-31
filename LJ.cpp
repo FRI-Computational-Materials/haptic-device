@@ -1584,6 +1584,7 @@ vector<vector<double>> runAmpForces(){
         if (PyErr_Occurred())
             PyErr_Print();
         fprintf(stderr, "Cannot find function");
+        exit(1);
     }
     Py_XDECREF(pFunc);
     Py_DECREF(pModule);
