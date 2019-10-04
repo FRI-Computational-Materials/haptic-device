@@ -10,11 +10,31 @@ Specify the # of atoms at launch like so:
 ```
 If you don't pass in anything, the default is five.
 
+<<<<<<< HEAD
 You can also read in an existing configuration:
 ```
 ./haptic-device example.con
 ```
 Make sure the .con file is in ../resources/data.
+=======
+## Build Instructions
+
+## ML Project
+In order to run, must have Amp, ase, numpy, and would have to modify Makefile.common and Makefile.config to allow for use of the Python.h header and corresponding library.
+
+### Windows
+
+Installing all the Drivers/SDKs/Software:
+
+
+1. Download Force Dimension drivers for the Novint Falcon from [force dimension](http://www.forcedimension.com/download/sdk). Most recent as of 10/3/18 is SDK 3.7.
+2. Run the .exe file to install drivers.
+3. Download the CHAI3D libraries from [CHAI3D](http://chai3d.org/download/releases). I think both the multi-platform and Windows versions work, but I got mine to work based off the multi-platform one.
+4. If you don’t have it, install the Community version of Visual Studio (for free!) from [visual studio](https://visualstudio.microsoft.com/downloads/?utm_medium=microsoft&utm_source=docs.microsoft.com&utm_campaign=button+cta&utm_content=download+vs2017).
+
+
+Creating Projects:
+>>>>>>> ML
 
 Choose the potential energy surface by adding a second argument:
 ```
@@ -100,7 +120,7 @@ The textbook is too big to upload so here's the link: http://www.charleshouserjr
 * Button naming convention in LJ-test.cpp (example = name in LJ-test.cp
 * p)
     * button 0 = button
-        * does nothing
+        * turns off forces while pressed
     * button 1 = button2
         * this button changes the current atom being used
     * button3 = freebutton
