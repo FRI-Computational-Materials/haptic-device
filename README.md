@@ -10,7 +10,6 @@ Specify the # of atoms at launch like so:
 ```
 If you don't pass in anything, the default is five.
 
-<<<<<<< HEAD
 You can also read in an existing configuration:
 ```
 ./haptic-device example.con
