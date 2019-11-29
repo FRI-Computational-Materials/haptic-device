@@ -10,6 +10,11 @@ Atom::Atom(double radius, double sphere_mass, cColorf color)
     anchor = false;
     current = false;
     repeating = false;
+    notCalculated = false;
+    copynumber = -1;
+    xPos = 0;
+    yPos = 0;
+    zPos = 0;
     velVector = new cShapeLine(cVector3d(0, 0, 0), cVector3d(0, 0, 0));
     force.zero();
     this->sphere_mass = sphere_mass;
@@ -64,6 +69,35 @@ void Atom::setRepeating(bool newRepeat) {
     repeating = newRepeat;
 }
 
+bool Atom::isNotCalculated() { return notCalculated; }
+
+void Atom::setNotCalculated(bool newNotCalculated) {
+  if (newNotCalculated) {
+    notCalculated = true;
+  }
+  else {
+    notCalculated = false;
+  }
+}
+
+void Atom::setLatticePosition(int xPosition, int yPosition, int zPosition){
+  xPos = xPosition;
+  yPos = yPosition;
+  zPos = zPosition;
+}
+
+double Atom::getLatticeX(){return xPos;}
+double Atom::getLatticeY(){return yPos;}
+double Atom::getLatticeZ(){return zPos;}
+
+void Atom::setCopyNumber(int newNum){
+  copynumber = newNum;
+}
+
+int Atom::getCopyNumber(){
+  return copynumber;
+}
+
 cVector3d Atom::getVelocity() { return velocity; }
 
 void Atom::setVelocity(cVector3d newVel) { velocity = newVel; }
@@ -88,7 +122,7 @@ void Atom::updateVelVector() {
     this->velVector->m_pointB =
     cAdd(this->getVelVector()->m_pointA, this->getForce() * .005);
     this->velVector->setLineWidth(5);
-    
+
     // Update the color based on the current status of the atom
     if (current) {
         this->velVector->m_colorPointA.setRed();

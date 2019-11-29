@@ -242,6 +242,18 @@ bool freezeAtoms = false;
 // save coordinates of central atom
 double centerCoords[3] = {50.0, 50.0, 50.0};
 
+//for periodic boundary conditions
+bool pbc = false;
+double xRepeats = 1;
+double yRepeats = 1;
+double zRepeats = 1;
+double xLength = 100;
+double yLength = 100;
+double zLength = 100;
+
+void drawPbc();
+void updatePbc();
+
 // default potential is Lennard Jones
 Potential energySurface = LENNARD_JONES;
 
@@ -582,7 +594,7 @@ int main(int argc, char *argv[]) {
         new_atom->setCurrent(true);
       }
     }
-  } else {  // read in specified file
+  } else if (argc < 3){  // read in specified file
     string file_path = "../resources/data/";
     string file_name = argv[1];
     ifstream readFile(file_path + file_name);
@@ -594,9 +606,26 @@ int main(int argc, char *argv[]) {
       exit(EXIT_FAILURE);
     }
     string line;
-    for (int i = 0; i < 11; i++) {
+    for (int i = 0; i < 2; i++) {
       getline(readFile, line);
     }
+
+    //get lattice lengths
+    vector<double> latticecoords;
+    getline(readFile, line);
+    string buffer;
+    stringstream ss(line);
+    while (ss >> buffer){
+      latticecoords.push_back(stod(buffer));
+    }
+    xLength = latticecoords[0];
+    yLength = latticecoords[1];
+    zLength = latticecoords[2];
+
+    for (int i = 2; i < 11; i++){
+      getline(readFile, line);
+    }
+
     bool firstAtom = true;
     vector<double> inputCoords;  // Create vector to hold our coordinates
     while (true) {
@@ -650,7 +679,223 @@ int main(int argc, char *argv[]) {
       }
     }
     readFile.close();
-  }
+  } else {
+
+    // determine pbc if speficied
+  if (argc > 3) {
+    string file_path = "../resources/data/";
+    string file_name = argv[1];
+    xRepeats = stoi(argv[3]);
+    yRepeats = stoi(argv[4]);
+    zRepeats = stoi(argv[5]);
+
+    ifstream readFile(file_path + file_name);
+
+    // file not found, so terminate program
+    if (!readFile.good()) {
+      cout << "ERROR: Input file " << file_name << " not found" << endl;
+      cout << "Input file should be in " << file_path << endl;
+      exit(EXIT_FAILURE);
+    }
+    string line;
+    for (int i = 0; i < 2; i++) {
+      getline(readFile, line);
+    }
+
+    //get lattice lengths
+    vector<double> latticecoords;
+    getline(readFile, line);
+    string buffer;
+    stringstream ss(line);
+    while (ss >> buffer){
+      latticecoords.push_back(stod(buffer));
+    }
+    xLength = latticecoords[0];
+    yLength = latticecoords[1];
+    zLength = latticecoords[2];
+
+    for (int i = 2; i < 11; i++){
+      getline(readFile, line);
+    }
+
+    bool firstAtom = true;
+    vector<double> inputCoords;  // Create vector to hold our coordinates
+    while (true) {
+      // read in next coordinates
+      inputCoords.clear();
+      getline(readFile, line);
+      if (readFile.eof()) {
+        break;
+      }
+      string buffer;          // Have a buffer string
+      stringstream ss(line);  // Insert the string into a stream
+      while (ss >> buffer) {
+        inputCoords.push_back(stod(buffer));
+      }
+      // create a sphere and define its radius
+      Atom *new_atom = new Atom(SPHERE_RADIUS, SPHERE_MASS);
+
+      // store pointer to sphere primitive
+      spheres.push_back(new_atom);
+
+      // add sphere primitive to world
+      world->addChild(new_atom);
+
+      // add line to world
+      world->addChild(new_atom->getVelVector());
+
+      // set graphic properties of sphere
+      new_atom->setTexture(texture);
+      new_atom->m_texture->setSphericalMappingEnabled(true);
+      new_atom->setUseTexture(true);
+
+      // Set the first and second sphere (the one being controlled to red
+      // initially and the anchor in blue)
+      if (inputCoords[4] == 0) {  // sphere is current
+        new_atom->setCurrent(true);
+      } else if (inputCoords[4] == 1) {  // sphere is anchor
+        new_atom->setAnchor(true);
+      }
+      if (firstAtom) {
+        for (int i = 0; i < 3; i++) {
+          centerCoords[i] = inputCoords[i];
+        }
+        new_atom->setLocalPos(0.0, 0.0, 0.0);
+        firstAtom = !firstAtom;
+      } else {
+        // scale coordinates
+        for (int i = 0; i < 3; i++) {
+          inputCoords[i] = 0.02 * (inputCoords[i] - centerCoords[i]);
+        }
+        new_atom->setLocalPos(inputCoords[0], inputCoords[1], inputCoords[2]);
+      }
+    }
+    readFile.close();
+    drawPbc();
+    /**int xloop = stoi(argv[3]);
+    int yloop;
+    int zloop;
+    int baseNumber = 0;
+    if (argc > 4) {
+      yloop = stoi(argv[4]);
+      if (argc > 5) {
+        zloop = stoi(argv[5]);
+      } else {zloop = 1;}
+    } else {yloop = 1;}
+    std::cout << xloop << " " << yloop << " " << zloop << endl;
+  // Loading in our crystal. Using nested loops because I can't think of a better way
+  // It is possibl you could use permutations of some sort but I'm not that smart
+        for (int l = 0; l < xloop; l++){
+          for (int m = 0; m < yloop; m++){
+            for (int n = 0; n < zloop; n++){
+              string file_path = "../resources/data/";
+              string file_name = argv[1];
+              ifstream readFile(file_path + file_name);
+
+              // file not found, so terminate program
+              if (!readFile.good()) {
+                cout << "ERROR: Input file " << file_name << " not found" << endl;
+                cout << "Input file should be in " << file_path << endl;
+                exit(EXIT_FAILURE);
+              }
+              string line;
+              for (int i = 0; i < 2; i++) {
+                getline(readFile, line);
+              }
+
+              //get lattice lengths
+              vector<double> latticecoords;
+              getline(readFile, line);
+              string buffer;
+              stringstream ss(line);
+              while (ss >> buffer){
+                latticecoords.push_back(stod(buffer));
+              }
+              xLength = latticecoords[0];
+              yLength = latticecoords[1];
+              zLength = latticecoords[2];
+
+              for (int i = 2; i < 11; i++){
+                getline(readFile, line);
+              }
+
+              // only let this happen the first loop
+              bool firstAtom = (l+m+n >= 0);
+              vector<double> inputCoords;  // Create vector to hold our coordinates
+              while (true) {
+
+                // read in next coordinates
+                inputCoords.clear();
+                getline(readFile, line);
+                if (readFile.eof()) {
+                  break;
+                }
+                string buffer;          // Have a buffer string
+                stringstream ss(line);  // Insert the string into a stream
+                while (ss >> buffer) {
+                  inputCoords.push_back(stod(buffer));
+                }
+                // create a sphere and define its radius
+                Atom *new_atom = new Atom(SPHERE_RADIUS, SPHERE_MASS);
+
+                // store pointer to sphere primitive
+                spheres.push_back(new_atom);
+
+                // add sphere primitive to world
+                world->addChild(new_atom);
+
+                // add line to world
+                world->addChild(new_atom->getVelVector());
+
+                // set graphic properties of sphere
+                new_atom->setTexture(texture);
+                new_atom->m_texture->setSphericalMappingEnabled(true);
+                new_atom->setUseTexture(true);
+
+                if (l+m+n == 0){
+                  baseNumber++;
+                }
+
+                // Set the first and second sphere (the one being controlled to red
+                // initially and the anchor in blue)
+                if (inputCoords[4] == 0) {  // sphere is current
+                  new_atom->setCurrent(true);
+                } else if (inputCoords[4] == 1) {  // sphere is anchor
+                  new_atom->setAnchor(true);
+                }
+                if (firstAtom) {
+                  for (int i = 0; i < 3; i++) {
+                    centerCoords[i] = inputCoords[i];
+                  }
+                  new_atom->setLocalPos(.02*l*xLength, .02*m*yLength, .02*n*zLength);
+                  firstAtom = !firstAtom;
+                } else {
+                  // scale coordinates
+                  for (int i = 0; i < 3; i++) {
+                    inputCoords[i] = 0.02 * (inputCoords[i] - centerCoords[i]);
+                  }
+                  new_atom->setLocalPos(inputCoords[0] + .02*l*xLength, inputCoords[1] + .02*m*yLength, inputCoords[2] + .02*n*zLength);
+                }
+                if (l+m+n > 0){
+                  new_atom->setNotCalculated(true);
+                  new_atom->setCopyNumber(spheres.size()%baseNumber);
+                  std::cout << (new_atom->getCopyNumber()) << endl;
+                }
+              }
+              readFile.close();
+            }
+            for (int i = 0; i < spheres.size(); i++) {
+              spheres[i]->setVelocity(0);
+            }
+          }
+        }
+        // convert to lowercase
+        string arg = argv[2];
+        for (char &c : arg) {
+          c = tolower(c);
+        }
+      **/}
+    }
   for (int i = 0; i < spheres.size(); i++) {
     spheres[i]->setVelocity(0);
   }
@@ -1110,6 +1355,7 @@ void updateHaptics(void) {
           // check forces with all other spheres
           force.zero();
 
+          if (current->isNotCalculated() != 1){
           // this loop is for finding all of atom i's neighbors
           for (int j = 0; j < spheres.size(); j++) {
             // Don't compute forces between an atom and itself
@@ -1139,6 +1385,7 @@ void updateHaptics(void) {
               }
             }
           }
+        }
         if (force.length() > 10000) {
           force.normalize();
           force.mul(10000);
@@ -1158,11 +1405,11 @@ void updateHaptics(void) {
         cVector3d spherePos = current->getLocalPos() + spherePos_change;
         double magnitude = force.length();
         if (magnitude > 5) {
-          cout << i << " velocity " << current->getVelocity().length() << endl;
+          /**cout << i << " velocity " << current->getVelocity().length() << endl;
           cout << i << " force " << force.length() << endl;
           cout << i << " acceleration " << sphereAcc.length() << endl;
           cout << i << " time " << timeInterval << endl;
-          cout << i << " position of  " << timeInterval << endl;
+          cout << i << " position of  " << timeInterval << endl;**/
         }
         // A is the current position, B is the position to move to
         cVector3d A = current->getLocalPos();
@@ -1239,9 +1486,20 @@ void updateHaptics(void) {
         if (!current->isCurrent()) {
           if (!current->isAnchor()) {
             current->setLocalPos(spherePos);
+            //pbc mirror movements
           }
         }
+        /**for (int k = 0; k < spheres.size(); k++){
+          current = spheres[k];
+          std::cout << i << ", %%" << current->getCopyNumber() << endl;
+          if ((i == current->getCopyNumber()) && (!current->isAnchor()) && !current->isCurrent()){
+            spherePos = current->getLocalPos() + spherePos_change;
+            current->setLocalPos(spherePos);
+          }
+          else {std::cout << i << ", " << current->getCopyNumber();}
+        }**/
       }
+      updatePbc();
     }
       else {
         vector<vector<double>> ampForces = runAmpForces();
@@ -1385,6 +1643,67 @@ void updateHaptics(void) {
 
   // exit haptics thread
   simulationFinished = true;
+}
+
+void drawPbc(){
+  cTexture2dPtr texture = cTexture2d::create();
+  // load texture file
+  bool fileload = texture->loadFromFile(
+      RESOURCE_PATH("../resources/images/spheremap-3.jpg"));
+  Atom *current;
+  int count = spheres.size();
+  for (int p = 0; p < count; p++){
+    current = spheres[p];
+    current->setCurrent(false);
+    cVector3d C = current->getLocalPos();
+
+    if (current->isNotCalculated()){
+      spheres.erase(spheres.begin() + p);
+      //std::cout << "Kill!" << endl;
+    } else{
+        for (int q = -1*xRepeats; q <= xRepeats; q++){
+          for (int r = -1*yRepeats; r <= yRepeats; r++){
+            for (int s = -1*zRepeats; s <= zRepeats; s++){
+              if (q != 0 || r != 0 || s != 0){
+                cout << "q: " << q << "  r: " << r << "  s: " << s << endl;
+                Atom *new_atom = new Atom(SPHERE_RADIUS, SPHERE_MASS);
+                spheres.push_back(new_atom);
+                world->addChild(new_atom);
+                world->addChild(new_atom->getVelVector());
+                new_atom->setTexture(texture);
+                new_atom->m_texture->setSphericalMappingEnabled(true);
+                new_atom->setUseTexture(true);
+                new_atom->setLocalPos(C.x() + .02*q*xLength, C.y() + .02*r*yLength, C.z() + .02*s*zLength);
+                new_atom->setNotCalculated(true);
+                new_atom->setLatticePosition(q,r,s);
+              }
+            }
+          }
+        }
+      }
+  }
+}
+
+void updatePbc(){
+  std::cout << "Testing:" << endl;
+  Atom *currentAtom;
+  cVector3d D;
+  int numberOfAtoms = spheres.size()/((2*xRepeats + 1) * (2*yRepeats + 1) * (2*zRepeats + 1));
+  for (int p = 0; p < numberOfAtoms; p++){
+    currentAtom = spheres[p];
+    D = currentAtom->getLocalPos();
+    //std::cout << p << endl;
+    for (int q = numberOfAtoms + p*(spheres.size()/numberOfAtoms - 1); q < numberOfAtoms + (p+1)*(spheres.size()/numberOfAtoms - 1); q++){
+      currentAtom = spheres[q];
+      double xVal = currentAtom->getLatticeX();
+      //std::cout << xVal << endl;
+      double yVal = currentAtom->getLatticeY();
+      double zVal = currentAtom->getLatticeZ();
+      currentAtom->setLocalPos(D.x() + .02*xVal*xLength, D.y() + .02*yVal*yLength, D.z() + .02*zVal*zLength);
+      //std::cout << numberOfAtoms << endl;
+      std::cout << q << " " << xVal << " " << yVal << " " << zVal << " " << endl;
+    }
+  }
 }
 
 vector<vector<double>> runAmpForces(){
