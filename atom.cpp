@@ -21,21 +21,22 @@ Atom::Atom(double radius, double sphere_mass, cColorf color)
     // note - cColorf defaults to white, as such
     // the default for atoms is also white (see the header file)
     base_color = color;
-    m_material->setColor(base_color);
+    m_material->setWhiteSmoke();
 }
 
 
 bool Atom::isAnchor() { return anchor; }
 
 void Atom::setAnchor(bool newAnchor) {
-    if (newAnchor) {
+    if (newAnchor && notCalculated == false) {
         // setting atom to be an anchor, so change color to blue
-        m_material->setBlue();
+        m_material->setBlueRoyal();
         current = false;
-    } else {
+    } else if (notCalculated == true){
         // removing atom as anchor, so change color to white
-        m_material->setColor(base_color);
-    }
+        m_material->setWhiteSmoke();
+    } else {m_material->setGray();}
+
     anchor = newAnchor;
 }
 
@@ -47,7 +48,7 @@ void Atom::setCurrent(bool newCurrent) {
         m_material->setRed();
         anchor = false;  // cannot be both anchor and current
     } else if (anchor) {
-        m_material->setBlue();
+        m_material->setBlueRoyal();
     } else {
         // toggling current off, so set to white
         m_material->setColor(base_color);

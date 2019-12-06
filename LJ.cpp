@@ -51,6 +51,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <cmath>
 //------------------------------------------------------------------------------
 using namespace chai3d;
 using namespace std;
@@ -250,6 +251,7 @@ double zRepeats = 1;
 double xLength = 100;
 double yLength = 100;
 double zLength = 100;
+vector<double> PbcTrueCenter;
 
 void drawPbc();
 void updatePbc();
@@ -518,10 +520,10 @@ int main(int argc, char *argv[]) {
   cTexture2dPtr texture = cTexture2d::create();
   // load texture file
   bool fileload = texture->loadFromFile(
-      RESOURCE_PATH("../resources/images/spheremap-3.jpg"));
+      RESOURCE_PATH("../resources/images/spheremap-6.jpg"));
   if (!fileload) {
 #if defined(_MSVC)
-    fileload = texture->loadFromFile("../resources/images/spheremap-3.jpg");
+    fileload = texture->loadFromFile("../resources/images/spheremap-6.jpg");
 #endif
   }
   if (!fileload) {
@@ -759,6 +761,9 @@ int main(int argc, char *argv[]) {
       if (firstAtom) {
         for (int i = 0; i < 3; i++) {
           centerCoords[i] = inputCoords[i];
+
+          //For finding the zero point in .con file
+          PbcTrueCenter.push_back(-.02*inputCoords[i]);
         }
         new_atom->setLocalPos(0.0, 0.0, 0.0);
         firstAtom = !firstAtom;
@@ -1499,6 +1504,28 @@ void updateHaptics(void) {
           else {std::cout << i << ", " << current->getCopyNumber();}
         }**/
       }
+      for (int k = 0; k < spheres.size(); k++){
+        Atom* currentAtom;
+        currentAtom = spheres[k];
+        cVector3d E = currentAtom->getLocalPos();
+        if (currentAtom->isNotCalculated() == false){
+          currentAtom->setLocalPos(fmod(E.x() - PbcTrueCenter[0],.02*xLength) + PbcTrueCenter[0], fmod(E.y() - PbcTrueCenter[1],.02*yLength) + PbcTrueCenter[1], fmod(E.z() + PbcTrueCenter[2],.02*zLength) - PbcTrueCenter[2]);
+          E = currentAtom->getLocalPos();
+
+          //Walls for reflection of atoms
+          if (E.x() < -.02*.5){ //There is an issue with atoms exploding when atoms are placed on the boundary when loaded. This is a temporary fix until a better idea arises.
+            currentAtom->setLocalPos(.02*xLength+E.x(),E.y(),E.z());
+            E = currentAtom->getLocalPos();
+          }
+          if (E.y() < -.02*.5){
+            currentAtom->setLocalPos(E.x(),.02*yLength+E.y(),E.z());
+            E = currentAtom->getLocalPos();
+          }
+          if (E.z() < -.02*.5){
+            currentAtom->setLocalPos(E.x(),E.y(),.02*zLength+E.z());
+          }
+        }
+      }
       updatePbc();
     }
       else {
@@ -1649,7 +1676,7 @@ void drawPbc(){
   cTexture2dPtr texture = cTexture2d::create();
   // load texture file
   bool fileload = texture->loadFromFile(
-      RESOURCE_PATH("../resources/images/spheremap-3.jpg"));
+      RESOURCE_PATH("../resources/images/spheremap-6.jpg"));
   Atom *current;
   int count = spheres.size();
   for (int p = 0; p < count; p++){
@@ -1685,7 +1712,7 @@ void drawPbc(){
 }
 
 void updatePbc(){
-  std::cout << "Testing:" << endl;
+  //std::cout << "Testing:" << endl;
   Atom *currentAtom;
   cVector3d D;
   int numberOfAtoms = spheres.size()/((2*xRepeats + 1) * (2*yRepeats + 1) * (2*zRepeats + 1));
@@ -1701,7 +1728,7 @@ void updatePbc(){
       double zVal = currentAtom->getLatticeZ();
       currentAtom->setLocalPos(D.x() + .02*xVal*xLength, D.y() + .02*yVal*yLength, D.z() + .02*zVal*zLength);
       //std::cout << numberOfAtoms << endl;
-      std::cout << q << " " << xVal << " " << yVal << " " << zVal << " " << endl;
+      //std::cout << q << " " << xVal << " " << yVal << " " << zVal << " " << endl;
     }
   }
 }
