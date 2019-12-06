@@ -244,7 +244,6 @@ bool freezeAtoms = false;
 double centerCoords[3] = {50.0, 50.0, 50.0};
 
 //for periodic boundary conditions
-bool pbc = false;
 double xRepeats = 1;
 double yRepeats = 1;
 double zRepeats = 1;
@@ -252,6 +251,7 @@ double xLength = 100;
 double yLength = 100;
 double zLength = 100;
 vector<double> PbcTrueCenter;
+double CutoffRadius = 4.8;
 
 void drawPbc();
 void updatePbc();
@@ -1374,19 +1374,24 @@ void updateHaptics(void) {
 
               // compute distance between both spheres
               double distance = cDistance(pos0, pos1) / DIST_SCALE;
-              if (energySurface == LENNARD_JONES) {
-                potentialEnergy += getLennardJonesEnergy(distance);
-              } else if (energySurface == MORSE) {
-                potentialEnergy += getMorseEnergy(distance);
-              }
-              if (!button0) {
-                double appliedForce;
-                if (energySurface == LENNARD_JONES) {
-                  appliedForce = getLennardJonesForce(distance);
-                } else if (energySurface == MORSE) {
-                  appliedForce = getMorseForce(distance);
+              // check to see if pbc are being run
+              if (CutoffRadius > 0){
+                if (.02*distance <= .02*CutoffRadius){
+                  if (energySurface == LENNARD_JONES) {
+                    potentialEnergy += getLennardJonesEnergy(distance);
+                  } else if (energySurface == MORSE) {
+                    potentialEnergy += getMorseEnergy(distance);
+                  }
+                  if (!button0) {
+                    double appliedForce;
+                    if (energySurface == LENNARD_JONES) {
+                      appliedForce = getLennardJonesForce(distance);
+                    } else if (energySurface == MORSE) {
+                      appliedForce = getMorseForce(distance);
+                    }
+                    force.add(appliedForce * dir01);
+                  }
                 }
-                force.add(appliedForce * dir01);
               }
             }
           }
@@ -1513,7 +1518,7 @@ void updateHaptics(void) {
           E = currentAtom->getLocalPos();
 
           //Walls for reflection of atoms
-          if (E.x() < -.02*.5){ //There is an issue with atoms exploding when atoms are placed on the boundary when loaded. This is a temporary fix until a better idea arises.
+          if (E.x() < -.02*.5){ //There is an issue with atoms exploding when atoms are placed on the boundary when loaded. This is a temporary fix until a better idea arises. (1516)
             currentAtom->setLocalPos(.02*xLength+E.x(),E.y(),E.z());
             E = currentAtom->getLocalPos();
           }
