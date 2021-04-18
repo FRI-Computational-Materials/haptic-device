@@ -98,9 +98,12 @@ to the absolute file path.
   * `sudo cp ./external/DHD/doc/linux/51-forcedimension.rules /etc/udev/rules.d`
   * `sudo udevadm control --reload-rules && udevadm trigger`
 
-10. Navigate to `lin-x86_64` and run `./haptic-device` to launch the program.
+11. Open Makefile.common and add `LDLIBS += -lpython2.7` after "LDLIBS = -l$(LIB_NAME)
 
+12. Navigate to `lin-x86_64` and run `./haptic-device` to launch the program.
 
+## If you have a problem
+Consider running make. You need to run make about one more time than was described in this README, but I forget where. If you're stuck and getting an error, try running `make` in the `haptic-device` directory
 
 ### MacOS
 1. Download the latest release of CHAI3D for Mac OS X from [chai3d](http://www.chai3d.org/download/releases)
