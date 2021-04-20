@@ -67,7 +67,7 @@ Check WINDOWS.md for details on installation.
 4. Run "make" in the chai3d-3.2.0 directory
 5. Clone this repo into the chai3d-3.2.0 directory
 6. Create the directory `data` in `bin/resources` and move the file `global_minima.txt` to here.
-7. Open Makefile.common and add `LDLIBS += -lpython2.7` after "LDLIBS = -l$(LIB_NAME)
+7. Open Makefile.common and add `LDLIBS += -lpython2.7` after `LDLIBS = -l$(LIB_NAME)`
 8. Run `make` in the `haptic-device` folder - be sure to do this after any changes.
 9. Your directory structure should look like so:
 <pre>
