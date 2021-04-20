@@ -64,6 +64,7 @@ Check WINDOWS.md for details on installation.
     * libasound2-dev
     * freeglut3-dev
     * xorg-dev
+    * python-dev
 4. Run "make" in the chai3d-3.2.0 directory
 5. Clone this repo into the chai3d-3.2.0 directory
 6. Create the directory `data` in `bin/resources` and move the file `global_minima.txt` to here.
