@@ -272,25 +272,13 @@ cLabel *screenshotLabel;
 // write to con notification label
 cLabel *writeConLabel;
 
-//------------------------------------------------------------------------------
-// DECLARED MACROS
-//------------------------------------------------------------------------------
-// convert to resource path
-#define RESOURCE_PATH(p) (char *)((resourceRoot + string(p)).c_str())
-//------------------------------------------------------------------------------
-// DECLARED FUNCTIONS
-//------------------------------------------------------------------------------
 // callback when the window display is resized
 void windowSizeCallback(GLFWwindow *a_window, int a_width, int a_height);
 
 // callback when an error GLFW occurs
 void errorCallback(int error, const char *a_description);
 
-//------------------------------------------------------------------------------
-// DECLARED MACROS
-//------------------------------------------------------------------------------
-// Convert to resource path
-#define RESOURCE_PATH(p) (char *)((resourceRoot + string(p)).c_str())
+// this function updates the draw positions
 void updateGraphics(void);
 
 // this function contains the main haptics simulation loop
@@ -327,10 +315,9 @@ vector<vector<double>> runAmpForces();
  haptics thread.
  */
 //==============================================================================
+// current camera
 int curr_camera = 1;
-double theta = 0;
-double x = .5;
-double y = .5;
+
 int main(int argc, char *argv[]) {
   //--------------------------------------------------------------------------
   // INITIALIZATION
@@ -355,15 +342,6 @@ int main(int argc, char *argv[]) {
   // set error callback
   glfwSetErrorCallback(errorCallback);
 
-  // compute desired size of window
-  const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-
-  //    const w *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-  int w = 0.8 * mode->height;
-  int h = 0.5 * mode->height;
-  int x = 0.5 * (mode->width - w);
-  int y = 0.5 * (mode->height - h);
-
   // set OpenGL version
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
@@ -375,19 +353,29 @@ int main(int argc, char *argv[]) {
     glfwWindowHint(GLFW_STEREO, GL_FALSE);
   }
 
+  // compute desired size of window
+  const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+
+  //    const w *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+  int windowWidth = 0.8 * mode->height;
+  int windowHeight = 0.5 * mode->height;
+  int windowX = 0.5 * (mode->width - windowWidth);
+  int windowY = 0.5 * (mode->height - windowHeight);
+
   // create display context
-  window = glfwCreateWindow(w, h, "CHAI3D", NULL, NULL);
+  window = glfwCreateWindow(windowWidth, windowHeight, "CHAI3D", NULL, NULL);
   if (!window) {
     cout << "failed to create window" << endl;
     cSleepMs(1000);
     glfwTerminate();
     return 1;
   }
+
   // get width and height of window
   glfwGetWindowSize(window, &width, &height);
 
   // set position of window
-  glfwSetWindowPos(window, x, y);
+  glfwSetWindowPos(window, windowX, windowY);
 
   // set key callback
   glfwSetKeyCallback(window, keyCallback);
