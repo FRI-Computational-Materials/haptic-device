@@ -19,7 +19,7 @@ Make sure the .con file is in ../resources/data.
 ## Build Instructions
 
 ## ML Project
-In order to run, must have Amp, ase, numpy, and would have to modify Makefile.common and Makefile.config to allow for use of the Python.h header and corresponding library.
+In order to run, must have Amp, ase, numpy, and tsase.
 
 ### Windows
 
@@ -68,9 +68,8 @@ Check WINDOWS.md for details on installation.
 4. Run "make" in the chai3d-3.2.0 directory
 5. Clone this repo into the chai3d-3.2.0 directory
 6. Create the directory `data` in `bin/resources` and move the file `global_minima.txt` to here.
-7. Open Makefile.common and add `LDLIBS += -lpython2.7` after `LDLIBS = -l$(LIB_NAME)`
-8. Run `make` in the `haptic-device` folder - be sure to do this after any changes.
-9. Your directory structure should look like so:
+7. Run `make` in the `haptic-device` folder - be sure to do this after any changes.
+8. Your directory structure should look like so:
 <pre>
 chai3d-3.2.0/
 ├── bin

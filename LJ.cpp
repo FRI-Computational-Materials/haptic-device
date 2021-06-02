@@ -44,7 +44,7 @@
 #include <GLFW/glfw3.h>
 #include <math.h>
 #include <unistd.h>
-#include <python2.7/Python.h>
+#include <python3.8/Python.h>
 #include <chrono>
 #include <ctime>
 #include <fstream>

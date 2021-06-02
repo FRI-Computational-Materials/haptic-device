@@ -46,6 +46,10 @@ CXXFLAGS += -I$(GLFW_DIR)/include
 LDFLAGS  += -L$(GLFW_DIR)/lib/$(CFG)/$(OS)-$(ARCH)-$(COMPILER)
 LDLIBS   += $(LDLIBS_GLFW)
 
+# Python embedding
+CXXFLAGS += $(shell python3.8-config --cflags --ldflags --embed)
+
+
 # platform-dependent adjustments
 ifeq ($(OS), mac)
 	DEPLOY = Rez -append $(TOP_DIR)/bin/resources/icons/chai3d.rsrc -o $(OUTPUT); SetFile -a C $(OUTPUT)
