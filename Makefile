@@ -47,7 +47,9 @@ LDFLAGS  += -L$(GLFW_DIR)/lib/$(CFG)/$(OS)-$(ARCH)-$(COMPILER)
 LDLIBS   += $(LDLIBS_GLFW)
 
 # Python embedding
-CXXFLAGS += $(shell python3.8-config --cflags --ldflags --embed)
+CXXFLAGS += $(shell python3.8-config --includes)
+CXXFLAGS += -fno-PIE -no-pie
+LDLIBS += $(shell python3.8-config --ldflags --embed)
 
 
 # platform-dependent adjustments

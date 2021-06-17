@@ -1389,9 +1389,9 @@ vector<vector<double>> runAmpForces(){
   PyObject *pValue, *pTuple, *pResult, *pFinal;
   int i;
 
-  pName = PyString_FromString("calculator");
+  pName = PyUnicode_FromString("calculator");
   PyObject* objectsRepresentation = PyObject_Repr(pName);
-  const char* s = PyString_AsString(objectsRepresentation);
+  const char* s = PyUnicode_AsUTF8(objectsRepresentation);
   /* Error checking of pName left out */
 
   pModule = PyImport_Import(pName);
