@@ -40,11 +40,11 @@
 #include "inputHandling.h"
 #include "potentials.h"
 #include "utility.h"
+#include "PyAMFF/PyAMFF.h"
 //------------------------------------------------------------------------------
 #include <GLFW/glfw3.h>
 #include <math.h>
 #include <unistd.h>
-#include <python3.8/Python.h>
 #include <chrono>
 #include <ctime>
 #include <fstream>
@@ -243,7 +243,7 @@ bool freezeAtoms = false;
 double centerCoords[3] = {50.0, 50.0, 50.0};
 
 // default potential is Lennard Jones
-Potential energySurface = LENNARD_JONES;
+LocalPotential energySurface = LENNARD_JONES;
 
 // check if able to read in the global min
 bool global_min_known = true;
@@ -298,10 +298,8 @@ void writeToCon(string fileName);
 
 
 
-// declare runAmp
-//double runAmp();
-
-vector<vector<double>> runAmpForces();
+// Declare pyamffEvaluate()
+vector<vector<double>> pyamffEvaluate();
 //------------------------------------------------------------------------------
 // DECLARED MACROS
 //------------------------------------------------------------------------------
@@ -651,9 +649,8 @@ int main(int argc, char *argv[]) {
     }
     if (arg == "morse" || arg == "m") {
       energySurface = MORSE;
-    }else if(arg == "amp" || arg == "a"){
+    }else if(arg == "pyamff" || arg == "a"){
       energySurface = MACHINE_LEARNING;
-      Py_Initialize();
     }
   }
   //--------------------------------------------------------------------------
@@ -1232,10 +1229,10 @@ void updateHaptics(void) {
       }
     }
       else {
-        vector<vector<double>> ampForces = runAmpForces();
-        potentialEnergy += 2*ampForces[spheres.size()][0];
+        vector<vector<double>> amffForces = pyamffEvaluate();
+        potentialEnergy += 2*amffForces[spheres.size()][0]; // why is this times 2 ?!?!?!?!
         for (int i = 0; i < spheres.size(); i++) {
-          cVector3d force = cVector3d(ampForces[i][0], ampForces[i][1], ampForces[i][2]);
+          cVector3d force = cVector3d(100000*amffForces[i][0], 100000*amffForces[i][1], 100000*amffForces[i][2]);
           current = spheres[i];
           cVector3d pos0 = current->getLocalPos();
           current->setForce(force);
@@ -1375,8 +1372,18 @@ void updateHaptics(void) {
   simulationFinished = true;
 }
 
-vector<vector<double>> runAmpForces(){
-  // Prepare positions so they may be passed to python
+vector<vector<double>> pyamffEvaluate(){
+  PyAMFF PyAMFFCalculator;
+
+  // Some values that we'll need
+  const int atomicNumbers[] = {1, 1, 46, 46, 46};
+  const double box[] = {100, 100, 100};
+  long pyamffN = spheres.size();
+  double pyamffF[spheres.size() * 3];
+  double pyamffU;
+  double* pyamffUPtr = &pyamffU;
+
+  // Prepare positions so they may be passed
   double atomArray [spheres.size() * 3];
   for (int i = 0; i < spheres.size() * 3; i+=3){
     cVector3d pos = spheres[i/3]->getLocalPos();
@@ -1385,82 +1392,23 @@ vector<vector<double>> runAmpForces(){
     atomArray[i+2] = pos.z()/.02 + centerCoords[2];
   }
 
-  PyObject *pName, *pModule, *pFunc;
-  PyObject *pValue, *pTuple, *pResult, *pFinal;
-  int i;
 
-  pName = PyUnicode_FromString("calculator");
-  PyObject* objectsRepresentation = PyObject_Repr(pName);
-  const char* s = PyUnicode_AsUTF8(objectsRepresentation);
-  /* Error checking of pName left out */
+  PyAMFFCalculator.force(pyamffN, atomArray, atomicNumbers, pyamffF, pyamffUPtr, box);
+  /**for (int i = 0; i < 3*pyamffN; i+=3) {
+    std::cout << pyamffF[i] << " " << pyamffF[i+1] << " " << pyamffF[i+2] << endl;
+  }**/
 
-  pModule = PyImport_Import(pName);
-  Py_DECREF(pName);
+  //std::cout << *pyamffUPtr << endl;
 
-  if (pModule != NULL) {
-    pFunc = PyObject_GetAttrString(pModule, "getValues");
-    /* pFunc is a new reference */
-    if (pFunc && PyCallable_Check(pFunc)) {
-        pResult = PyTuple_New(spheres.size() * 3);
-        for (i = 0; i < spheres.size() * 3; ++i) {
-            pValue = PyFloat_FromDouble(atomArray[i]);
-            if (!pValue) {
-                Py_DECREF(pResult);
-                Py_DECREF(pModule);
-                fprintf(stderr, "Cannot convert argument\n");
-                //return 1;
-            }
-            // pValue reference stolen here:
-            PyTuple_SetItem(pResult, i, pValue);
-        }
-        //Create tuple to put pArgs inside of -- Becaue we need to pass one object to python
-
-        pTuple = PyTuple_New(1);
-        PyTuple_SetItem(pTuple, 0, pResult);
-        //pFinal = PyTuple_New(spheres.size() * 3);
-        pFinal = PyObject_CallObject(pFunc, pTuple);
-        if (pTuple != NULL){
-          Py_DECREF(pTuple);
-        }
-        if (pFinal != NULL) {
-          vector<vector<double>> forceArr;
-          for (int j = 0; j < spheres.size()*3; j+=3){
-            vector<double> temp;
-            temp.push_back(PyFloat_AsDouble(PyList_GetItem(pFinal,j)));
-            temp.push_back(PyFloat_AsDouble(PyList_GetItem(pFinal,j + 1)));
-            temp.push_back(PyFloat_AsDouble(PyList_GetItem(pFinal,j + 2)));
-            forceArr.push_back(temp);
-          }
-          // For the Potential Energy
-          vector<double> temp;
-          temp.push_back(PyFloat_AsDouble(PyList_GetItem(pFinal, spheres.size() * 3)));
-          forceArr.push_back(temp);
-
-          return forceArr;
-          Py_DECREF(pValue);
-          Py_DECREF(pResult);
-          Py_DECREF(pFinal);
-        }
-        else {
-          Py_DECREF(pFunc);
-          Py_DECREF(pModule);
-          PyErr_Print();
-          fprintf(stderr,"Call failed\n");
-          //return 1;
-        }
-    }
-    else {
-        if (PyErr_Occurred())
-            PyErr_Print();
-        fprintf(stderr, "Cannot find function");
-        exit(1);
-    }
-    Py_XDECREF(pFunc);
-    Py_DECREF(pModule);
-}
-  else {
-    PyErr_Print();
-    fprintf(stderr, "Failed to load");
-    //return 1;
+  // Convert to array for return
+  // TODO: Make this something more meaningful than vector<vector<double>>
+  vector<vector<double>> returnVector = {};
+  for (int i = 0; i < spheres.size() * 3; i+=3) {
+    vector<double> pushBack = {*(pyamffF + i), *(pyamffF + i + 1), *(pyamffF + i + 2)};
+    returnVector.push_back(pushBack);
   }
+
+  returnVector.push_back({*pyamffUPtr});
+  return returnVector;
+
 }

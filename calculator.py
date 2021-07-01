@@ -3,6 +3,7 @@ import ase.io
 import tsase
 import amp
 import numpy
+from pyamff.pyamffCalc import pyamffCalc
 
 def getValues(position):
 
@@ -17,8 +18,8 @@ def getValues(position):
     #print array
 
     # Set up calculator
-    calc = amp.Amp.load('calc.amp')
-    # load con file    
+    calc = pyamffCalc("./pyamff.pt")
+    # load atoms object    
     p = ase.Atoms('Pt' + str(len(position)/3), positions=array)
 
     # Set Calculator   

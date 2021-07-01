@@ -46,10 +46,16 @@ CXXFLAGS += -I$(GLFW_DIR)/include
 LDFLAGS  += -L$(GLFW_DIR)/lib/$(CFG)/$(OS)-$(ARCH)-$(COMPILER)
 LDLIBS   += $(LDLIBS_GLFW)
 
+# PyAMFF
+SRC_DIR_PYAMFF = ../../eon/client/potentials/PyAMFF
+LDFLAGS += -L$(SRC_DIR_PYAMFF)
+LDLIBS += -lAMFF
+LDLIBS += -lgfortran
+
 # Python embedding
-CXXFLAGS += $(shell python3.8-config --includes)
+#CXXFLAGS += $(shell python3.8-config --includes)
 CXXFLAGS += -fno-PIE -no-pie
-LDLIBS += $(shell python3.8-config --ldflags --embed)
+#LDLIBS += $(shell python3.8-config --ldflags --embed)
 
 
 # platform-dependent adjustments
@@ -63,8 +69,11 @@ HDR_DIR   = .
 OBJ_DIR   = ./obj/$(CFG)/$(OS)-$(ARCH)-$(COMPILER)
 PROG      = $(notdir $(shell pwd)) 
 SOURCES   = $(wildcard $(SRC_DIR)/*.cpp)
+#SOURCES   += $(wildcard $(SRC_DIR_PYAMFF)/*.cpp)
 INCLUDES  = $(wildcard $(HDR_DIR)/*.h)
+#INCLUDES  += $(wildcard $(SRC_DIR_PYAMFF)/*.h)
 OBJECTS   = $(patsubst %.cpp, $(OBJ_DIR)/%.o, $(notdir $(SOURCES)))
+OBJECTS   += $(wildcard $(SRC_DIR_PYAMFF)/*.o)
 OUTPUT    = $(BIN_DIR)/$(PROG)
 
 all: $(OUTPUT)
