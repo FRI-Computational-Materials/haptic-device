@@ -47,7 +47,7 @@ LDFLAGS  += -L$(GLFW_DIR)/lib/$(CFG)/$(OS)-$(ARCH)-$(COMPILER)
 LDLIBS   += $(LDLIBS_GLFW)
 
 # PyAMFF
-SRC_DIR_PYAMFF = ../../eon/client/potentials/PyAMFF
+SRC_DIR_PYAMFF = ./PyAMFF
 LDFLAGS += -L$(SRC_DIR_PYAMFF)
 LDLIBS += -lAMFF
 LDLIBS += -lgfortran
