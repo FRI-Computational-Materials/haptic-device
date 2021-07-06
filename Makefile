@@ -46,11 +46,16 @@ CXXFLAGS += -I$(GLFW_DIR)/include
 LDFLAGS  += -L$(GLFW_DIR)/lib/$(CFG)/$(OS)-$(ARCH)-$(COMPILER)
 LDLIBS   += $(LDLIBS_GLFW)
 
+# PyAMFF
+SRC_DIR_PYAMFF = ./PyAMFF
+LDFLAGS += -L$(SRC_DIR_PYAMFF)
+LDLIBS += -lAMFF
+LDLIBS += -lgfortran
+
 # Python embedding
 CXXFLAGS += $(shell python3.8-config --includes)
 CXXFLAGS += -fno-PIE -no-pie
 LDLIBS += $(shell python3.8-config --ldflags --embed)
-
 
 # platform-dependent adjustments
 ifeq ($(OS), mac)

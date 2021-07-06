@@ -244,7 +244,7 @@ bool freezeAtoms = false;
 double centerCoords[3] = {50.0, 50.0, 50.0};
 
 // default potential is Lennard Jones
-Potential energySurface = LENNARD_JONES;
+LocalPotential energySurface = LENNARD_JONES;
 
 // check if able to read in the global min
 bool global_min_known = true;
