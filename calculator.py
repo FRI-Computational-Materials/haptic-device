@@ -17,11 +17,11 @@ def getValues(position):
     #print array
 
     # Set up calculator
-    calc = amp.Amp.load('calc.amp')
-    # load con file    
+    calc = tsase.calculators.lj(cutoff=15.0)
+    # load con file
     p = ase.Atoms('Pt' + str(len(position)/3), positions=array)
 
-    # Set Calculator   
+    # Set Calculator
     p.set_calculator(calc)
 
     # Forces are the first 3N values of the list array2, and the potential energy is the final value
