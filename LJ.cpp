@@ -1467,7 +1467,7 @@ vector<vector<double>> aseGetValues(){
   PyObject *pValue, *pTuple, *pResult, *pFinal;
   int i;
 
-  pName = PyUnicode_FromString("../../haptic-device/calculator");
+  pName = PyUnicode_FromString("calculator");
   PyObject* objectsRepresentation = PyObject_Repr(pName);
   const char* s = PyUnicode_AsUTF8(objectsRepresentation);
   /* Error checking of pName left out */
