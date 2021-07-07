@@ -53,9 +53,9 @@ LDLIBS += -lAMFF
 LDLIBS += -lgfortran
 
 # Python embedding
-#CXXFLAGS += $(shell python3.8-config --includes)
+CXXFLAGS += $(shell python3.8-config --includes)
 CXXFLAGS += -fno-PIE -no-pie
-#LDLIBS += $(shell python3.8-config --ldflags --embed)
+LDLIBS += $(shell python3.8-config --ldflags --embed)
 
 
 # platform-dependent adjustments
