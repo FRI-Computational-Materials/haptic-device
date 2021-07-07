@@ -40,12 +40,12 @@
 #include "inputHandling.h"
 #include "potentials.h"
 #include "utility.h"
+#include "PyAMFF/PyAMFF.h"
 //------------------------------------------------------------------------------
 #include <GLFW/glfw3.h>
+#include <python3.8/Python.h>
 #include <math.h>
 #include <unistd.h>
-#include <python3.8/Python.h>
-#include "PyAMFF/PyAMFF.h"
 #include <chrono>
 #include <ctime>
 #include <fstream>
@@ -299,9 +299,9 @@ void writeToCon(string fileName);
 
 
 
-// Declare ASE force calculation
-vector<vector<double>> aseGetForces();
-vector<vector<double>> pyamffGetForces();
+// Declare pyamffGetValues()
+vector<vector<double>> pyamffGetValues();
+vector<vector<double>> aseGetValues();
 //------------------------------------------------------------------------------
 // DECLARED MACROS
 //------------------------------------------------------------------------------
@@ -653,8 +653,7 @@ int main(int argc, char *argv[]) {
       energySurface = MORSE;
     }else if(arg == "pyamff" || arg == "p"){
       energySurface = MACHINE_LEARNING;
-    }
-    else if(arg == "ase" || arg == "a"){
+    }else if(arg == "ase" || arg == "a"){
       energySurface = ASE;
       Py_Initialize();
     }
@@ -1092,7 +1091,7 @@ void updateHaptics(void) {
 
       // JD: edited this so that many operations are removed out of the inner
       // loop This loop is for computing the force on atom i
-      if ((energySurface == MACHINE_LEARNING)||(energySurface == MORSE)){
+      if ((energySurface == LENNARD_JONES)||(energySurface == MORSE)){
         for (int i = 0; i < spheres.size(); i++) {
           // compute force on atom
           cVector3d force;
@@ -1234,11 +1233,11 @@ void updateHaptics(void) {
         }
       }
     }
-      if (energySurface == MACHINE_LEARNING) {
-        vector<vector<double>> pyamffForces = pyamffGetForces();
-        potentialEnergy += 2*pyamffForces[spheres.size()][0];
+      else if (energySurface == MACHINE_LEARNING){
+        vector<vector<double>> amffForces = pyamffGetValues();
+        potentialEnergy += 2*amffForces[spheres.size()][0]; // why is this times 2 ?!?!?!?!
         for (int i = 0; i < spheres.size(); i++) {
-          cVector3d force = cVector3d(pyamffForces[i][0], pyamffForces[i][1], pyamffForces[i][2]);
+          cVector3d force = cVector3d(100000*amffForces[i][0], 100000*amffForces[i][1], 100000*amffForces[i][2]);
           current = spheres[i];
           cVector3d pos0 = current->getLocalPos();
           current->setForce(force);
@@ -1269,9 +1268,8 @@ void updateHaptics(void) {
           cout << "ATOM OUT OF BOUNDS";
         }
       }
-      else { //ASE Calculator
-        // this code is exactly the same as the previous if statement for pyamff. We need to make a calculator class with a getForces method.
-        vector<vector<double>> aseForces = aseGetForces();
+      else {
+        vector<vector<double>> aseForces = aseGetValues();
         potentialEnergy += 2*aseForces[spheres.size()][0];
         for (int i = 0; i < spheres.size(); i++) {
           cVector3d force = cVector3d(aseForces[i][0], aseForces[i][1], aseForces[i][2]);
@@ -1414,7 +1412,48 @@ void updateHaptics(void) {
   simulationFinished = true;
 }
 
-vector<vector<double>> aseGetForces(){
+vector<vector<double>> pyamffGetValues(){
+  PyAMFF PyAMFFCalculator;
+
+  // Some values that we'll need
+  const int atomicNumbers[] = {1, 1, 46, 46, 46};
+  const double box[] = {100, 100, 100};
+  long pyamffN = spheres.size();
+  double pyamffF[spheres.size() * 3];
+  double pyamffU;
+  double* pyamffUPtr = &pyamffU;
+
+  // Prepare positions so they may be passed
+  double atomArray [spheres.size() * 3];
+  for (int i = 0; i < spheres.size() * 3; i+=3){
+    cVector3d pos = spheres[i/3]->getLocalPos();
+    atomArray[i] = pos.x()/.02 + centerCoords[0];
+    atomArray[i+1] = pos.y()/.02 + centerCoords[1];
+    atomArray[i+2] = pos.z()/.02 + centerCoords[2];
+  }
+
+
+  PyAMFFCalculator.force(pyamffN, atomArray, atomicNumbers, pyamffF, pyamffUPtr, box);
+  /**for (int i = 0; i < 3*pyamffN; i+=3) {
+    std::cout << pyamffF[i] << " " << pyamffF[i+1] << " " << pyamffF[i+2] << endl;
+  }**/
+
+  //std::cout << *pyamffUPtr << endl;
+
+  // Convert to array for return
+  // TODO: Make this something more meaningful than vector<vector<double>>
+  vector<vector<double>> returnVector = {};
+  for (int i = 0; i < spheres.size() * 3; i+=3) {
+    vector<double> pushBack = {*(pyamffF + i), *(pyamffF + i + 1), *(pyamffF + i + 2)};
+    returnVector.push_back(pushBack);
+  }
+
+  returnVector.push_back({*pyamffUPtr});
+  return returnVector;
+
+}
+
+vector<vector<double>> aseGetValues(){
   // Prepare positions so they may be passed to python
   double atomArray [spheres.size() * 3];
   for (int i = 0; i < spheres.size() * 3; i+=3){
@@ -1496,7 +1535,7 @@ vector<vector<double>> aseGetForces(){
     }
     Py_XDECREF(pFunc);
     Py_DECREF(pModule);
-}
+  }
   else {
     PyErr_Print();
     fprintf(stderr, "Failed to load");

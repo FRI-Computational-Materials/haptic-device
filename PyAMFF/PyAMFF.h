@@ -14,7 +14,7 @@
 #include "Potential.h"
 
 //extern "C" void calc_eon(long *nAtoms, const double [], const double [], const int [], double *F, double *U);
-// extern "C" { 
+//extern "C" {
 //    void calceon_(const long int *nAtoms, const double *R, const double *box, const int *atomicNrs, double *F, double *U);
 //}
 
@@ -26,9 +26,8 @@ class PyAMFF : public Potential
 		~PyAMFF();
 		void initialize() {};
 		void cleanMemory(void);
-        void force(long N, const double *R, const int *atomicNrs, 
+        void force(long N, const double *R, const int *atomicNrs,
                    double *F, double *U, const double *box);
         bool new_pyamff;
-};     
+};
 #endif
-

@@ -68,8 +68,11 @@ HDR_DIR   = .
 OBJ_DIR   = ./obj/$(CFG)/$(OS)-$(ARCH)-$(COMPILER)
 PROG      = $(notdir $(shell pwd)) 
 SOURCES   = $(wildcard $(SRC_DIR)/*.cpp)
+#SOURCES   += $(wildcard $(SRC_DIR_PYAMFF)/*.cpp)
 INCLUDES  = $(wildcard $(HDR_DIR)/*.h)
+#INCLUDES  += $(wildcard $(SRC_DIR_PYAMFF)/*.h)
 OBJECTS   = $(patsubst %.cpp, $(OBJ_DIR)/%.o, $(notdir $(SOURCES)))
+OBJECTS   += $(wildcard $(SRC_DIR_PYAMFF)/*.o)
 OUTPUT    = $(BIN_DIR)/$(PROG)
 
 all: $(OUTPUT)
