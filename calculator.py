@@ -1,12 +1,17 @@
 import ase
 import ase.io
-import numpy
+#import numpy
 from ase.calculators.lj import LennardJones
 
 def getValues(position):
 
     # Create positions array
-    array = numpy.zeros((len(position)//3,3))
+    m=len(position)//3
+    n=3
+    array = [[0 for j in range(n)] for i in range(m)]
+    for i in range(m):
+        for j in range(n):
+            array[i][j] = 0
     for i in range(len(position)//3):
         array[i][0] = position[3*i]
         array[i][1] = position[3*i+1]
