@@ -41,6 +41,7 @@
 #include "potentials.h"
 #include "utility.h"
 #include "PyAMFF/PyAMFF.h"
+#include "potentials.h"
 //------------------------------------------------------------------------------
 #include <GLFW/glfw3.h>
 #include <python3.8/Python.h>
@@ -136,6 +137,9 @@ const cVector3d backPlaneNorm =
 //------------------------------------------------------------------------------
 // DECLARED VARIABLES
 //------------------------------------------------------------------------------
+// calculator
+Calculator* calculatorPtr;
+
 // radius of the camera
 double rho = .35;
 
@@ -297,11 +301,6 @@ void updateCameraLabel(cLabel *&camera_pos, cCamera *&camera);
 // save configuration in .con file
 void writeToCon(string fileName);
 
-
-
-// Declare pyamffGetValues()
-vector<vector<double>> pyamffGetValues();
-vector<vector<double>> aseGetValues();
 //------------------------------------------------------------------------------
 // DECLARED MACROS
 //------------------------------------------------------------------------------
@@ -651,12 +650,29 @@ int main(int argc, char *argv[]) {
     }
     if (arg == "morse" || arg == "m") {
       energySurface = MORSE;
-    }else if(arg == "pyamff" || arg == "p"){
-      energySurface = MACHINE_LEARNING;
-    }else if(arg == "ase" || arg == "a"){
-      energySurface = ASE;
+      calculatorPtr = new morseCalculator();
+    }else if (arg == "pyamff" || arg == "p"){
+      energySurface = PYAMFF;
+      int atomicNums[1] = {1};
+      const double box[1] = {1.0};
+      calculatorPtr = new pyamffCalculator(atomicNums, box);
+    }else if (arg == "ase" || arg == "a"){
+      // Start python instance
       Py_Initialize();
+
+      // These are placeholders for the moment
+      energySurface = ASE;
+      int atomicNums[1] = {1};
+      const double box[1] = {1.0};
+      std::string stry = "";
+      calculatorPtr = new aseCalculator(stry, atomicNums, box);
     }
+    else if (arg == "lennard-jones" || arg == "lj") {
+      calculatorPtr = new ljCalculator();
+    }
+  }
+  else {
+    calculatorPtr = new ljCalculator();
   }
   //--------------------------------------------------------------------------
   // WIDGETS
@@ -1089,64 +1105,23 @@ void updateHaptics(void) {
       // compute forces for all spheres
       double potentialEnergy = 0;
 
-      // JD: edited this so that many operations are removed out of the inner
-      // loop This loop is for computing the force on atom i
-      if ((energySurface == LENNARD_JONES)||(energySurface == MORSE)){
-        for (int i = 0; i < spheres.size(); i++) {
-          // compute force on atom
-          cVector3d force;
-          current = spheres[i];
-          cVector3d pos0 = current->getLocalPos();
-          // check forces with all other spheres
-          force.zero();
-
-          // this loop is for finding all of atom i's neighbors
-          for (int j = 0; j < spheres.size(); j++) {
-            // Don't compute forces between an atom and itself
-            if (i != j) {
-              // get position of sphere
-              cVector3d pos1 = spheres[j]->getLocalPos();
-
-              // compute direction vector from sphere 0 to 1
-
-              cVector3d dir01 = cNormalize(pos0 - pos1);
-
-              // compute distance between both spheres
-              double distance = cDistance(pos0, pos1) / DIST_SCALE;
-              if (energySurface == LENNARD_JONES) {
-                potentialEnergy += getLennardJonesEnergy(distance);
-              } else if (energySurface == MORSE) {
-                potentialEnergy += getMorseEnergy(distance);
-              }
-              if (!button0) {
-                double appliedForce;
-                if (energySurface == LENNARD_JONES) {
-                  appliedForce = getLennardJonesForce(distance);
-                } else if (energySurface == MORSE) {
-                  appliedForce = getMorseForce(distance);
-                }
-                force.add(appliedForce * dir01);
-              }
-            }
-          }
-        if (force.length() > 10000) {
-          force.normalize();
-          force.mul(10000);
-        }
+      // This section of code (1108-1138) used to be a series of loops dependent on the calculator type
+      vector<vector<double>> forcesVec = calculatorPtr->getFandU(spheres);
+      potentialEnergy += forcesVec[spheres.size()][0];
+      for (int i = 0; i < spheres.size(); i++) {
+        cVector3d force = cVector3d(forcesVec[i][0], forcesVec[i][1], forcesVec[i][2]);
+        current = spheres[i];
+        cVector3d pos0 = current->getLocalPos();
         current->setForce(force);
-        // cVector3d sphereAcc = (force / SPHERE_MASS);
-        cVector3d sphereAcc = A_DAMPING * (force / current->getMass());
+        cVector3d sphereAcc = (force / current->getMass());
         current->setVelocity(
             V_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
-        if (current->getVelocity().length() > 100) {
-          current->getVelocity().normalize();
-          current->getVelocity().mul(100);
-        }
-        // compute position
+            // compute /position
         cVector3d spherePos_change = timeInterval * current->getVelocity() +
-                                     cSqr(timeInterval) * sphereAcc;
+                                         cSqr(timeInterval) * sphereAcc;
+        double magnitude = spherePos_change.length();
+
         cVector3d spherePos = current->getLocalPos() + spherePos_change;
-        double magnitude = force.length();
         if (magnitude > 5) {
           cout << i << " velocity " << current->getVelocity().length() << endl;
           cout << i << " force " << force.length() << endl;
@@ -1154,154 +1129,15 @@ void updateHaptics(void) {
           cout << i << " time " << timeInterval << endl;
           cout << i << " position of  " << timeInterval << endl;
         }
-        // A is the current position, B is the position to move to
-        cVector3d A = current->getLocalPos();
-        cVector3d B = spherePos;
 
-        // holds intersect point/norm if an intersect is made
-        cVector3d intersectPoint;
-        cVector3d intersectNorm;
-        cVector3d tempPos;
-        cVector3d tempA;
-        tempA.copyfrom(A);
-        tempPos.copyfrom(spherePos);
-
-        // north plane
-        if (cIntersectionSegmentPlane(A, B, northPlanePos, northPlaneNorm,
-                                      intersectPoint, intersectNorm) == 1) {
-          spherePos.zero();
-          spherePos.copyfrom(intersectPoint);
-          spherePos.y(spherePos.y() - (BOUNDARY_LIMIT * 2 - .01));
-          if (!checkBounds(spherePos)) {
-            spherePos.copyfrom(tempPos);
-          }
-        }
-        // south plane
-        if (cIntersectionSegmentPlane(A, B, southPlanePos, southPlaneNorm,
-                                      intersectPoint, intersectNorm) == 1) {
-          spherePos.zero();
-          spherePos.copyfrom(intersectPoint);
-          spherePos.y(spherePos.y() + (BOUNDARY_LIMIT * 2 - .01));
-          if (!checkBounds(spherePos)) {
-            spherePos.copyfrom(tempPos);
-          }
-        }
-        // east plane
-        if (cIntersectionSegmentPlane(A, B, eastPlanePos, eastPlaneNorm,
-                                      intersectPoint, intersectNorm) == 1) {
-          spherePos.zero();
-          spherePos.copyfrom(intersectPoint);
-          spherePos.x(spherePos.x() - (BOUNDARY_LIMIT * 2 - .01));
-          if (!checkBounds(spherePos)) {
-            spherePos.copyfrom(tempPos);
-          }
-        }
-        // west plane
-        if (cIntersectionSegmentPlane(A, B, westPlanePos, westPlaneNorm,
-                                      intersectPoint, intersectNorm) == 1) {
-          spherePos.zero();
-          spherePos.copyfrom(intersectPoint);
-          spherePos.x(spherePos.x() + (BOUNDARY_LIMIT * 2 - .01));
-          if (!checkBounds(spherePos)) {
-            spherePos.copyfrom(tempPos);
-          }
-        }
-        // forward plane
-        if (cIntersectionSegmentPlane(A, B, forwardPlanePos, forwardPlaneNorm,
-                                      intersectPoint, intersectNorm) == 1) {
-          spherePos.zero();
-          spherePos.copyfrom(intersectPoint);
-          spherePos.z(spherePos.z() - (BOUNDARY_LIMIT * 2 - .01));
-          if (!checkBounds(spherePos)) {
-            spherePos.copyfrom(tempPos);
-          }
-        }
-        // back plane
-        if (cIntersectionSegmentPlane(A, B, backPlanePos, backPlaneNorm,
-                                      intersectPoint, intersectNorm) == 1) {
-          spherePos.zero();
-          spherePos.copyfrom(intersectPoint);
-          spherePos.z(spherePos.z() + (BOUNDARY_LIMIT * 2 - .01));
-          if (!checkBounds(spherePos)) {
-            spherePos = tempPos;
-          }
-        }
         if (!current->isCurrent()) {
           if (!current->isAnchor()) {
             current->setLocalPos(spherePos);
           }
         }
       }
-    }
-      else if (energySurface == MACHINE_LEARNING){
-        vector<vector<double>> amffForces = pyamffGetValues();
-        potentialEnergy += 2*amffForces[spheres.size()][0]; // why is this times 2 ?!?!?!?!
-        for (int i = 0; i < spheres.size(); i++) {
-          cVector3d force = cVector3d(100000*amffForces[i][0], 100000*amffForces[i][1], 100000*amffForces[i][2]);
-          current = spheres[i];
-          cVector3d pos0 = current->getLocalPos();
-          current->setForce(force);
-          cVector3d sphereAcc = (force / current->getMass());
-          current->setVelocity(
-              V_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
-              // compute /position
-          cVector3d spherePos_change = timeInterval * current->getVelocity() +
-                                           cSqr(timeInterval) * sphereAcc;
-          double magnitude = spherePos_change.length();
-
-          cVector3d spherePos = current->getLocalPos() + spherePos_change;
-          if (magnitude > 5) {
-            cout << i << " velocity " << current->getVelocity().length() << endl;
-            cout << i << " force " << force.length() << endl;
-            cout << i << " acceleration " << sphereAcc.length() << endl;
-            cout << i << " time " << timeInterval << endl;
-            cout << i << " position of  " << timeInterval << endl;
-          }
-
-          if (!current->isCurrent()) {
-            if (!current->isAnchor()) {
-              current->setLocalPos(spherePos);
-            }
-          }
-        }
-        if (!checkBounds(current->getLocalPos())) {
-          cout << "ATOM OUT OF BOUNDS";
-        }
-      }
-      else {
-        vector<vector<double>> aseForces = aseGetValues();
-        potentialEnergy += 2*aseForces[spheres.size()][0];
-        for (int i = 0; i < spheres.size(); i++) {
-          cVector3d force = cVector3d(aseForces[i][0], aseForces[i][1], aseForces[i][2]);
-          current = spheres[i];
-          cVector3d pos0 = current->getLocalPos();
-          current->setForce(force);
-          cVector3d sphereAcc = (force / current->getMass());
-          current->setVelocity(
-              V_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
-              // compute /position
-          cVector3d spherePos_change = timeInterval * current->getVelocity() +
-                                           cSqr(timeInterval) * sphereAcc;
-          double magnitude = spherePos_change.length();
-
-          cVector3d spherePos = current->getLocalPos() + spherePos_change;
-          if (magnitude > 5) {
-            cout << i << " velocity " << current->getVelocity().length() << endl;
-            cout << i << " force " << force.length() << endl;
-            cout << i << " acceleration " << sphereAcc.length() << endl;
-            cout << i << " time " << timeInterval << endl;
-            cout << i << " position of  " << timeInterval << endl;
-          }
-
-          if (!current->isCurrent()) {
-            if (!current->isAnchor()) {
-              current->setLocalPos(spherePos);
-            }
-          }
-        }
-        if (!checkBounds(current->getLocalPos())) {
-          cout << "ATOM OUT OF BOUNDS";
-        }
+      if (!checkBounds(current->getLocalPos())) {
+        cout << "ATOM OUT OF BOUNDS";
       }
       current = spheres[curr_atom];
       current->setLocalPos(position);
@@ -1320,7 +1156,7 @@ void updateHaptics(void) {
 
       // JD: moved this out of nested for loop so that test is set only when
       // fully calculated update haptic and graphic rate data
-      LJ_num->setText("Potential Energy: " + cStr((potentialEnergy / 2), 5));
+      LJ_num->setText("Potential Energy: " + cStr(potentialEnergy, 5));
       // update position of label
       LJ_num->setLocalPos(0, 15, 0);
       // count the number of anchored atoms
@@ -1344,12 +1180,12 @@ void updateHaptics(void) {
       // The number fmod() is compared to is the threshold, this adjusts the
       // timescale
       if (fmod(currentTime, currentTimeRounded) <= .01) {
-        scope->setSignalValues(potentialEnergy / 2, global_minimum);
+        scope->setSignalValues(potentialEnergy, global_minimum);
       }
       // scale the graph if the minimum isn't known
       if (!global_min_known) {
-        if ((potentialEnergy / 2) < global_minimum) {
-          global_minimum = (potentialEnergy / 2);
+        if (potentialEnergy < global_minimum) {
+          global_minimum = potentialEnergy;
           num_anchored->setText(to_string(anchored) + " anchored / " +
                                 to_string(spheres.size()) + " total");
           auto num_anchored_width = (width - num_anchored->getWidth()) - 5;
@@ -1364,12 +1200,12 @@ void updateHaptics(void) {
           // The number fmod() is compared to is the threshold, this adjusts the
           // timescale
           if (fmod(currentTime, currentTimeRounded) <= .01) {
-            scope->setSignalValues(potentialEnergy / 2, global_minimum);
+            scope->setSignalValues(potentialEnergy, global_minimum);
           }
           // scale the graph if the minimum isn't known
           if (!global_min_known) {
-            if ((potentialEnergy / 2) < global_minimum) {
-              global_minimum = (potentialEnergy / 2);
+            if (potentialEnergy < global_minimum) {
+              global_minimum = potentialEnergy;
             }
             if (global_minimum < scope->getRangeMin()) {
               auto new_lower = scope->getRangeMin() - 25;
@@ -1410,176 +1246,7 @@ void updateHaptics(void) {
 
   // exit haptics thread
   simulationFinished = true;
-}
 
-vector<vector<double>> pyamffGetValues(){
-  PyAMFF PyAMFFCalculator;
-
-  // Some values that we'll need
-  const int atomicNumbers[] = {1, 1, 46, 46, 46};
-  const double box[] = {100, 100, 100};
-  long pyamffN = spheres.size();
-  double pyamffF[spheres.size() * 3];
-  double pyamffU;
-  double* pyamffUPtr = &pyamffU;
-
-  // Prepare positions so they may be passed
-  double atomArray [spheres.size() * 3];
-  for (int i = 0; i < spheres.size() * 3; i+=3){
-    cVector3d pos = spheres[i/3]->getLocalPos();
-    atomArray[i] = pos.x()/.02 + centerCoords[0];
-    atomArray[i+1] = pos.y()/.02 + centerCoords[1];
-    atomArray[i+2] = pos.z()/.02 + centerCoords[2];
-  }
-
-
-  PyAMFFCalculator.force(pyamffN, atomArray, atomicNumbers, pyamffF, pyamffUPtr, box);
-  /**for (int i = 0; i < 3*pyamffN; i+=3) {
-    std::cout << pyamffF[i] << " " << pyamffF[i+1] << " " << pyamffF[i+2] << endl;
-  }**/
-
-  //std::cout << *pyamffUPtr << endl;
-
-  // Convert to array for return
-  // TODO: Make this something more meaningful than vector<vector<double>>
-  vector<vector<double>> returnVector = {};
-  for (int i = 0; i < spheres.size() * 3; i+=3) {
-    vector<double> pushBack = {*(pyamffF + i), *(pyamffF + i + 1), *(pyamffF + i + 2)};
-    returnVector.push_back(pushBack);
-  }
-
-  returnVector.push_back({*pyamffUPtr});
-  return returnVector;
-
-}
-
-vector<vector<double>> aseGetValues(){
-  // Prepare positions so they may be passed to python
-  double atomArray [spheres.size() * 3];
-  for (int i = 0; i < spheres.size() * 3; i+=3){
-    cVector3d pos = spheres[i/3]->getLocalPos();
-    atomArray[i] = pos.x()/.02 + centerCoords[0];
-    atomArray[i+1] = pos.y()/.02 + centerCoords[1];
-    atomArray[i+2] = pos.z()/.02 + centerCoords[2];
-  }
-
-  PyObject *pName, *pModule, *pFunc;
-  PyObject *pValue, *pTuple, *pResult, *pFinal;
-  int i;
-
-  pName = PyUnicode_FromString("calculator");
-  PyObject* objectsRepresentation = PyObject_Repr(pName);
-  const char* s = PyUnicode_AsUTF8(objectsRepresentation);
-  /* Error checking of pName left out */
-
-  pModule = PyImport_Import(pName);
-  Py_DECREF(pName);
-
-  if (pModule != NULL) {
-    pFunc = PyObject_GetAttrString(pModule, "getValues");
-    /* pFunc is a new reference */
-    if (pFunc && PyCallable_Check(pFunc)) {
-        pResult = PyTuple_New(spheres.size() * 3);
-        for (i = 0; i < spheres.size() * 3; ++i) {
-            pValue = PyFloat_FromDouble(atomArray[i]);
-            if (!pValue) {
-                Py_DECREF(pResult);
-                Py_DECREF(pModule);
-                fprintf(stderr, "Cannot convert argument\n");
-                //return 1;
-            }
-            // pValue reference stolen here:
-            PyTuple_SetItem(pResult, i, pValue);
-        }
-        //Create tuple to put pArgs inside of -- Becaue we need to pass one object to python
-
-        pTuple = PyTuple_New(1);
-        PyTuple_SetItem(pTuple, 0, pResult);
-        //pFinal = PyTuple_New(spheres.size() * 3);
-        pFinal = PyObject_CallObject(pFunc, pTuple);
-        if (pTuple != NULL){
-          Py_DECREF(pTuple);
-        }
-        if (pFinal != NULL) {
-          vector<vector<double>> forceArr;
-          for (int j = 0; j < spheres.size()*3; j+=3){
-            vector<double> temp;
-            temp.push_back(PyFloat_AsDouble(PyList_GetItem(pFinal,j)));
-            temp.push_back(PyFloat_AsDouble(PyList_GetItem(pFinal,j + 1)));
-            temp.push_back(PyFloat_AsDouble(PyList_GetItem(pFinal,j + 2)));
-            forceArr.push_back(temp);
-          }
-          // For the Potential Energy
-          vector<double> temp;
-          temp.push_back(PyFloat_AsDouble(PyList_GetItem(pFinal, spheres.size() * 3)));
-          forceArr.push_back(temp);
-
-          return forceArr;
-          Py_DECREF(pValue);
-          Py_DECREF(pResult);
-          Py_DECREF(pFinal);
-        }
-        else {
-          Py_DECREF(pFunc);
-          Py_DECREF(pModule);
-          PyErr_Print();
-          fprintf(stderr,"Call failed\n");
-          //return 1;
-        }
-    }
-    else {
-        if (PyErr_Occurred())
-            PyErr_Print();
-        fprintf(stderr, "Cannot find function");
-        exit(1);
-    }
-    Py_XDECREF(pFunc);
-    Py_DECREF(pModule);
-  }
-  else {
-    PyErr_Print();
-    fprintf(stderr, "Failed to load");
-    //return 1;
-  }
-}
-
-vector<vector<double>> pyamffGetForces(){
-  PyAMFF PyAMFFCalculator;
-
-  // Some values that we'll need
-  const int atomicNumbers[] = {1, 1, 46, 46, 46};
-  const double box[] = {100, 100, 100};
-  long pyamffN = spheres.size();
-  double pyamffF[spheres.size() * 3];
-  double pyamffU;
-  double* pyamffUPtr = &pyamffU;
-
-  // Prepare positions so they may be passed
-  double atomArray [spheres.size() * 3];
-  for (int i = 0; i < spheres.size() * 3; i+=3){
-    cVector3d pos = spheres[i/3]->getLocalPos();
-    atomArray[i] = pos.x()/.02 + centerCoords[0];
-    atomArray[i+1] = pos.y()/.02 + centerCoords[1];
-    atomArray[i+2] = pos.z()/.02 + centerCoords[2];
-  }
-
-
-  PyAMFFCalculator.force(pyamffN, atomArray, atomicNumbers, pyamffF, pyamffUPtr, box);
-  /**for (int i = 0; i < 3*pyamffN; i+=3) {
-    std::cout << pyamffF[i] << " " << pyamffF[i+1] << " " << pyamffF[i+2] << endl;
-  }**/
-
-  //std::cout << *pyamffUPtr << endl;
-
-  // Convert to array for return
-  // TODO: Make this something more meaningful than vector<vector<double>>
-  vector<vector<double>> returnVector = {};
-  for (int i = 0; i < spheres.size() * 3; i+=3) {
-    vector<double> pushBack = {*(pyamffF + i), *(pyamffF + i + 1), *(pyamffF + i + 2)};
-    returnVector.push_back(pushBack);
-  }
-
-  returnVector.push_back({*pyamffUPtr});
-  return returnVector;
-
+  // Close the calculator
+  delete calculatorPtr;
 }

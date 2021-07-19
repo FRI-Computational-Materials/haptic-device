@@ -2,12 +2,16 @@
 #include "atom.h"
 #include <vector>
 #include <GLFW/glfw3.h>
+#include "potentials.h"
 
 //------------------------------------------------------------------------------
 // STATES
 //------------------------------------------------------------------------------
 enum MouseState { MOUSE_IDLE, MOUSE_SELECTION };
-enum LocalPotential { LENNARD_JONES, MORSE, MACHINE_LEARNING, ASE };
+enum LocalPotential { LENNARD_JONES, MORSE, PYAMFF, ASE };
+
+// Calculator object for force and potential energy calculatorString
+extern Calculator* calculatorPtr;
 
 // vector holding hotkey key labels
 extern std::vector<chai3d::cLabel *> hotkeyKeys;

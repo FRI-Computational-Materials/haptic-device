@@ -88,7 +88,7 @@ void Atom::updateVelVector() {
     this->velVector->m_pointB =
     cAdd(this->getVelVector()->m_pointA, this->getForce() * .005);
     this->velVector->setLineWidth(5);
-    
+
     // Update the color based on the current status of the atom
     if (current) {
         this->velVector->m_colorPointA.setRed();
