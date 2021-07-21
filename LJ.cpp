@@ -656,6 +656,7 @@ int main(int argc, char *argv[]) {
     }else if(arg == "ase" || arg == "a"){
       energySurface = ASE;
       Py_Initialize();
+      PyRun_SimpleString("import sys\nsys.path.append('.')\n");
     }
   }
   //--------------------------------------------------------------------------
