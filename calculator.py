@@ -1,6 +1,5 @@
 import ase
 import ase.io
-#import numpy
 from ase.calculators.lj import LennardJones
 
 def getValues(position):
@@ -13,12 +12,6 @@ def getValues(position):
         line[1] = position[3*i+1]
         line[2] = position[3*i+2]
         array.append(line)
-
-    #array = numpy.zeros((len(position)//3,3))
-    #for i in range(len(position)//3):
-        #array[i][0] = position[3*i]
-        #array[i][1] = position[3*i+1]
-        #array[i][2] = position[3*i+2]
 
     # troubleshooting
     #print(array)
