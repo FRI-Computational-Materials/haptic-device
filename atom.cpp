@@ -5,7 +5,7 @@
 using namespace std;
 using namespace chai3d;
 
-Atom::Atom(double radius, double sphere_mass, cColorf color)
+Atom::Atom(double radius, double sphere_mass, int atomicNumber, cColorf color)
 : cShapeSphere(radius) {
     anchor = false;
     current = false;
@@ -13,6 +13,7 @@ Atom::Atom(double radius, double sphere_mass, cColorf color)
     velVector = new cShapeLine(cVector3d(0, 0, 0), cVector3d(0, 0, 0));
     force.zero();
     this->sphere_mass = sphere_mass;
+    this->atomicNumber = atomicNumber;
     // note - cColorf defaults to white, as such
     // the default for atoms is also white (see the header file)
     base_color = color;
@@ -112,3 +113,9 @@ void Atom::setInitialPosition(double spawn_dist) {
 double Atom::getMass() { return sphere_mass; }
 
 void Atom::setColor(cColorf color) { m_material->setColor(color); }
+
+int Atom::getAtomicNumber() { return atomicNumber; }
+
+void Atom::setAtomicNumber( int num ) { atomicNumber = num; }
+
+void Atom::setMass( double mass ) { sphere_mass = mass; }

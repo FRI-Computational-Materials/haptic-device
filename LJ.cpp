@@ -504,13 +504,16 @@ int main(int argc, char *argv[]) {
     close();
     return (-1);
   }
+
+  // Declare variables needed for calculator constructor (cell, pbc), atoms object (mass, atomic number), and placing of initial atoms (positions)
+
   // either no arguments were given or argument was an integer
   if (argc == 1 || isNumber(argv[1])) {
     // set numSpheres to input; if none or negative, default is five
     int numSpheres = argc > 1 ? atoi(argv[1]) : 5;
     for (int i = 0; i < numSpheres; i++) {
       // create a sphere and define its radius
-      Atom *new_atom = new Atom(SPHERE_RADIUS, SPHERE_MASS);
+      Atom *new_atom = new Atom(SPHERE_RADIUS, SPHERE_MASS, 0);
 
       // store pointer to sphere primitive
       spheres.push_back(new_atom);
@@ -570,7 +573,109 @@ int main(int argc, char *argv[]) {
       }
     }
   } else {  // read in specified file
-    string file_path = "../resources/data/";
+
+    // Begin python instance and set path
+    Py_Initialize();
+    PyRun_SimpleString("import sys\nsys.path.append('../../haptic-device/')\n");
+
+    // Create variables for the function and module name, return tuple object, and
+    PyObject *pName, *pModule, *pFunc, *pFileName, *pCallTuple;
+    PyObject *pResult;
+    std::vector<std::vector<float>> positions;
+    std::vector<float> startingMasses;
+    std::vector<int> startingAtomicNrs;
+    int nAtoms;
+
+    // Import python module
+    pName = PyUnicode_FromString("ase_file_io");
+    pModule = PyImport_Import(pName);
+
+    // return an error if PyImport_Import can't find the pModule
+    if (pModule != NULL) {
+      // get function
+      pFunc = PyObject_GetAttrString(pModule, "get_state_information");
+
+      if (pFunc && PyCallable_Check(pFunc)) {
+        // Send filename to function. pResult is a python tuple that will be unpacked to get out values that we want
+        pFileName = PyUnicode_FromString(argv[1]);
+        pCallTuple = PyTuple_New(1); // this is because CallObject requires that you pass in a tuple containing the data you want
+        PyTuple_SetItem(pCallTuple, 0, pFileName);
+        pResult = PyObject_CallObject(pFunc, pCallTuple);
+
+        // get number of atoms
+        nAtoms = (int)PyLong_AsLong(PyList_GetItem(pResult, 0));
+
+        // Unpack Positions and extract values
+        for (int i = 0; i < nAtoms; i++) {
+          // unpack positions
+          positions.push_back(std::vector<float>({
+            PyFloat_AsDouble(PyList_GetItem(pResult, 3 * i + 1)),
+            PyFloat_AsDouble(PyList_GetItem(pResult, 3 * i + 2)),
+            PyFloat_AsDouble(PyList_GetItem(pResult, 3 * i + 3))
+          }));
+          // unpack masses
+          startingMasses.push_back(PyFloat_AsDouble(PyList_GetItem(pResult, 3*nAtoms + 1 + i)));
+          // unpack atomic numbers
+          startingAtomicNrs.push_back((int)PyLong_AsLong(PyList_GetItem(pResult, 4*nAtoms + 1 + i)));
+        }
+
+        // decref everything
+        Py_DECREF(pName);
+        Py_DECREF(pModule);
+        Py_DECREF(pResult);
+        Py_DECREF(pFunc);
+        Py_DECREF(pFileName);
+        Py_DECREF(pCallTuple);
+
+        // end python instance
+        Py_FinalizeEx();
+      }
+    } else {
+      std::cout << "Error: module not found" << std::endl;
+    }
+
+    // create atoms objects, put them in spheres, world
+    for (int i = 0; i < nAtoms; i++) {
+      // Create atom pointer
+      Atom* newAtom = new Atom(SPHERE_RADIUS, startingMasses[i], startingAtomicNrs[i]);
+
+      // store pointer to sphere primitive
+      spheres.push_back(newAtom);
+
+      // add sphere primitive to world
+      world->addChild(newAtom);
+
+      // add line to world
+      world->addChild(newAtom->getVelVector());
+
+      // set graphic properties of sphere
+      newAtom->setTexture(texture);
+      newAtom->m_texture->setSphericalMappingEnabled(true);
+      newAtom->setUseTexture(true);
+
+      // Set the positions of all atoms
+      if (i == 0) {
+        // make very first atom the current atom
+        newAtom->setCurrent(true);
+        // get coordinates from pPositionTriplet
+        for (int j = 0; j < 3; j++) {
+          centerCoords[j] = positions[0][j];
+        }
+        // set first atom at center of view
+        newAtom->setLocalPos(0.0, 0.0, 0.0);
+      } else {
+        // Anchor by default
+        newAtom->setAnchor(true);
+        // scale coordinates and insert
+        newAtom->setLocalPos(
+          0.02 * positions[i][0],
+          0.02 * positions[i][1],
+          0.02 * positions[i][2]
+        );
+      }
+    }
+
+    /*string file_path = "../resources/data/";
     string file_name = argv[1];
     ifstream readFile(file_path + file_name);
 
@@ -637,7 +742,9 @@ int main(int argc, char *argv[]) {
       }
     }
     readFile.close();
-  }
+  */}
+
+  // Done reading any sort of info. Now setting up calculator selection
   for (int i = 0; i < spheres.size(); i++) {
     spheres[i]->setVelocity(0);
   }
@@ -653,12 +760,8 @@ int main(int argc, char *argv[]) {
       calculatorPtr = new morseCalculator();
     }else if (arg == "pyamff" || arg == "p"){
       energySurface = PYAMFF;
-      int atomicNums[1] = {1};
-      const double box[1] = {1.0};
-      calculatorPtr = new pyamffCalculator(atomicNums, box);
+      calculatorPtr = new pyamffCalculator(spheres.size());
     }else if (arg == "ase" || arg == "a"){
-      // Start python instance
-      Py_Initialize();
 
       // These are placeholders for the moment
       energySurface = ASE;

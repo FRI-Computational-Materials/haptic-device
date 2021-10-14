@@ -30,6 +30,7 @@ PyAMFF::PyAMFF(void)
 
 PyAMFF::~PyAMFF(){
     cleanMemory();
+    std::cout << "destructed" << endl;
 }
 
 void PyAMFF::cleanMemory(void)
@@ -49,8 +50,8 @@ void PyAMFF::cleanMemory(void)
 void PyAMFF::force(long N, const double *R, const int *atomicNrs, double *F,
                  double *U, const double *box)
 {
-//    int i;  
-//    const char *atomicSymbols[N];i 
+//    int i;
+//    const char *atomicSymbols[N];i
 //    int numUnique;
 
 //    for (i=0; i < N; i++)

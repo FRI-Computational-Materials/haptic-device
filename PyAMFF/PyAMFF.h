@@ -13,6 +13,12 @@
 
 #include "Potential.h"
 
+extern "C" void calc_eon(long *nAtoms, const double [], const double [], const int [], double [], double *U, int *num_elements, int []);
+
+extern "C" void read_mlffParas(long *nAtoms, int *num_elements, int *max_fps, const int [], int []);
+
+extern "C" void prepfNN( long *nAtoms, int *num_elements, int *max_fps, const int [], int []);
+
 //extern "C" void calc_eon(long *nAtoms, const double [], const double [], const int [], double *F, double *U);
 //extern "C" {
 //    void calceon_(const long int *nAtoms, const double *R, const double *box, const int *atomicNrs, double *F, double *U);

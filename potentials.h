@@ -2,6 +2,7 @@
 #define POTENTIALS_H
 #include <vector>
 #include "atom.h"
+#include "PyAMFF/PyAMFF.h"
 
 ////// Base class for all calculators
 class Calculator {
@@ -53,10 +54,42 @@ class ljCalculator:public Calculator {
 
 ////// Calculator for pyamff
 class pyamffCalculator:public Calculator {
+  PyAMFF PyAMFFCalculatorInstance;
+  long pyamffN;
+  int num_elements;
+  int max_fps = 100;
+  vector<int> unique_atomicNrs;
+  // Some values that we'll need
+  const int atomicNumbers[5] = {1, 1, 46, 46, 46};
+  const double box[3] = {100, 100, 100};
   public:
-    pyamffCalculator(int* atomicNrs, const double* b){
-      atomicNumbers = atomicNrs;
-      box = b;
+    pyamffCalculator(long nAtoms){
+      pyamffN = nAtoms;
+
+      // initialize pyamff
+      // stealing this from the PyAMFF.cpp with instruction from Ryan Ciufo
+      // Make a vector of the unique atomic numbers present
+      for (int i = 0; i < pyamffN; i++) {
+        int j;
+        for (j = 0; j < i; j++) {
+          if (atomicNumbers[i] == atomicNumbers[j]) {
+            break;
+          }
+        }
+        if (i == j) {
+          unique_atomicNrs.push_back(atomicNumbers[i]);
+        }
+      }
+
+      // get the number of elements
+      num_elements = unique_atomicNrs.size();
+      std::cout << num_elements << endl;
+      // make a copy of unique_atomicNrs (This is what the original code did. Maybe calc_eon pops the unique atomic nrs)
+      int unique[num_elements];
+      copy(unique_atomicNrs.begin(), unique_atomicNrs.end(), unique);
+      // prepare the fingerprints and neural network
+      read_mlffParas(&pyamffN, &num_elements, &max_fps, atomicNumbers, unique);
+      prepfNN(&pyamffN, &num_elements, &max_fps, atomicNumbers, unique);
     }
     vector<vector<double>> getFandU(std::vector<Atom*>& spheres);
 };
@@ -66,11 +99,7 @@ class aseCalculator:public Calculator {
   std::string importString; // This will be evaluated to import the proper calculator module in calculator.py
   std::string calculatorString; // This will be evaluated for the calc = calcname(parameters) line in calculator.py
   public:
-    aseCalculator(std::string& cName, int* atomicNrs, const double* b){
-      calculatorString = cName;
-      atomicNumbers = atomicNrs;
-      box = b;
-    }
+    aseCalculator(std::string& cName, int* atomicNrs, const double* b); // in cpp because of Python.h dependency
     // Get forces and potential energy. Does not support anything other than positions right now
     std::vector<std::vector<double>> getFandU(std::vector<Atom*>& spheres);
 };

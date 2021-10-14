@@ -114,16 +114,10 @@ double ljCalculator::getLennardJonesForce(double distance) {
 //////////////////////////////// pyamff ////////////////////////////////////
 // Force and Potential energy calculation function for the pyamff calculator
 vector<vector<double>> pyamffCalculator::getFandU(std::vector<Atom*>& spheres) {
-  PyAMFF PyAMFFCalculator;
 
-  // Some values that we'll need
-  const int atomicNumbers[] = {1, 1, 46, 46, 46};
-  const double box[] = {100, 100, 100};
-  long pyamffN = spheres.size();
-  double pyamffF[spheres.size() * 3];
+  double pyamffF[pyamffN * 3];
   double pyamffU;
   double* pyamffUPtr = &pyamffU;
-
   // Prepare positions so they may be passed
   double atomArray [spheres.size() * 3];
   for (int i = 0; i < spheres.size() * 3; i+=3){
@@ -133,8 +127,10 @@ vector<vector<double>> pyamffCalculator::getFandU(std::vector<Atom*>& spheres) {
     atomArray[i+2] = pos.z()/.02 + 50;
   }
 
-
-  PyAMFFCalculator.force(pyamffN, atomArray, atomicNumbers, pyamffF, pyamffUPtr, box);
+  // Make a copy of the vector
+  int unique[num_elements];
+  copy(unique_atomicNrs.begin(), unique_atomicNrs.end(), unique);
+  calc_eon(&pyamffN, atomArray, box, atomicNumbers, pyamffF, pyamffUPtr, &num_elements, unique);
 
   // Convert to array for return
   vector<vector<double>> returnVector = {};
@@ -148,6 +144,16 @@ vector<vector<double>> pyamffCalculator::getFandU(std::vector<Atom*>& spheres) {
 }
 
 ////////////////////////////////// ase //////////////////////////////////////
+// ase calculator constructor
+aseCalculator::aseCalculator(std::string& cName, int* atomicNrs, const double* b){
+  calculatorString = cName;
+  atomicNumbers = atomicNrs;
+  box = b;
+
+  // Start python instance and add current directory to path
+  Py_Initialize();
+  PyRun_SimpleString("import sys\nsys.path.append('../../haptic-device/')\n");
+}
 // Force and Potential energy calculation function for the ase calculator
 std::vector<std::vector<double>> aseCalculator::getFandU(std::vector<Atom*>& spheres){
   // Prepare positions so they may be passed to python
@@ -161,12 +167,8 @@ std::vector<std::vector<double>> aseCalculator::getFandU(std::vector<Atom*>& sph
 
   PyObject *pName, *pModule, *pFunc;
   PyObject *pValue, *pTuple, *pResult, *pFinal;
-  int i;
 
   pName = PyUnicode_FromString("calculator");
-  PyObject* objectsRepresentation = PyObject_Repr(pName);
-  const char* s = PyUnicode_AsUTF8(objectsRepresentation);
-  /* Error checking of pName left out */
 
   pModule = PyImport_Import(pName);
   Py_DECREF(pName);
@@ -176,7 +178,7 @@ std::vector<std::vector<double>> aseCalculator::getFandU(std::vector<Atom*>& sph
     /* pFunc is a new reference */
     if (pFunc && PyCallable_Check(pFunc)) {
       pResult = PyTuple_New(spheres.size() * 3);
-      for (i = 0; i < spheres.size() * 3; ++i) {
+      for (int i = 0; i < spheres.size() * 3; ++i) {
         pValue = PyFloat_FromDouble(atomArray[i]);
         if (!pValue) {
           Py_DECREF(pResult);
