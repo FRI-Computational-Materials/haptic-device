@@ -1,4 +1,4 @@
-from ase.io import read
+import ase.io
 import os
 
 def get_state_information(filename):
@@ -9,16 +9,16 @@ def get_state_information(filename):
     to do this, we will just return the number of atoms at the beginning of the list
     """
     try:
-        our_atoms = read(filename)
+        our_atoms = ase.io.read(filename)
     except:
         print("Error: File not found in", os.getcwd())
 
     return_vals = [len(our_atoms)]
-    return_vals = [*position for position in our_atoms.get_positions()]
-    return_vals += our_atoms.get_masses()
-    return_vals += our_atoms.get_atomic_numbers()
+    return_vals += [item for position in our_atoms.get_positions() for item in position]
+    return_vals += list(our_atoms.get_masses())
+    return_vals += list(our_atoms.get_atomic_numbers())
 
     return return_vals
 
 if __name__ == '__main__':
-    print("This file is used for reading in files using ASE. It is not intended for individual use.")
+    print(get_state_information('../bin/resources/testing.con'))
