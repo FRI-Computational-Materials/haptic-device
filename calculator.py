@@ -1,5 +1,4 @@
 import ase
-import ase.io
 from ase.calculators.lj import LennardJones
 
 def getValues(position):

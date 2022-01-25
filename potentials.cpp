@@ -152,8 +152,11 @@ aseCalculator::aseCalculator(std::string& cName, int* atomicNrs, const double* b
 
   // Start python instance and add current directory to path
   Py_Initialize();
-  PyRun_SimpleString("import sys\nsys.path.append('../../haptic-device/')\n");
+  PyRun_SimpleString("import sys\n"
+                    "import ase.calculators.lj\n"  // racking my brain. calculator.py has trouble finding this module on some systems
+                    "sys.path.append('../../haptic-device/')");
 }
+
 // Force and Potential energy calculation function for the ase calculator
 std::vector<std::vector<double>> aseCalculator::getFandU(std::vector<Atom*>& spheres){
   // Prepare positions so they may be passed to python
@@ -171,6 +174,11 @@ std::vector<std::vector<double>> aseCalculator::getFandU(std::vector<Atom*>& sph
   pName = PyUnicode_FromString("calculator");
 
   pModule = PyImport_Import(pName);
+  if (pModule == nullptr) {
+    PyErr_Print();
+    std::exit(1);
+  }
+
   Py_DECREF(pName);
 
   if (pModule != NULL) {

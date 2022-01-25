@@ -41,7 +41,6 @@
 #include "potentials.h"
 #include "utility.h"
 #include "PyAMFF/PyAMFF.h"
-#include "potentials.h"
 //------------------------------------------------------------------------------
 #include <GLFW/glfw3.h>
 #include <python3.8/Python.h>
