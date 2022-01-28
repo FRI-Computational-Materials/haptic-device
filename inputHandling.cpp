@@ -4,6 +4,8 @@
 #include <sys/stat.h>
 #include <fstream>
 
+int just_unanchored = 0;
+
 void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
                  int a_mods) {
   // filter calls that only include a key press
@@ -42,6 +44,8 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
         spheres[i]->setAnchor(false);
       }
     }
+    assert(just_unanchored = 5);
+    just_unanchored = 0;
   } else if (a_key == GLFW_KEY_S) {
     // option - save screenshot to file
     cImagePtr image = cImage::create();
