@@ -55,6 +55,8 @@
 //------------------------------------------------------------------------------
 using namespace chai3d;
 using namespace std;
+
+extern int just_unanchored;
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 // GENERAL SETTINGS
@@ -1230,6 +1232,95 @@ void updateHaptics(void) {
           cout << i << " acceleration " << sphereAcc.length() << endl;
           cout << i << " time " << timeInterval << endl;
           cout << i << " position of  " << timeInterval << endl;
+        }
+
+        // A is the current position, B is the postion to move to. Used for checking bounds
+        cVector3d A = current->getLocalPos();
+        cVector3d B = spherePos;
+
+        // freezing atoms at wall when they fly off 
+        if (just_unanchored != 5) {
+          // threshold for cube contining atoms
+          double threshold = .5;
+          // correct to keep atom inside of cube
+          if (B.x() > threshold) {
+            B.x(threshold);
+          } else if (B.x() < threshold * -1) {
+            B.x(threshold * -1);
+          }
+          if (B.y() > threshold) {
+            B.y(threshold);
+          } else if (B.y() < threshold * -1) {
+            B.y(threshold * -1);
+          }
+          if (B.z() > threshold) {
+            B.z(threshold);
+          } else if (B.z() < threshold * -1) {
+            B.z(threshold * -1);
+          }
+        }
+
+        // holds intersect point/norm if an intersect is made
+        cVector3d intersectPoint;
+        cVector3d intersectNorm;
+        cVector3d tempPos;
+        cVector3d tempA;
+        tempA.copyfrom(A);
+        tempPos.copyfrom(spherePos);
+
+        // north plane
+        if (cIntersectionSegmentPlane(A, B, northPlanePos, northPlaneNorm, intersectPoint, intersectNorm) == 1) {
+          spherePos.zero();
+          spherePos.copyfrom(intersectPoint);
+          spherePos.y(spherePos.y() - (BOUNDARY_LIMIT * 2 - .01));
+          if (!checkBounds(spherePos)) {
+            spherePos.copyfrom(tempPos);
+          }
+        }
+        // south plane
+        if (cIntersectionSegmentPlane(A, B, southPlanePos, southPlaneNorm, intersectPoint, intersectNorm) == 1) {
+          spherePos.zero();
+          spherePos.copyfrom(intersectPoint);
+          spherePos.y(spherePos.y() + (BOUNDARY_LIMIT * 2 - .01));
+          if (!checkBounds(spherePos)) {
+            spherePos.copyfrom(tempPos);
+          }
+        }
+        // east plane
+        if (cIntersectionSegmentPlane(A, B, eastPlanePos, eastPlaneNorm, intersectPoint, intersectNorm) == 1) {
+          spherePos.zero();
+          spherePos.copyfrom(intersectPoint);
+          spherePos.x(spherePos.x() - (BOUNDARY_LIMIT * 2 - .01));
+          if (!checkBounds(spherePos)) {
+            spherePos.copyfrom(tempPos);
+          }
+        }
+        // west plane
+        if (cIntersectionSegmentPlane(A, B, westPlanePos, westPlaneNorm, intersectPoint, intersectNorm) == 1) {
+          spherePos.zero();
+          spherePos.copyfrom(intersectPoint);
+          spherePos.x(spherePos.x() + (BOUNDARY_LIMIT * 2 - .01));
+          if (!checkBounds(spherePos)) {
+            spherePos.copyfrom(tempPos);
+          }
+        }
+        // forward plane
+        if (cIntersectionSegmentPlane(A, B, forwardPlanePos, forwardPlaneNorm, intersectPoint, intersectNorm) == 1) {
+          spherePos.zero();
+          spherePos.copyfrom(intersectPoint);
+          spherePos.z(spherePos.z() - (BOUNDARY_LIMIT * 2 - .01));
+          if (!checkBounds(spherePos)) {
+            spherePos.copyfrom(tempPos);
+          }
+        }
+        // back plane
+        if (cIntersectionSegmentPlane(A, B, backPlanePos, backPlaneNorm, intersectPoint, intersectNorm) == 1) {
+          spherePos.zero();
+          spherePos.copyfrom(intersectPoint);
+          spherePos.z(spherePos.z() + (BOUNDARY_LIMIT * 2 - .01));
+          if (!checkBounds(spherePos)) {
+            spherePos = tempPos;
+          }
         }
 
         if (!current->isCurrent()) {
