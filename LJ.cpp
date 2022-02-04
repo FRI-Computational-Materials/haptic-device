@@ -41,6 +41,7 @@
 #include "potentials.h"
 #include "utility.h"
 #include "PyAMFF/PyAMFF.h"
+#include "boundaryConditions.h"
 //------------------------------------------------------------------------------
 #include <GLFW/glfw3.h>
 #include <python3.8/Python.h>
@@ -1000,15 +1001,6 @@ void updateGraphics(void) {
   if (err != GL_NO_ERROR) cout << "Error: " << gluErrorString(err) << endl;
 }
 
-bool checkBounds(cVector3d location) {
-  if (location.y() > BOUNDARY_LIMIT || location.y() < -BOUNDARY_LIMIT ||
-      location.x() > BOUNDARY_LIMIT || location.x() < -BOUNDARY_LIMIT ||
-      location.z() > BOUNDARY_LIMIT || location.z() < -BOUNDARY_LIMIT) {
-    return false;
-  }
-  return true;
-}
-
 void updateHaptics(void) {
   Atom *current;
   Atom *previous;
@@ -1238,98 +1230,36 @@ void updateHaptics(void) {
         cVector3d A = current->getLocalPos();
         cVector3d B = spherePos;
 
-        // freezing atoms at wall when they fly off 
-        if (just_unanchored != 5) {
-          // threshold for cube contining atoms
-          double threshold = .5;
-          // correct to keep atom inside of cube
-          if (B.x() > threshold) {
-            B.x(threshold);
-          } else if (B.x() < threshold * -1) {
-            B.x(threshold * -1);
-          }
-          if (B.y() > threshold) {
-            B.y(threshold);
-          } else if (B.y() < threshold * -1) {
-            B.y(threshold * -1);
-          }
-          if (B.z() > threshold) {
-            B.z(threshold);
-          } else if (B.z() < threshold * -1) {
-            B.z(threshold * -1);
-          }
-        }
+        // apply david boundary conditions
+        applyDavidBoundaryConditions(A, B);
 
-        // holds intersect point/norm if an intersect is made
-        cVector3d intersectPoint;
-        cVector3d intersectNorm;
-        cVector3d tempPos;
-        cVector3d tempA;
-        tempA.copyfrom(A);
-        tempPos.copyfrom(spherePos);
+        // apply sean boundary conditions
+        applySeanBoundaryConditions(A, 
+                                    B, 
+                                    spherePos,
+                                    northPlanePos,
+                                    northPlaneNorm,
+                                    southPlanePos,
+                                    southPlaneNorm,
+                                    eastPlanePos,
+                                    eastPlaneNorm,
+                                    westPlanePos,
+                                    westPlaneNorm,
+                                    forwardPlanePos,
+                                    forwardPlaneNorm,
+                                    backPlanePos,
+                                    backPlaneNorm,
+                                    BOUNDARY_LIMIT
+                                    );
 
-        // north plane
-        if (cIntersectionSegmentPlane(A, B, northPlanePos, northPlaneNorm, intersectPoint, intersectNorm) == 1) {
-          spherePos.zero();
-          spherePos.copyfrom(intersectPoint);
-          spherePos.y(spherePos.y() - (BOUNDARY_LIMIT * 2 - .01));
-          if (!checkBounds(spherePos)) {
-            spherePos.copyfrom(tempPos);
-          }
-        }
-        // south plane
-        if (cIntersectionSegmentPlane(A, B, southPlanePos, southPlaneNorm, intersectPoint, intersectNorm) == 1) {
-          spherePos.zero();
-          spherePos.copyfrom(intersectPoint);
-          spherePos.y(spherePos.y() + (BOUNDARY_LIMIT * 2 - .01));
-          if (!checkBounds(spherePos)) {
-            spherePos.copyfrom(tempPos);
-          }
-        }
-        // east plane
-        if (cIntersectionSegmentPlane(A, B, eastPlanePos, eastPlaneNorm, intersectPoint, intersectNorm) == 1) {
-          spherePos.zero();
-          spherePos.copyfrom(intersectPoint);
-          spherePos.x(spherePos.x() - (BOUNDARY_LIMIT * 2 - .01));
-          if (!checkBounds(spherePos)) {
-            spherePos.copyfrom(tempPos);
-          }
-        }
-        // west plane
-        if (cIntersectionSegmentPlane(A, B, westPlanePos, westPlaneNorm, intersectPoint, intersectNorm) == 1) {
-          spherePos.zero();
-          spherePos.copyfrom(intersectPoint);
-          spherePos.x(spherePos.x() + (BOUNDARY_LIMIT * 2 - .01));
-          if (!checkBounds(spherePos)) {
-            spherePos.copyfrom(tempPos);
-          }
-        }
-        // forward plane
-        if (cIntersectionSegmentPlane(A, B, forwardPlanePos, forwardPlaneNorm, intersectPoint, intersectNorm) == 1) {
-          spherePos.zero();
-          spherePos.copyfrom(intersectPoint);
-          spherePos.z(spherePos.z() - (BOUNDARY_LIMIT * 2 - .01));
-          if (!checkBounds(spherePos)) {
-            spherePos.copyfrom(tempPos);
-          }
-        }
-        // back plane
-        if (cIntersectionSegmentPlane(A, B, backPlanePos, backPlaneNorm, intersectPoint, intersectNorm) == 1) {
-          spherePos.zero();
-          spherePos.copyfrom(intersectPoint);
-          spherePos.z(spherePos.z() + (BOUNDARY_LIMIT * 2 - .01));
-          if (!checkBounds(spherePos)) {
-            spherePos = tempPos;
-          }
-        }
-
+        // set position to new position if not controlled or anchored
         if (!current->isCurrent()) {
           if (!current->isAnchor()) {
             current->setLocalPos(spherePos);
           }
         }
       }
-      if (!checkBounds(current->getLocalPos())) {
+      if (!checkBounds(current->getLocalPos(), BOUNDARY_LIMIT)) {
         cout << "ATOM OUT OF BOUNDS";
       }
       current = spheres[curr_atom];
