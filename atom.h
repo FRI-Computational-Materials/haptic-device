@@ -14,12 +14,13 @@ private:
     cVector3d velocity;
     cVector3d force;
     cShapeLine *velVector;
-    double sphere_mass;
     int atomicNumber;
     cColorf base_color;
 
+
 public:
-    Atom(double radius, double sphere_mass, int atomicNumber, cColorf color = cColorf());
+    Atom(double radius, int atomicNumber, cColorf color);
+    Atom(double radius, int atomicNumber);
     bool isAnchor();
     void setAnchor(bool newAnchor);
     bool isRepeating();
@@ -34,11 +35,11 @@ public:
     void setVelVector(cShapeLine *newVelVector);
     void updateVelVector();
     void setInitialPosition(double spawn_dist = .1);
-    double getMass();
-    void setMass(double mass);
     void setColor(cColorf color);
     int getAtomicNumber();
     void setAtomicNumber(int num);
+    string getElement();
+    double getMass();
 };
 
 #endif  // ATOM_H

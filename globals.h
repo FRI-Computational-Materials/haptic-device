@@ -3,12 +3,23 @@
 #include <vector>
 #include <GLFW/glfw3.h>
 #include "potentials.h"
+#include <unordered_map>
+#include <tuple>
 
 //------------------------------------------------------------------------------
 // STATES
 //------------------------------------------------------------------------------
 enum MouseState { MOUSE_IDLE, MOUSE_SELECTION };
 enum LocalPotential { LENNARD_JONES, MORSE, PYAMFF, ASE };
+
+// map of atom stringnames by atomic number
+extern std::unordered_map<int, std::string> atomStringNames;
+
+// map of atom weights by atomic number
+extern std::unordered_map<int, double> atomWeights;
+
+// map of atom colors by atomic number
+extern std::unordered_map<int, std::tuple<const GLfloat, const GLfloat, const GLfloat>> atomColors;
 
 // Calculator object for force and potential energy calculatorString
 extern Calculator* calculatorPtr;

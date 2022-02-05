@@ -91,7 +91,7 @@ const double WALL_RIGHT = 0.05;    // 0.2;
 const double WALL_FRONT = 0.05;    // 0.08;
 const double WALL_BACK = -0.05;    //-0.08;
 const double SPHERE_STIFFNESS = 500.0;
-const double SPHERE_MASS = 0.02;
+const double SPHERE_MASS_SCALE_FACTOR = 0.02;
 const double F_DAMPING = 0.25;  // 0.25
 const double V_DAMPING = 0.8;   // 0.1
 const double A_DAMPING = 0.99;  // 0.5
@@ -515,7 +515,7 @@ int main(int argc, char *argv[]) {
     int numSpheres = argc > 1 ? atoi(argv[1]) : 5;
     for (int i = 0; i < numSpheres; i++) {
       // create a sphere and define its radius
-      Atom *new_atom = new Atom(SPHERE_RADIUS, SPHERE_MASS, 0);
+      Atom *new_atom = new Atom(SPHERE_RADIUS, 16);
 
       // store pointer to sphere primitive
       spheres.push_back(new_atom);
@@ -639,7 +639,7 @@ int main(int argc, char *argv[]) {
     // create atoms objects, put them in spheres, world
     for (int i = 0; i < nAtoms; i++) {
       // Create atom pointer
-      Atom* newAtom = new Atom(SPHERE_RADIUS, startingMasses[i], startingAtomicNrs[i]);
+      Atom* newAtom = new Atom(SPHERE_RADIUS, startingAtomicNrs[i]);
 
       // store pointer to sphere primitive
       spheres.push_back(newAtom);
@@ -1209,7 +1209,7 @@ void updateHaptics(void) {
         current = spheres[i];
         cVector3d pos0 = current->getLocalPos();
         current->setForce(force);
-        cVector3d sphereAcc = (force / current->getMass());
+        cVector3d sphereAcc = (force / (current->getMass() * SPHERE_MASS_SCALE_FACTOR));
         current->setVelocity(
             V_DAMPING * (current->getVelocity() + timeInterval * sphereAcc));
             // compute /position
