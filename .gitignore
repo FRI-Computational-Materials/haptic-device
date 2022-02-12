@@ -33,3 +33,7 @@
 *.exe
 *.out
 *.app
+
+# python stuff
+__pycache__
+*.pyc

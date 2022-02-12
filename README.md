@@ -15,31 +15,12 @@ You can also read in an existing configuration:
 ./haptic-device example.con
 ```
 Make sure the .con file is in ../resources/data.
-=======
-## Build Instructions
-
-## ML Project
-In order to run, must have Amp, ase, numpy, and tsase.
-
-### Windows
-
-Installing all the Drivers/SDKs/Software:
-
-
-1. Download Force Dimension drivers for the Novint Falcon from [force dimension](http://www.forcedimension.com/download/sdk). Most recent as of 10/3/18 is SDK 3.7.
-2. Run the .exe file to install drivers.
-3. Download the CHAI3D libraries from [CHAI3D](http://chai3d.org/download/releases). I think both the multi-platform and Windows versions work, but I got mine to work based off the multi-platform one.
-4. If you don’t have it, install the Community version of Visual Studio (for free!) from [visual studio](https://visualstudio.microsoft.com/downloads/?utm_medium=microsoft&utm_source=docs.microsoft.com&utm_campaign=button+cta&utm_content=download+vs2017).
-
-
-Creating Projects:
->>>>>>> ML
 
 Choose the potential energy surface by adding a second argument:
 ```
 ./haptic-device 25 morse
 ```
-The default is Lennard-Jones.
+The default is Lennard-Jones(lj). Other options are morse, ase, pyamff.
 
 ## Build Instructions
 
@@ -48,7 +29,6 @@ The default is Lennard-Jones.
 Windows development temporarily halted (unable to compile on Visual Studio).
 Check WINDOWS.md for details on installation.
 
-
 ### Linux
 1. Download the multiplatform release from [chai3d](http://www.chai3d.org/download/releases)
 2. Run the following commands
@@ -56,20 +36,17 @@ Check WINDOWS.md for details on installation.
    sudo add-apt-repository universe
    sudo apt update
    ```
-3. Install the following packages using the command
+3. Install the required packages using the command
     ```
-    sudo apt-get install <package_name>
+    sudo apt-get install libusb-1.0-0-dev libasound2-dev freeglut3-dev xorg-dev python3-dev gfortran
     ```
-    * libusb-1.0-0-dev
-    * libasound2-dev
-    * freeglut3-dev
-    * xorg-dev
-    * python-dev
+
 4. Run "make" in the chai3d-3.2.0 directory
 5. Clone this repo into the chai3d-3.2.0 directory
-6. Create the directory `data` in `bin/resources` and move the file `global_minima.txt` to here.
-7. Run `make` in the `haptic-device` folder - be sure to do this after any changes.
-8. Your directory structure should look like so:
+6. Create the directory `data` in `bin/resources` and move the file `global_minima.txt` there
+7. Run `make` in the `haptic-device/PyAMFF` folder
+8. Run `make` in the `haptic-device` folder
+9. Your directory structure should look like so:
 <pre>
 chai3d-3.2.0/
 ├── bin
@@ -86,23 +63,20 @@ chai3d-3.2.0/
     ├── <b>LJ.cpp</b>
     ├── <b>Makefile</b>
     ├── <b>obj</b>
+    ├── <b>PyAMFF</b>    
     └── <b>README.md</b>
 </pre>
 
-9. Note that you may to change lines involving the relative file path
+At this point, the software should run with mouse and keyboard. The following steps are for setting up the haptic device
+10. You may to change lines involving the relative file path
 ```c++
 bool fileload = texture->loadFromFile(RESOURCE_PATH("../resources/images/spheremap-3.jpg"));
 ```
 to the absolute file path.
 
-10. Run the following commands while in chai3d-3.20/:
+11. Run the following commands while in chai3d-3.20/:
   * `sudo cp ./external/DHD/doc/linux/51-forcedimension.rules /etc/udev/rules.d`
   * `sudo udevadm control --reload-rules && udevadm trigger`
-
-11. Navigate to `lin-x86_64` and run `./haptic-device` to launch the program.
-
-## If you have a problem
-Consider running make. You need to run make about one more time than was described in this README, but I forget where. If you're stuck and getting an error, try running `make` in the `haptic-device` directory
 
 ### MacOS
 1. Download the latest release of CHAI3D for Mac OS X from [chai3d](http://www.chai3d.org/download/releases)
@@ -117,6 +91,14 @@ The textbook is too big to upload so here's the link: http://www.charleshouserjr
 
 ## Notes
 
+### PyAMFF
+In order to use pyamff, you will need to have the following files in the lin-x86_64 folder:
+   * mlff.pyamff
+   * pyamff.pt
+   * fpParas.dat
+These must be valid files for a pyamff run and must all correspond to the same molecular system and fingerprint setup
+
+### Controls
 * The buttons are labeled 0-3, starting at the center and going clockwise for user switches
 * Button naming convention in LJ-test.cpp (example = name in LJ-test.cp
 * p)

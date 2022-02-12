@@ -1,5 +1,4 @@
 import ase
-import ase.io
 from ase.calculators.lj import LennardJones
 
 def getValues(position):
@@ -36,6 +35,6 @@ def getValues(position):
     #array2.append(p.get_potential_energy())
     return array2
 
-
+# This  comes in handy when something is broken w the C API and you need to troubleshoot
 if __name__ == '__main__':
-    getValues([1,1,1,2,2,2,3,3,3,4,4,4,5,5,5])
+    print(getValues([1,1,1,2,2,2,3,3,3,4,4,4,5,5,5]))
