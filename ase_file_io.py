@@ -15,7 +15,6 @@ def get_state_information(filename):
 
     return_vals = [len(our_atoms)]
     return_vals += [item for position in our_atoms.get_positions() for item in position]
-    return_vals += list(our_atoms.get_masses())
     return_vals += list(our_atoms.get_atomic_numbers())
 
     return return_vals

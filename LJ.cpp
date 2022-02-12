@@ -515,7 +515,7 @@ int main(int argc, char *argv[]) {
     int numSpheres = argc > 1 ? atoi(argv[1]) : 5;
     for (int i = 0; i < numSpheres; i++) {
       // create a sphere and define its radius
-      Atom *new_atom = new Atom(SPHERE_RADIUS, 16);
+      Atom *new_atom = new Atom(SPHERE_RADIUS, 1);
 
       // store pointer to sphere primitive
       spheres.push_back(new_atom);
@@ -584,7 +584,6 @@ int main(int argc, char *argv[]) {
     PyObject *pName, *pModule, *pFunc, *pFileName, *pCallTuple;
     PyObject *pResult;
     std::vector<std::vector<float>> positions;
-    std::vector<float> startingMasses;
     std::vector<int> startingAtomicNrs;
     int nAtoms;
 
@@ -615,10 +614,8 @@ int main(int argc, char *argv[]) {
             PyFloat_AsDouble(PyList_GetItem(pResult, 3 * i + 2)),
             PyFloat_AsDouble(PyList_GetItem(pResult, 3 * i + 3))
           }));
-          // unpack masses
-          startingMasses.push_back(PyFloat_AsDouble(PyList_GetItem(pResult, 3*nAtoms + 1 + i)));
           // unpack atomic numbers
-          startingAtomicNrs.push_back((int)PyLong_AsLong(PyList_GetItem(pResult, 4*nAtoms + 1 + i)));
+          startingAtomicNrs.push_back((int)PyLong_AsLong(PyList_GetItem(pResult, 3*nAtoms + 1 + i)));
         }
 
         // decref everything
@@ -629,8 +626,8 @@ int main(int argc, char *argv[]) {
         Py_DECREF(pFileName);
         Py_DECREF(pCallTuple);
 
-        // end python instance
-        Py_FinalizeEx();
+        // end python instance (doing this caused a segfault)
+        //Py_FinalizeEx();
       }
     } else {
       std::cout << "Error: module not found" << std::endl;
