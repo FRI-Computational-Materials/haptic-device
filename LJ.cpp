@@ -667,81 +667,13 @@ int main(int argc, char *argv[]) {
         newAtom->setAnchor(true);
         // scale coordinates and insert
         newAtom->setLocalPos(
-          0.02 * positions[i][0],
-          0.02 * positions[i][1],
-          0.02 * positions[i][2]
+          0.02 * (positions[i][0] - centerCoords[0]), // position offset -- should probably disappear once we get boxes working
+          0.02 * (positions[i][1] - centerCoords[1]),
+          0.02 * (positions[i][2] - centerCoords[2])
         );
-      }
+      }    
     }
-
-    /*string file_path = "../resources/data/";
-    string file_name = argv[1];
-    ifstream readFile(file_path + file_name);
-
-    // file not found, so terminate program
-    if (!readFile.good()) {
-      cout << "ERROR: Input file " << file_name << " not found" << endl;
-      cout << "Input file should be in " << file_path << endl;
-      exit(EXIT_FAILURE);
-    }
-    string line;
-    for (int i = 0; i < 11; i++) {
-      getline(readFile, line);
-    }
-    bool firstAtom = true;
-    vector<double> inputCoords;  // Create vector to hold our coordinates
-    while (true) {
-      // read in next coordinates
-      inputCoords.clear();
-      getline(readFile, line);
-      if (readFile.eof()) {
-        break;
-      }
-      string buffer;          // Have a buffer string
-      stringstream ss(line);  // Insert the string into a stream
-      while (ss >> buffer) {
-        inputCoords.push_back(stod(buffer));
-      }
-      // create a sphere and define its radius
-      Atom *new_atom = new Atom(SPHERE_RADIUS, SPHERE_MASS);
-
-      // store pointer to sphere primitive
-      spheres.push_back(new_atom);
-
-      // add sphere primitive to world
-      world->addChild(new_atom);
-
-      // add line to world
-      world->addChild(new_atom->getVelVector());
-
-      // set graphic properties of sphere
-      new_atom->setTexture(texture);
-      new_atom->m_texture->setSphericalMappingEnabled(true);
-      new_atom->setUseTexture(true);
-
-      // Set the first and second sphere (the one being controlled to red
-      // initially and the anchor in blue)
-      if (inputCoords[4] == 0) {  // sphere is current
-        new_atom->setCurrent(true);
-      } else if (inputCoords[4] == 1) {  // sphere is anchor
-        new_atom->setAnchor(true);
-      }
-      if (firstAtom) {
-        for (int i = 0; i < 3; i++) {
-          centerCoords[i] = inputCoords[i];
-        }
-        new_atom->setLocalPos(0.0, 0.0, 0.0);
-        firstAtom = !firstAtom;
-      } else {
-        // scale coordinates
-        for (int i = 0; i < 3; i++) {
-          inputCoords[i] = 0.02 * (inputCoords[i] - centerCoords[i]);
-        }
-        new_atom->setLocalPos(inputCoords[0], inputCoords[1], inputCoords[2]);
-      }
-    }
-    readFile.close();
-  */}
+  }
 
   // Done reading any sort of info. Now setting up calculator selection
   for (int i = 0; i < spheres.size(); i++) {
