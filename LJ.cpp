@@ -618,13 +618,13 @@ int main(int argc, char *argv[]) {
           startingAtomicNrs.push_back((int)PyLong_AsLong(PyList_GetItem(pResult, 3*nAtoms + 1 + i)));
         }
 
-        // decref everything
-        Py_DECREF(pName);
-        Py_DECREF(pModule);
-        Py_DECREF(pResult);
-        Py_DECREF(pFunc);
-        Py_DECREF(pFileName);
-        Py_DECREF(pCallTuple);
+        // decref everything (this breaks our python instance. Will try to implement correctly later)
+        //Py_DECREF(pName);
+        //Py_DECREF(pModule);
+        //Py_DECREF(pResult);
+        //Py_DECREF(pFunc);
+        //Py_DECREF(pFileName);
+        //Py_DECREF(pCallTuple);
 
         // end python instance (doing this caused a segfault)
         //Py_FinalizeEx();
