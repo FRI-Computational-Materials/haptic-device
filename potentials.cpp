@@ -235,3 +235,78 @@ std::vector<std::vector<double>> aseCalculator::getFandU(std::vector<Atom*>& sph
     }
   }
 }
+
+///////////////////////////// DEMO ///////////////////////////////////////
+// Mixed lj potential for gold and silver nanoparticle demo //////////////
+vector<vector<double>> demoCalculator::getFandU(vector<Atom*>& spheres) {
+  vector<vector<double>> returnVector;
+  double potentialEnergy = 0;
+  Atom* current;
+  for (int i = 0; i < spheres.size(); i++) {
+    // compute force on atom
+    cVector3d force;
+    current = spheres[i];
+    cVector3d pos0 = current->getLocalPos();
+    // check forces with all other spheres
+    force.zero();
+
+    // this loop is for finding all of atom i's neighbors
+    for (int j = 0; j < spheres.size(); j++) {
+      // Don't compute forces between an atom and itself
+      if (i != j) {
+        // get position of sphere
+        cVector3d pos1 = spheres[j]->getLocalPos();
+
+        // compute direction vector from sphere 0 to 1
+
+        cVector3d dir01 = cNormalize(pos0 - pos1);
+
+        // compute distance between both spheres
+        double distance = cDistance(pos0, pos1) / distanceScale;
+        potentialEnergy += getDemoEnergy(distance, spheres[i], spheres[j]);
+        double appliedForce = getDemoForce(distance, spheres[i], spheres[j]);
+        force.add(appliedForce * dir01);
+      }
+    }
+  vector<double> pushBack = {force.x(), force.y(), force.z()};
+  returnVector.push_back(pushBack);
+  }
+  // Potential energy -- halve it because pairwise
+  vector<double> potentE = {potentialEnergy / 2};
+  returnVector.push_back(potentE);
+
+  return returnVector;
+}
+
+// Pairwise energy calculation for lj
+double demoCalculator::getDemoEnergy(double distance, Atom* a1, Atom* a2) {
+  double sigma, epsilon;
+  if ((a1->getAtomicNumber() == 79) && (a2->getAtomicNumber() == 79)) {
+    sigma = sigmaAuAu;
+    epsilon = epsilonAuAu;
+  } else if ((a1->getAtomicNumber() == 78) && (a2->getAtomicNumber() == 78)) {
+    sigma = sigmaPtPt;
+    epsilon = epsilonPtPt;
+  } else {
+    sigma = sigmaAuPt;
+    epsilon = epsilonAuPt;
+  }
+  return 4 * epsilon * (pow(sigma / distance, 12) - pow(sigma / distance, 6));
+}
+
+// Pairwise force calculation for lj
+double demoCalculator::getDemoForce(double distance, Atom* a1, Atom* a2) {
+  double sigma, epsilon;
+  if ((a1->getAtomicNumber() == 79) && (a2->getAtomicNumber() == 79)) {
+    sigma = sigmaAuAu;
+    epsilon = epsilonAuAu;
+  } else if ((a1->getAtomicNumber() == 78) && (a2->getAtomicNumber() == 78)) {
+    sigma = sigmaPtPt;
+    epsilon = epsilonPtPt;
+  } else {
+    sigma = sigmaAuPt;
+    epsilon = epsilonAuPt;
+  }
+  return -4 * epsilon *
+         ((-12 * pow(sigma / distance, 13)) - (-6 * pow(sigma / distance, 7)));
+}

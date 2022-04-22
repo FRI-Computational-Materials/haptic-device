@@ -267,7 +267,9 @@ std::unordered_map<int, std::tuple<const GLfloat, const GLfloat, const GLfloat>>
     {26, {255, 165, 0}},
     {25, {42, 128, 42}},
     {20, {128, 128, 128}},
-    {0, {255, 20, 147}}
+    {0, {255, 20, 147}},
+    {79, {255,  215, 0}},
+    {78, {200, 200, 200}}
 });
 
 Atom::Atom(double radius, int atomicNumber, cColorf color)

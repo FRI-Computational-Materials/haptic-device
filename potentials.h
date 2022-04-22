@@ -104,4 +104,27 @@ class aseCalculator:public Calculator {
     std::vector<std::vector<double>> getFandU(std::vector<Atom*>& spheres);
 };
 
+
+//////// Calculator for demo
+class demoCalculator:public Calculator {
+  double sigmaAuAu, sigmaAuPt, sigmaPtPt, epsilonAuAu, epsilonAuPt, epsilonPtPt, distanceScale;
+
+  public:
+    demoCalculator() {
+      // tbh I got this from a sketchy paper. These constants are not empirical nor constant in real life
+      epsilonAuAu = .4414;
+      epsilonAuPt = .5485; // lorentz berthelot
+      epsilonPtPt = .6816;
+
+      sigmaAuAu = 2.637;
+      sigmaAuPt = 2.590; // lorentz berthelot
+      sigmaPtPt = 2.542;
+
+      distanceScale = .02;
+    }
+    vector<vector<double>> getFandU(vector<Atom*>& spheres);
+    double getDemoEnergy(double distance, Atom* a1, Atom* a2);
+    double getDemoForce(double distance, Atom* a1, Atom* a2);
+};
+
 #endif

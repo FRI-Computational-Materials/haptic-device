@@ -10,7 +10,7 @@
 // STATES
 //------------------------------------------------------------------------------
 enum MouseState { MOUSE_IDLE, MOUSE_SELECTION };
-enum LocalPotential { LENNARD_JONES, MORSE, PYAMFF, ASE };
+enum LocalPotential { LENNARD_JONES, MORSE, PYAMFF, ASE, DEMO };
 
 // map of atom stringnames by atomic number
 extern std::unordered_map<int, std::string> atomStringNames;

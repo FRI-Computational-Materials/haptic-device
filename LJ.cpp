@@ -692,6 +692,9 @@ int main(int argc, char *argv[]) {
     }else if (arg == "pyamff" || arg == "p"){
       energySurface = PYAMFF;
       calculatorPtr = new pyamffCalculator(spheres.size());
+    }else if (arg == "demo" || arg == "d"){
+      energySurface = DEMO;
+      calculatorPtr = new demoCalculator();
     }else if (arg == "ase" || arg == "a"){
 
       // These are placeholders for the moment
