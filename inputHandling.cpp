@@ -3,6 +3,12 @@
 #include <GLFW/glfw3.h>
 #include <sys/stat.h>
 #include <fstream>
+#include "atom.h"
+#include "chai3d.h"
+
+Atom *current;
+Atom *previous;
+int just_unanchored = 0;
 
 void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
                  int a_mods) {
@@ -42,7 +48,9 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
         spheres[i]->setAnchor(false);
       }
     }
-  } else if (a_key == GLFW_KEY_S) {
+    assert(just_unanchored = 5);
+    just_unanchored = 0;
+  } else if (a_key == GLFW_KEY_T) {
     // option - save screenshot to file
     cImagePtr image = cImage::create();
     camera->m_frontLayer->removeChild(scope);
@@ -50,7 +58,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
     camera->copyImageBuffer(image);
     camera->m_frontLayer->addChild(scope);
     int index = 0;
-    string filename_stem = "lj" + to_string(spheres.size()) + "_";
+    string filename_stem = "screenshot" + to_string(spheres.size()) + "_";
     while (fileExists(filename_stem + to_string(index) + ".png")) {
       index++;
     }
@@ -89,7 +97,7 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
     writeConCounter = 5000;
     writeToCon(dir2 + "atoms" + to_string(index) + ".con");
     cout << "LOGGED AT " + date + " atoms" + to_string(index) + ".con" << endl;
-  } else if (a_key == GLFW_KEY_A) {
+  } else if (a_key == GLFW_KEY_Y) {
     // anchor all atoms while maintaining control
     for (auto i{0}; i < spheres.size(); i++) {
       if (!spheres[i]->isAnchor() && !(spheres[i]->isCurrent())) {
@@ -100,29 +108,27 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
         int direction = (a_key == GLFW_KEY_UP) ? 1 : -1;
         camera->setSphericalPolarRad(camera->getSphericalPolarRad() +
                                      (M_PI / 50) * direction);
-        // prevent overflow on camera position
-        if (camera->getSphericalPolarRad() > 1000 * M_PI) {
-            camera->setSphericalPolarRad(camera->getSphericalPolarRad() -
-                                         1000 * M_PI);
-        }
-        if (camera->getSphericalPolarRad() < -1000 * M_PI) {
-            camera->setSphericalPolarRad(camera->getSphericalPolarRad() +
-                                         1000 * M_PI);
-        }
+
+	// normalize between 0 and 2pi
+        if (camera->getSphericalPolarRad() < 0) {
+            camera->setSphericalPolarRad(fmod(camera->getSphericalPolarRad(), (2 * M_PI)) + 2 * M_PI);
+	} else if (camera->getSphericalPolarRad() > 2 * M_PI) {
+	  camera->setSphericalPolarRad(fmod(camera->getSphericalPolarRad(), (2 * M_PI)));
+	  }
+
         updateCameraLabel(camera_pos, camera);
     } else if (a_key == GLFW_KEY_RIGHT || a_key == GLFW_KEY_LEFT) {
         int direction = (a_key == GLFW_KEY_RIGHT) ? 1 : -1;
         camera->setSphericalAzimuthRad(camera->getSphericalAzimuthRad() +
                                        (M_PI / 50) * direction);
-        // prevent overflow on camera position
-        if (camera->getSphericalAzimuthRad() > 1000 * M_PI) {
-            camera->setSphericalAzimuthRad(camera->getSphericalAzimuthRad() -
-                                           1000 * M_PI);
-        }
-        if (camera->getSphericalAzimuthRad() < -1000 * M_PI) {
-            camera->setSphericalAzimuthRad(camera->getSphericalAzimuthRad() +
-                                           1000 * M_PI);
-        }
+
+	// normalize between 0 and 2pi
+        if (camera->getSphericalAzimuthRad() < 0) {
+            camera->setSphericalAzimuthRad(fmod(camera->getSphericalAzimuthRad(), (2 * M_PI)) + 2 * M_PI);
+	} else if (camera->getSphericalAzimuthRad() > 2 * M_PI) {
+	  camera->setSphericalAzimuthRad(fmod(camera->getSphericalAzimuthRad(), (2 * M_PI)));
+	  }
+
         updateCameraLabel(camera_pos, camera);
 
   } else if (a_key == GLFW_KEY_LEFT_BRACKET ||
@@ -141,6 +147,45 @@ void keyCallback(GLFWwindow *a_window, int a_key, int a_scancode, int a_action,
       camera->setSphericalRadius(.35);
       rho = .35;
       updateCameraLabel(camera_pos, camera);
+  } else if ((a_key == GLFW_KEY_W) || (a_key == GLFW_KEY_S) || (a_key == GLFW_KEY_A) 
+      || (a_key == GLFW_KEY_D) || (a_key == GLFW_KEY_Z) || (a_key == GLFW_KEY_X)) {
+      // Move current atom
+      // Identify current atom
+      int curr_atom = 0;
+      for(int i = 0; i < spheres.size(); i++){
+        if (spheres[i] -> isCurrent()){
+	  curr_atom = i;
+	  }
+	}
+      current = spheres[curr_atom];
+
+      // Get current position, direction, and vectors
+      cVector3d A = current->getLocalPos();
+      double x_vect, y_vect, z_vect, direction;
+      direction = ((a_key == GLFW_KEY_Z) || (a_key == GLFW_KEY_W) || (a_key == GLFW_KEY_A)) ? -0.005 : 0.005;
+      // Define vectors by direction choice
+      // Z/X is in/out, W/S is up/down, and A/D is left/right
+      if ((a_key == GLFW_KEY_Z) || (a_key == GLFW_KEY_X)){
+	x_vect = rho * sin(camera->getSphericalPolarRad()) * cos(camera->getSphericalAzimuthRad()) ;
+	y_vect = rho * sin(camera->getSphericalPolarRad()) * sin(camera->getSphericalAzimuthRad());
+	z_vect = rho * cos(camera->getSphericalPolarRad());
+      } else if ((a_key == GLFW_KEY_W) || (a_key == GLFW_KEY_S)){
+	x_vect = rho * sin(camera->getSphericalPolarRad() + M_PI / 2) * cos(camera->getSphericalAzimuthRad()) ;
+	y_vect = rho * sin(camera->getSphericalPolarRad() + M_PI / 2) * sin(camera->getSphericalAzimuthRad());
+	z_vect = rho * cos(camera->getSphericalPolarRad() + M_PI / 2);
+      } else if ((a_key == GLFW_KEY_A) || (a_key == GLFW_KEY_D)){
+	x_vect = rho * sin(camera->getSphericalPolarRad()) * cos(camera->getSphericalAzimuthRad() + 3 * M_PI / 2) ;
+	y_vect = rho * sin(camera->getSphericalPolarRad()) * sin(camera->getSphericalAzimuthRad() + 3 * M_PI / 2);
+	z_vect = 0;
+	if (camera->getSphericalPolarRad() == 0){
+	  y_vect = camera->getSphericalRadius();
+	} else if (camera->getSphericalPolarRad() < M_PI){
+	  direction *= -1;
+	  }
+	}
+
+      // Move atom accordingly
+      current->setLocalPos(direction * x_vect + A.x(), direction * y_vect + A.y(), direction * z_vect + A.z());
   }else if(a_key == GLFW_KEY_LEFT_CONTROL || a_key == GLFW_KEY_RIGHT_CONTROL){
       helpPanel->setShowPanel(!helpPanel->getShowPanel());
       if(helpPanel->getShowPanel()){
@@ -199,24 +244,51 @@ void mouseMotionCallback(GLFWwindow *a_window, double a_posX, double a_posY) {
 
 void mouseButtonCallback(GLFWwindow *a_window, int a_button, int a_action,
                          int a_mods) {
-    // store mouse position
+    // store mouse position and current atom position
     double x, y;
+    current = spheres[0];
+    cVector3d A = current->getLocalPos();
 
     // detect for any collision between mouse and scene
     cCollisionRecorder recorder;
     cCollisionSettings settings;
     if (a_button == GLFW_MOUSE_BUTTON_LEFT && a_action == GLFW_PRESS) {
+	int curr_atom = 0;
+        int previous_curr_atom;
         glfwGetCursorPos(window, &x, &y);
         bool hit =
         camera->selectWorld(x, (height - y), width, height, recorder, settings);
         if (hit) {
             cGenericObject *selected = recorder.m_nearestCollision.m_object;
             selectedAtom = (Atom *)selected;
-            selectedPoint = recorder.m_nearestCollision.m_globalPos;
-            selectedAtomOffset =
-            recorder.m_nearestCollision.m_globalPos - selectedAtom->getLocalPos();
-            mouseState = MOUSE_SELECTION;
-        }
+
+	    // Change selected atom to current atom if not anchor
+            if (!selectedAtom->isAnchor() && !selectedAtom->isCurrent()) {
+		for(int i = 0; i < spheres.size(); i++){
+                    if (spheres[i] -> isCurrent()){
+			previous_curr_atom = i;
+		    } else if (spheres[i] == selectedAtom){
+			curr_atom = i;
+			}
+		}
+	        current = spheres[curr_atom];
+            	previous = spheres[previous_curr_atom];
+		cVector3d A = previous->getLocalPos();
+
+		previous->setCurrent(false);
+		previous->setLocalPos(A); 
+		current->setCurrent(true);
+
+		selectedAtom->setCurrent(true);
+
+	    // If selected atom is an anchor allow for it to be moved
+            } else if (selectedAtom->isAnchor()){
+	      selectedPoint = recorder.m_nearestCollision.m_globalPos;
+              selectedAtomOffset =
+              recorder.m_nearestCollision.m_globalPos - selectedAtom->getLocalPos();
+	      }
+	    mouseState = MOUSE_SELECTION;
+	    }
     } else if (a_button == GLFW_MOUSE_BUTTON_RIGHT && a_action == GLFW_PRESS) {
         glfwGetCursorPos(window, &x, &y);
         bool hit =

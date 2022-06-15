@@ -1,0 +1,18 @@
+
+
+
+// Assign true minimum energy value
+double min_energy = 0;
+
+double current_energy = 100;
+double current_min = 100;
+
+
+int main(double min_energy, double current_energy, double current_min) {
+	while (current_min <= min_energy){
+		if  (current_energy < current_min){
+			current_min = current_energy;
+			}
+		}
+	return 0;
+	}
