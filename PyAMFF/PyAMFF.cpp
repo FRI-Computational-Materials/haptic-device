@@ -20,7 +20,7 @@ extern "C" void cleanup();
 
 extern "C" void nncleanup();
 
-extern "C" void prepfNN( long *nAtoms, int *num_elements, int *max_fps, const int [], int []);
+extern "C" void prepfNN(long *nAtoms, int *num_elements, const int [], int []);
 
 PyAMFF::PyAMFF(void)
 {
@@ -30,6 +30,7 @@ PyAMFF::PyAMFF(void)
 
 PyAMFF::~PyAMFF(){
     cleanMemory();
+    std::cout << "destructed" << endl;
 }
 
 void PyAMFF::cleanMemory(void)
@@ -49,8 +50,8 @@ void PyAMFF::cleanMemory(void)
 void PyAMFF::force(long N, const double *R, const int *atomicNrs, double *F,
                  double *U, const double *box)
 {
-//    int i;  
-//    const char *atomicSymbols[N];i 
+//    int i;
+//    const char *atomicSymbols[N];i
 //    int numUnique;
 
 //    for (i=0; i < N; i++)
@@ -85,15 +86,14 @@ void PyAMFF::force(long N, const double *R, const int *atomicNrs, double *F,
 
 
     if (new_pyamff == true){
-        //cout << "reading mlff in c" << endl;
+        cout << "reading mlff in c" << endl;
         read_mlffParas(&N, &num_elements, &max_fps, atomicNrs, unique);
-        //cout << "prepping fnn in c" << endl;
-        prepfNN(&N, &num_elements, &max_fps, atomicNrs, unique);
-        //cout << "fnn prepped!" << endl;
+        cout << "prepping fnn in c" << endl;
+        prepfNN(&N, &num_elements, atomicNrs, unique);
+        cout << "fnn prepped!" << endl;
     }
     new_pyamff = false;
     calc_eon(&N, R, box, atomicNrs, F, U, &num_elements, unique);
-
 
     return;
 }
